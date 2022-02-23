@@ -1,0 +1,27 @@
+{
+  "python.autoComplete.extraPaths": [
+    "/opt/ros/galactic/lib/python3.8/site-packages",
+  ],
+  "[cpp]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "zachflower.uncrustify"
+  },
+  "[xml]": {
+    "editor.tabSize": 2,
+    "editor.autoClosingBrackets": "always",
+    "files.trimFinalNewlines": true,
+    "editor.defaultFormatter": "redhat.vscode-xml",
+  },
+  "uncrustify.configPath.linux": ".vscode/uncrustify.cfg",
+  "xml.format.splitAttributes": true,
+  "editor.formatOnSave": true,
+  "cmakeFormat.args": [
+    "--config-file",
+    ".vscode/cmake-format.py"
+  ],
+  "python.analysis.extraPaths": [
+    "/opt/ros/foxy/lib/python3.8/site-packages"
+  ],
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true
+}
