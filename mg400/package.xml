@@ -9,11 +9,6 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>mg400_msgs</depend>
-  <depend>mg400_description</depend>
-  <depend>mg400_controller</depend>
-  <depend>mg400_bringup</depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

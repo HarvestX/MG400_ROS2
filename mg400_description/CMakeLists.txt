@@ -10,6 +10,8 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
+install(DIRECTORY urdf xacro meshes DESTINATION share/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="RGB_SCALE" value="${1.0 / 255.0}" />
+
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0" />
+  </material>
+
+  <material name="grey">
+    <color rgba="0.2 0.2 0.2 1.0" />
+  </material>
+
+  <material name="light-grey">
+    <color rgba="0.6 0.6 0.6 1.0" />
+  </material>
+
+  <material name="orange">
+    <color rgba="${255/255} ${108/255} ${10/255} 1.0" />
+  </material>
+
+  <material name="brown">
+    <color rgba="${222/255} ${207/255} ${195/255} 1.0" />
+  </material>
+
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0" />
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0.0 0.0 1.0" />
+  </material>
+
+  <material name="blue">
+    <color rgba="0.0 0.0 0.8 1.0" />
+  </material>
+
+  <material name="green">
+    <color rgba="0.0 0.8 0.0 1.0" />
+  </material>
+
+  <material name="yellow">
+    <color rgba="${248 * RGB_SCALE} ${181 * RGB_SCALE} 0.0 1.0" />
+  </material>
+
+  <material name="transparent-black">
+    <color rgba="0.0 0.0 0.0 0.2" />
+  </material>
+
+  <material name="transparent-red">
+    <color rgba="0.8 0.0 0.0 0.2" />
+  </material>
+
+  <material name="transparent-blue">
+    <color rgba="0.0 0.0 0.8 0.2" />
+  </material>
+
+  <material name="transparent-green">
+    <color rgba="0.0 0.8 0.0 0.2" />
+  </material>
+
+  <material name="transparent-yellow">
+    <color rgba="${248 * RGB_SCALE} ${181 * RGB_SCALE} 0.0 0.2" />
+  </material>
+
+  <material name="transparent-grey">
+    <color rgba="0.2 0.2 0.2 0.2" />
+  </material>
+
+  <material name="transparent-light-grey">
+    <color rgba="0.6 0.6 0.6 0.2" />
+  </material>
+</robot>

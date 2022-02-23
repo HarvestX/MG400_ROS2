@@ -3,9 +3,12 @@
 <package format="3">
   <name>mg400_bringup</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="m12watanabe1a@gmail.com">aoi</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Dobot MG400 launch file package.</description>
+  <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
+  <license>Apache License 2.0</license>
+
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
