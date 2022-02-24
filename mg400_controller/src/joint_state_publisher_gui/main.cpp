@@ -25,8 +25,14 @@ int main(int argc, char * argv[])
   rclcpp::NodeOptions options;
 
   QApplication app(argc, argv);
-  MainWindow main_window(options);
-  main_window.show();
+  auto main_window = std::make_shared<MainWindow>(options);
+  main_window->show();
 
+  rclcpp::WallRate loop_rate(20);
+  while (rclcpp::ok()) {
+    app.processEvents();
+    rclcpp::spin_some(main_window);
+    loop_rate.sleep();
+  }
   return QApplication::exec();
 }

@@ -53,17 +53,10 @@ def generate_launch_description():
         executable='robot_state_publisher',
         parameters=[robot_description],
     )
-    joint_state_publisher_node = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        condition=UnlessCondition(LaunchConfiguration('gui')),
-    )
     joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
+        package='mg400_controller',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
-        condition=IfCondition(LaunchConfiguration('gui')),
     )
     rviz_node = Node(
         package='rviz2',
@@ -74,12 +67,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            name='gui',
-            default_value='True',
-            description='Flag to enable joint_state_publisher_gui'
-        ),
-        joint_state_publisher_node,
         joint_state_publisher_gui_node,
         robot_state_publisher_node,
         rviz_node,

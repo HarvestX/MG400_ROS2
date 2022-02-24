@@ -42,7 +42,9 @@ public:
 
 private:
   Ui::MainWindow * ui_;
+
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   double j1_;
   double j2_;
