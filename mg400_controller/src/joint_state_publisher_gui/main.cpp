@@ -34,5 +34,5 @@ int main(int argc, char * argv[])
     rclcpp::spin_some(main_window);
     loop_rate.sleep();
   }
-  return QApplication::exec();
+  return EXIT_SUCCESS;
 }
