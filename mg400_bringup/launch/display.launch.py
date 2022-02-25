@@ -1,3 +1,4 @@
+"""Display robot joint states."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,11 @@
 from ament_index_python.packages import get_package_share_path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.conditions.if_condition import IfCondition
-from launch.conditions.unless_condition import UnlessCondition
 from launch.substitutions.command import Command
 from launch.substitutions.find_executable import FindExecutable
-from launch.substitutions.launch_configuration import LaunchConfiguration
 from launch.substitutions.path_join_substitution import PathJoinSubstitution
 
 from launch_ros.actions.node import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():

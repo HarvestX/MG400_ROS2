@@ -17,7 +17,7 @@
   "editor.formatOnSave": true,
   "cmakeFormat.args": [
     "--config-file",
-    ".vscode/cmake-format.py"
+    ".vscode/cmake-format"
   ],
   "python.analysis.extraPaths": [
     "/opt/ros/foxy/lib/python3.8/site-packages"
