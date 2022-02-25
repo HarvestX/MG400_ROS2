@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <unistd.h>
 #include <rclcpp/rclcpp.hpp>
 
 namespace mg400_interface

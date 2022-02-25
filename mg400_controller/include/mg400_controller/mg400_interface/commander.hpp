@@ -67,13 +67,12 @@ struct RealTimeData
 };
 #pragma pack(pop)
 
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400Commander");
 
 class Commander
 {
 private:
   std::mutex mutex_;
-  double current_joint_[6];
+  double current_joints_[6];
   double tool_vector_[6];
   RealTimeData real_time_data_;
   std::atomic<bool> is_running_;
@@ -82,212 +81,50 @@ private:
   std::shared_ptr<TcpClient> dash_board_tcp_;
 
 public:
-  explicit Commander(const std::string & ip)
-  : current_joint_{}, tool_vector_{}, real_time_data_{}, is_running_(false)
-  {
-    this->is_running_ = false;
-    this->real_time_tcp_ = std::make_shared<TcpClient>(ip, 30003);
-    this->dash_board_tcp_ = std::make_shared<TcpClient>(ip, 29999);
-  }
+  explicit Commander(const std::string &);
+  ~Commander();
 
-  ~Commander()
-  {
-    this->is_running_ = false;
-    this->thread_->join();
-  }
+  void getCurrentJointStates(double *);
 
-  void getCurrentJointStates(double * joint)
-  {
-    this->mutex_.lock();
-    memcpy(joint, this->current_joint_, sizeof(this->current_joint_));
-    mutex_.unlock();
-  }
+  void getToolVectorActual(double *);
 
-  void getToolVectorActual(double * val)
-  {
-    this->mutex_.lock();
-    memcpy(val, this->tool_vector_, sizeof(tool_vector_));
-    this->mutex_.unlock();
-  }
+  void recvTask() noexcept;
 
-  void recvTask() noexcept
-  {
-    while (this->is_running_) {
-      try {
-        if (this->dash_board_tcp_->isConnected() && this->real_time_tcp_->isConnected()) {
-          if (this->real_time_tcp_->recv(
-              &this->real_time_data_, sizeof(this->real_time_data_),
-              5000))
-          {
-            if (this->real_time_data_.len != 1440) {
-              continue;
-            }
+  void init() noexcept;
 
-            this->mutex_.lock();
-            for (uint64_t i = 0; i < 6; ++i) {
-              current_joint_[i] = this->deg2Rad(
-                this->real_time_data_.q_actual[i]
-              );
-            }
-            memcpy(this->tool_vector_, this->real_time_data_, sizeof(this->tool_vector_));
-            this->mutex_.unlock();
-          } else {
-            // timeout
-            RCLCPP_WARN(
-              LOGGER,
-              "Tcp recv timeout"
-            );
-          }
-        } else {
-          try {
-            this->real_time_tcp_->connect();
-            this->dash_board_tcp_->connect();
-          } catch (const TcpClientException & err) {
-            RCLCPP_ERROR(
-              LOGGER,
-              "Tcp recv error : %s",
-              err.what()
-            );
-            this->sleep(3);
-          }
-        }
-      } catch (const TcpClientException & err) {
-        dash_board_tcp_->disConnect();
-        RCLCPP_ERROR(
-          LOGGER,
-          "Tcp recv error : %s", err.what()
-        );
-      }
-    }
-  }
+  bool isEnable() const;
 
-  void init() noexcept
-  {
-    try {
-      this->is_running_ = true;
-      this->thread_ = std::make_unique<std::thread>(
-        &Commander::recvTask, this
-      );
-    } catch (const TcpClientException & err) {
-      RCLCPP_ERROR(
-        LOGGER,
-        "Commander : %s",
-        err.what()
-      );
-    }
-  }
+  bool isConnected() const;
 
-  bool isEnable() const
-  {
-    return this->real_time_data_.robot_mode == 5;
-  }
+  void enableRobot();
 
-  bool isConnected() const
-  {
-    return this->dash_board_tcp_->isConnected() && this->real_time_tcp_->isConnected();
-  }
+  void disableRobot();
 
-  void enableRobot()
-  {
-    const char * cmd = "EnableRobot()";
-    this->dash_board_tcp_->send(cmd, strlen(cmd));
-  }
+  void clearError();
 
-  void disableRobot()
-  {
-    const char * cmd = "DisableRobot()";
-    this->dash_board_tcp_->send(cmd, strlen(cmd));
-  }
+  void resetRobot();
 
-  void clearError()
-  {
-    const char * cmd = "ClearError()";
-    this->dash_board_tcp_->send(cmd, strlen(cmd));
-  }
+  void speedFactor(int);
 
-  void resetRobot()
-  {
-    const char * cmd = "ResetRobot()";
-    this->dash_board_tcp_->send(cmd, strlen(cmd));
-  }
+  void movJ(double, double, double, double, double, double);
 
-  void speedFactor(int ratio)
-  {
-    char cmd[100];
-    sprintf(cmd, "SpeedFactor(%d)", ratio);
-    this->dash_board_tcp_(cmd, strlen(cmd));
-  }
+  void movL(double, double, double, double, double, double);
 
-  void movJ(double x, double y, double z, double a, double b, double c)
-  {
-    char cmd[100];
-    sprintf(cmd, "MovJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", x, y, z, a, b, c);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void jointMovJ(double, double, double, double, double, double);
 
-  void movL(double x, double y, double z, double a, double b, double c)
-  {
-    char cmd[100];
-    sprintf(cmd, "MovL(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", x, y, z, a, b, c);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void moveJog(const std::string &);
 
-  void jointMovJ(double j1, double j2, double j3, double j4, double j5, double j6)
-  {
-    char cmd[100];
-    sprintf(cmd, "JointMovJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", j1, j2, j3, j4, j5, j6);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void relMovJ(double, double, double, double, double, double);
 
-  void moveJog(const std::string & axis)
-  {
-    char cmd[100];
-    sprintf(cmd, "MoveJog(%s)", axis.c_str());
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void relMovL(double, double, double);
 
-  void relMovJ(
-    double offset1, double offset2, double offset3, double offset4, double offset5,
-    double offset6)
-  {
-    char cmd[100];
-    sprintf(
-      cmd, "RelMovJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", offset1, offset2, offset3, offset4,
-      offset5,
-      offset6);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void servoJ(double, double, double, double, double, double);
 
-  void relMovL(double x, double y, double z)
-  {
-    char cmd[100];
-    sprintf(cmd, "RelMovL(%0.3f,%0.3f,%0.3f)", x, y, z);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void servoP(double, double, double, double, double, double);
 
-  void servoJ(double j1, double j2, double j3, double j4, double j5, double j6)
-  {
-    char cmd[100];
-    sprintf(cmd, "ServoJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", j1, j2, j3, j4, j5, j6);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void dashSendCmd(const char *, uint32_t);
 
-  void servoP(double x, double y, double z, double a, double b, double c)
-  {
-    char cmd[100];
-    sprintf(cmd, "ServoP(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", x, y, z, a, b, c);
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
-
-  void dashSendCmd(const char * cmd, uint32_t len)
-  {
-    this->dash_board_tcp_->tcpSend(cmd, strlen(cmd));
-  }
-
-  void realSendCmd(const char * cmd, uint32_t len)
-  {
-    this->real_time_tcp_->tcpSend(cmd, strlen(cmd));
-  }
+  void realSendCmd(const char *, uint32_t);
 
 private:
   static inline double rad2Deg(double rad)
