@@ -1,0 +1,9 @@
+# pip install -r requirements.txt
+
+# base ----------------------------------------
+pyyaml
+flake8
+autopep8
+pydocstyle
+cmake_format
+

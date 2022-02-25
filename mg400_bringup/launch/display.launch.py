@@ -1,3 +1,4 @@
+"""Display robot joint states."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,11 @@
 from ament_index_python.packages import get_package_share_path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.conditions.if_condition import IfCondition
-from launch.conditions.unless_condition import UnlessCondition
 from launch.substitutions.command import Command
 from launch.substitutions.find_executable import FindExecutable
-from launch.substitutions.launch_configuration import LaunchConfiguration
 from launch.substitutions.path_join_substitution import PathJoinSubstitution
 
 from launch_ros.actions.node import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -53,17 +49,10 @@ def generate_launch_description():
         executable='robot_state_publisher',
         parameters=[robot_description],
     )
-    joint_state_publisher_node = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        condition=UnlessCondition(LaunchConfiguration('gui')),
-    )
     joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
+        package='mg400_controller',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
-        condition=IfCondition(LaunchConfiguration('gui')),
     )
     rviz_node = Node(
         package='rviz2',
@@ -74,12 +63,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            name='gui',
-            default_value='True',
-            description='Flag to enable joint_state_publisher_gui'
-        ),
-        joint_state_publisher_node,
         joint_state_publisher_gui_node,
         robot_state_publisher_node,
         rviz_node,
