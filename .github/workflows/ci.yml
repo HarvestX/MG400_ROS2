@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  schedule:
+    - cron: "0 2 * * 0" # Weekly on Sundays at 02:00
+
+jobs:
+  ci:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        ros_distribution: [galactic]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ros-tooling/setup-ros@v0.2
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+      - name: Build and Test
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          target-ros2-distro: ${{ matrix.ros_distribution }}
+          import-token: ${{ secrets.GITHUB_TOKEN }}
+          package-name: |
+            mg400
+            mg400_bringup
+            mg400_controller
+            mg400_description
+            mg400_msgs
