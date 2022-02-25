@@ -48,9 +48,9 @@ public:
   void close();
   void connect();
   void disConnect();
-  void isConnected() const;
+  bool isConnected() const;
   void send(const void *, uint32_t);
-  void recv(void *, uint32_t, uint32_t);
+  bool recv(void *, uint32_t, uint32_t);
   std::string toString();
 };
 } // namespace mg400_interface
