@@ -78,10 +78,6 @@ class MG400InterfaceNode : public rclcpp::Node
 {
 private:
   double goal_[6];
-  uint32_t index_;
-  rclcpp::TimerBase::UniquePtr timer_;
-  rclcpp::TimerBase::UniquePtr mov_j_timer_;
-  double trajectory_duration_;
   std::unique_ptr<Commander> commander_;
 
   rclcpp::Service<EnableRobot>::SharedPtr enable_robot_srv;
