@@ -74,9 +74,8 @@
 namespace mg400_interface
 {
 using namespace mg400_msgs::srv;
-class MG400ServiceServer
+class MG400InterfaceNode : public rclcpp::Node
 {
-
 private:
   double goal_[6];
   uint32_t index_;
@@ -134,8 +133,9 @@ private:
   rclcpp::Service<JointMovJ>::SharedPtr joint_mov_j_srv_;
 
 public:
-  MG400ServiceServer();
-  ~MG400ServiceServer();
+  explicit MG400InterfaceNode(
+    const rclcpp::NodeOptions &);
+  ~MG400InterfaceNode();
 
   void init();
 
@@ -152,237 +152,237 @@ protected:
     const std::shared_ptr<rmw_request_id_t>,
     const EnableRobot::Request::SharedPtr,
     EnableRobot::Response::SharedPtr
-  );
+  ) noexcept;
   void disableRobot(
     const std::shared_ptr<rmw_request_id_t>,
     const DisableRobot::Request::SharedPtr,
     DisableRobot::Response::SharedPtr
-  );
+  ) noexcept;
   void clearError(
     const std::shared_ptr<rmw_request_id_t>,
     const ClearError::Request::SharedPtr,
     ClearError::Response::SharedPtr
-  );
+  ) noexcept;
   void resetRobot(
     const std::shared_ptr<rmw_request_id_t>,
     const ResetRobot::Request::SharedPtr,
     ResetRobot::Response::SharedPtr
-  );
+  )noexcept;
   void speedFactor(
     const std::shared_ptr<rmw_request_id_t>,
     const SpeedFactor::Request::SharedPtr,
     SpeedFactor::Response::SharedPtr
-  );
+  )noexcept;
   void user(
     const std::shared_ptr<rmw_request_id_t>,
     const User::Request::SharedPtr,
     User::Response::SharedPtr
-  );
+  )noexcept;
   void tool(
     const std::shared_ptr<rmw_request_id_t>,
     const Tool::Request::SharedPtr,
     Tool::Response::SharedPtr
-  );
+  )noexcept;
   void robotMode(
     const std::shared_ptr<rmw_request_id_t>,
     const RobotMode::Request::SharedPtr,
     RobotMode::Response::SharedPtr
-  );
+  )noexcept;
   void payload(
     const std::shared_ptr<rmw_request_id_t>,
     const Payload::Request::SharedPtr,
     Payload::Response::SharedPtr
-  );
-  void DO(
+  )noexcept;
+  void dO(
     const std::shared_ptr<rmw_request_id_t>,
     const DO::Request::SharedPtr,
     DO::Response::SharedPtr
-  );
-  void DOExecute(
+  )noexcept;
+  void dOExecute(
     const std::shared_ptr<rmw_request_id_t>,
     const DOExecute::Request::SharedPtr,
     DOExecute::Response::SharedPtr
-  );
+  )noexcept;
   void toolDO(
     const std::shared_ptr<rmw_request_id_t>,
     const ToolDO::Request::SharedPtr,
     ToolDO::Response::SharedPtr
-  );
+  )noexcept;
   void toolDOExecute(
     const std::shared_ptr<rmw_request_id_t>,
     const ToolDOExecute::Request::SharedPtr,
     ToolDOExecute::Response::SharedPtr
-  );
-  void AO(
+  )noexcept;
+  void aO(
     const std::shared_ptr<rmw_request_id_t>,
     const AO::Request::SharedPtr,
     AO::Response::SharedPtr
-  );
-  void AOExecute(
+  )noexcept;
+  void aOExecute(
     const std::shared_ptr<rmw_request_id_t>,
     const AOExecute::Request::SharedPtr,
     AOExecute::Response::SharedPtr
-  );
+  )noexcept;
   void accJ(
     const std::shared_ptr<rmw_request_id_t>,
     const AccJ::Request::SharedPtr,
     AccJ::Response::SharedPtr
-  );
+  )noexcept;
   void accL(
     const std::shared_ptr<rmw_request_id_t>,
     const AccL::Request::SharedPtr,
     AccL::Response::SharedPtr
-  );
+  )noexcept;
   void speedJ(
     const std::shared_ptr<rmw_request_id_t>,
     const SpeedJ::Request::SharedPtr,
     SpeedJ::Response::SharedPtr
-  );
+  )noexcept;
   void speedL(
     const std::shared_ptr<rmw_request_id_t>,
     const SpeedL::Request::SharedPtr,
     SpeedL::Response::SharedPtr
-  );
+  )noexcept;
   void arch(
     const std::shared_ptr<rmw_request_id_t>,
     const Arch::Request::SharedPtr,
     Arch::Response::SharedPtr
-  );
+  )noexcept;
   void cp(
     const std::shared_ptr<rmw_request_id_t>,
     const CP::Request::SharedPtr,
     CP::Response::SharedPtr
-  );
+  )noexcept;
   void limZ(
     const std::shared_ptr<rmw_request_id_t>,
     const LimZ::Request::SharedPtr,
     LimZ::Response::SharedPtr
-  );
+  )noexcept;
   void setArmOrientation(
     const std::shared_ptr<rmw_request_id_t>,
     const SetArmOrientation::Request::SharedPtr,
     SetArmOrientation::Response::SharedPtr
-  );
+  )noexcept;
   void powerOn(
     const std::shared_ptr<rmw_request_id_t>,
     const PowerOn::Request::SharedPtr,
     PowerOn::Response::SharedPtr
-  );
+  )noexcept;
   void runScript(
     const std::shared_ptr<rmw_request_id_t>,
     const RunScript::Request::SharedPtr,
     RunScript::Response::SharedPtr
-  );
+  )noexcept;
   void stopScript(
     const std::shared_ptr<rmw_request_id_t>,
     const StopScript::Request::SharedPtr,
     StopScript::Response::SharedPtr
-  );
+  )noexcept;
   void pauseScript(
     const std::shared_ptr<rmw_request_id_t>,
     const PauseScript::Request::SharedPtr,
     PauseScript::Response::SharedPtr
-  );
+  )noexcept;
   void continueScript(
     const std::shared_ptr<rmw_request_id_t>,
     const ContinueScript::Request::SharedPtr,
     ContinueScript::Response::SharedPtr
-  );
+  )noexcept;
   void setSafeSkin(
     const std::shared_ptr<rmw_request_id_t>,
     const SetSafeSkin::Request::SharedPtr,
     SetSafeSkin::Response::SharedPtr
-  );
+  )noexcept;
   void setObstacleAvoid(
     const std::shared_ptr<rmw_request_id_t>,
     const SetObstacleAvoid::Request::SharedPtr,
     SetObstacleAvoid::Response::SharedPtr
-  );
+  )noexcept;
   void setCollisionLevel(
     const std::shared_ptr<rmw_request_id_t>,
     const SetCollisionLevel::Request::SharedPtr,
     SetCollisionLevel::Response::SharedPtr
-  );
+  )noexcept;
   void emergencyStop(
     const std::shared_ptr<rmw_request_id_t>,
     const EmergencyStop::Request::SharedPtr,
     EmergencyStop::Response::SharedPtr
-  );
+  )noexcept;
 
   void movJ(
     const std::shared_ptr<rmw_request_id_t>,
     const MovJ::Request::SharedPtr,
     MovJ::Response::SharedPtr
-  );
+  )noexcept;
   void movL(
     const std::shared_ptr<rmw_request_id_t>,
     const MovL::Request::SharedPtr,
     MovL::Response::SharedPtr
-  );
+  )noexcept;
   void jointMovJ(
     const std::shared_ptr<rmw_request_id_t>,
     const JointMovJ::Request::SharedPtr,
     JointMovJ::Response::SharedPtr
-  );
+  )noexcept;
   void jump(
     const std::shared_ptr<rmw_request_id_t>,
     const Jump::Request::SharedPtr,
     Jump::Response::SharedPtr
-  );
+  )noexcept;
   void relMovJ(
     const std::shared_ptr<rmw_request_id_t>,
     const RelMovJ::Request::SharedPtr,
     RelMovJ::Response::SharedPtr
-  );
+  )noexcept;
   void relMovL(
     const std::shared_ptr<rmw_request_id_t>,
     const RelMovL::Request::SharedPtr,
     RelMovL::Response::SharedPtr
-  );
+  )noexcept;
   void arc(
     const std::shared_ptr<rmw_request_id_t>,
     const Arc::Request::SharedPtr,
     Arc::Response::SharedPtr
-  );
+  )noexcept;
   void circle(
     const std::shared_ptr<rmw_request_id_t>,
     const Circle::Request::SharedPtr,
     Circle::Response::SharedPtr
-  );
+  )noexcept;
   void servoJ(
     const std::shared_ptr<rmw_request_id_t>,
     const ServoJ::Request::SharedPtr,
     ServoJ::Response::SharedPtr
-  );
+  )noexcept;
   void servoP(
     const std::shared_ptr<rmw_request_id_t>,
     const ServoP::Request::SharedPtr,
     ServoP::Response::SharedPtr
-  );
+  )noexcept;
   void sync(
     const std::shared_ptr<rmw_request_id_t>,
     const Sync::Request::SharedPtr,
     Sync::Response::SharedPtr
-  );
+  )noexcept;
   void startTrace(
     const std::shared_ptr<rmw_request_id_t>,
     const StartTrace::Request::SharedPtr,
     StartTrace::Response::SharedPtr
-  );
+  )noexcept;
   void startPath(
     const std::shared_ptr<rmw_request_id_t>,
     const StartPath::Request::SharedPtr,
     StartPath::Response::SharedPtr
-  );
+  )noexcept;
   void startFCTrace(
     const std::shared_ptr<rmw_request_id_t>,
     const StartFCTrace::Request::SharedPtr,
     StartFCTrace::Response::SharedPtr
-  );
+  )noexcept;
   void moveJog(
     const std::shared_ptr<rmw_request_id_t>,
     const MoveJog::Request::SharedPtr,
     MoveJog::Response::SharedPtr
-  );
+  )noexcept;
 };
 } // namespace mg400_interface

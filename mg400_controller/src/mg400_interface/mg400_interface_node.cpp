@@ -13,33 +13,368 @@
 // limitations under the License.
 
 
-#include "mg400_controller/mg400_interface/mg400_service_server.hpp"
+#include "mg400_controller/mg400_interface/mg400_interface_node.hpp"
 
 namespace mg400_interface
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400ServiceServer");
-void MG400ServiceServer::getJonitState(double * js)
+
+MG400InterfaceNode::MG400InterfaceNode(
+  const rclcpp::NodeOptions & options
+)
+: Node("mg400_interface", "mg400_interface", options)
+{
+  this->enable_robot_srv = this->create_service<EnableRobot>(
+    "enable_robot",
+    std::bind(
+      MG400InterfaceNode::enableRobot, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->disable_robot_srv_ = this->create_service<DisableRobot>(
+    "disable_robot",
+    std::bind(
+      MG400InterfaceNode::disableRobot, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->clear_error_srv_ = this->create_service<ClearError>(
+    "clear_error",
+    std::bind(
+      MG400InterfaceNode::clearError, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->reset_robot_srv_ = this->create_service<ResetRobot>(
+    "reset_robot",
+    std::bind(
+      MG400InterfaceNode::resetRobot, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->speed_factor_srv_ = this->create_service<SpeedFactor>(
+    "speed_factor",
+    std::bind(
+      MG400InterfaceNode::speedFactor, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->user_srv_ = this->create_service<User>(
+    "user",
+    std::bind(
+      MG400InterfaceNode::user, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->tool_srv_ = this->create_service<Tool>(
+    "tool",
+    std::bind(
+      MG400InterfaceNode::tool, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->robot_mode_srv_ = this->create_service<RobotMode>(
+    "robot_mode",
+    std::bind(
+      MG400InterfaceNode::robotMode, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->payload_srv_ = this->create_service<Payload>(
+    "payload",
+    std::bind(
+      MG400InterfaceNode::payload, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->do_srv_ = this->create_service<DO>(
+    "DO",
+    std::bind(
+      MG400InterfaceNode::dO, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->do_execute_srv_ = this->create_service<DOExecute>(
+    "DO_execute",
+    std::bind(
+      MG400InterfaceNode::dOExecute, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->tool_do_srv_ = this->create_service<ToolDO>(
+    "tool_DO",
+    std::bind(
+      MG400InterfaceNode::toolDO, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->tool_do_execute_srv_ = this->create_service<ToolDOExecute>(
+    "tool_DO_execute",
+    std::bind(
+      MG400InterfaceNode::toolDOExecute, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->ao_srv_ = this->create_service<AO>(
+    "AO",
+    std::bind(
+      MG400InterfaceNode::aO, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->ao_execute_srv_ = this->create_service<AOExecute>(
+    "AO_execute",
+    std::bind(
+      MG400InterfaceNode::aOExecute, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->acc_j_srv_ = this->create_service<AccJ>(
+    "acc_j",
+    std::bind(
+      MG400InterfaceNode::accJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->acc_l_srv_ = this->create_service<AccL>(
+    "acc_l",
+    std::bind(
+      MG400InterfaceNode::accL, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->speed_j_srv_ = this->create_service<SpeedJ>(
+    "speed_j",
+    std::bind(
+      MG400InterfaceNode::speedJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->speed_l_srv_ = this->create_service<SpeedL>(
+    "speed_l",
+    std::bind(
+      MG400InterfaceNode::speedL, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->arch_srv_ = this->create_service<Arch>(
+    "arch",
+    std::bind(
+      MG400InterfaceNode::arch, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->cp_srv_ = this->create_service<CP>(
+    "cp",
+    std::bind(
+      MG400InterfaceNode::cp, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->lim_z_srv_ = this->create_service<LimZ>(
+    "lim_z",
+    std::bind(
+      MG400InterfaceNode::limZ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->set_arm_orientation_srv_ = this->create_service<SetArmOrientation>(
+    "set_arm_orientation",
+    std::bind(
+      MG400InterfaceNode::setArmOrientation, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->power_on_srv_ = this->create_service<PowerOn>(
+    "power_on",
+    std::bind(
+      MG400InterfaceNode::powerOn, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->run_script_srv_ = this->create_service<RunScript>(
+    "run_script",
+    std::bind(
+      MG400InterfaceNode::runScript, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->stop_script_srv_ = this->create_service<StopScript>(
+    "stop_script",
+    std::bind(
+      MG400InterfaceNode::stopScript, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->pause_script_srv_ = this->create_service<PauseScript>(
+    "pause_script",
+    std::bind(
+      MG400InterfaceNode::pauseScript, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->continue_script_srv_ = this->create_service<ContinueScript>(
+    "continue_script",
+    std::bind(
+      MG400InterfaceNode::continueScript, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->set_safe_skin_srv_ = this->create_service<SetSafeSkin>(
+    "set_safe_skin",
+    std::bind(
+      MG400InterfaceNode::setSafeSkin, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->set_obstacle_avoid_srv_ = this->create_service<SetObstacleAvoid>(
+    "set_obstacle_avoid",
+    std::bind(
+      MG400InterfaceNode::setObstacleAvoid, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->set_collistion_level_srv_ = this->create_service<SetCollisionLevel>(
+    "set_collision_level",
+    std::bind(
+      MG400InterfaceNode::setCollisionLevel, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->emergency_stop_srv_ = this->create_service<EmergencyStop>(
+    "emergency_stop",
+    std::bind(
+      MG400InterfaceNode::emergencyStop, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+
+  this->mov_j_srv_ = this->create_service<MovJ>(
+    "mov_j",
+    std::bind(
+      MG400InterfaceNode::movJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->mov_l_srv_ = this->create_service<MovL>(
+    "mov_l",
+    std::bind(
+      MG400InterfaceNode::movL, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->jump_srv_ = this->create_service<Jump>(
+    "jump",
+    std::bind(
+      MG400InterfaceNode::jump, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->arc_srv_ = this->create_service<Arc>(
+    "arc",
+    std::bind(
+      MG400InterfaceNode::arc, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->sync_srv_ = this->create_service<Sync>(
+    "sync",
+    std::bind(
+      MG400InterfaceNode::sync, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->circle_srv_ = this->create_service<Circle>(
+    "circle",
+    std::bind(
+      MG400InterfaceNode::circle, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->servo_j_srv_ = this->create_service<ServoJ>(
+    "servo_j",
+    std::bind(
+      MG400InterfaceNode::servoJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->start_trace_srv_ = this->create_service<StartTrace>(
+    "start_trace",
+    std::bind(
+      MG400InterfaceNode::startTrace, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->start_path_srv_ = this->create_service<StartPath>(
+    "start_path",
+    std::bind(
+      MG400InterfaceNode::startPath, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->move_jog_srv_ = this->create_service<MoveJog>(
+    "move_jog",
+    std::bind(
+      MG400InterfaceNode::moveJog, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->servo_p_srv_ = this->create_service<ServoP>(
+    "servo_p",
+    std::bind(
+      MG400InterfaceNode::servoP, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->rel_mov_j_srv_ = this->create_service<RelMovJ>(
+    "rel_mov_j",
+    std::bind(
+      MG400InterfaceNode::relMovJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->rel_mov_l_srv_ = this->create_service<RelMovL>(
+    "rel_mov_l",
+    std::bind(
+      MG400InterfaceNode::relMovJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+  this->joint_mov_j_srv_ = this->create_service<JointMovJ>(
+    "joint_mov_j",
+    std::bind(
+      MG400InterfaceNode::jointMovJ, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
+    )
+  );
+
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Ready"
+  );
+}
+
+void MG400InterfaceNode::getJonitState(double * js)
 {
   this->commander_->getCurrentJointStates(js);
 }
 
-bool MG400ServiceServer::isEnabled() const
+bool MG400InterfaceNode::isEnabled() const
 {
   return this->commander_->isEnabled();
 }
 
-bool MG400ServiceServer::isConnected() const
+bool MG400InterfaceNode::isConnected() const
 {
   return this->commander_->isConnected();
 }
 
-void MG400ServiceServer::getToolVectorActual(double * val)
+void MG400InterfaceNode::getToolVectorActual(double * val)
 {
   this->commander_->getToolVectorActual(val);
 }
 
 // dashboard
-void MG400ServiceServer::enableRobot(
+void MG400InterfaceNode::enableRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const EnableRobot::Request::SharedPtr request,
   EnableRobot::Response::SharedPtr response
@@ -51,7 +386,7 @@ void MG400ServiceServer::enableRobot(
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     this->commander_->clearError();
@@ -59,7 +394,7 @@ void MG400ServiceServer::enableRobot(
   }
 }
 
-void MG400ServiceServer::disableRobot(
+void MG400InterfaceNode::disableRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const DisableRobot::Request::SharedPtr request,
   DisableRobot::Response::SharedPtr response
@@ -71,7 +406,7 @@ void MG400ServiceServer::disableRobot(
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     this->commander_->clearError();
@@ -79,7 +414,7 @@ void MG400ServiceServer::disableRobot(
   }
 }
 
-void MG400ServiceServer::clearError(
+void MG400InterfaceNode::clearError(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ClearError::Request::SharedPtr request,
   ClearError::Response::SharedPtr response
@@ -91,7 +426,7 @@ void MG400ServiceServer::clearError(
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     this->commander_->clearError();
@@ -99,7 +434,7 @@ void MG400ServiceServer::clearError(
   }
 }
 
-void MG400ServiceServer::resetRobot(
+void MG400InterfaceNode::resetRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ResetRobot::Request::SharedPtr request,
   ResetRobot::Response::SharedPtr response
@@ -111,14 +446,14 @@ void MG400ServiceServer::resetRobot(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::speedFactor(
+void MG400InterfaceNode::speedFactor(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SpeedFactor::Request::SharedPtr request,
   SpeedFactor::Response::SharedPtr response
@@ -130,14 +465,14 @@ void MG400ServiceServer::speedFactor(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::user(
+void MG400InterfaceNode::user(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const User::Request::SharedPtr request,
   User::Response::SharedPtr response
@@ -151,14 +486,14 @@ void MG400ServiceServer::user(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::tool(
+void MG400InterfaceNode::tool(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Tool::Request::SharedPtr request,
   Tool::Response::SharedPtr response
@@ -172,14 +507,14 @@ void MG400ServiceServer::tool(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::robotMode(
+void MG400InterfaceNode::robotMode(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const RobotMode::Request::SharedPtr request,
   RobotMode::Response::SharedPtr response
@@ -192,14 +527,14 @@ void MG400ServiceServer::robotMode(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::payload(
+void MG400InterfaceNode::payload(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Payload::Request::SharedPtr request,
   Payload::Response::SharedPtr response
@@ -213,14 +548,14 @@ void MG400ServiceServer::payload(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::DO(
+void MG400InterfaceNode::dO(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const DO::Request::SharedPtr request,
   DO::Response::SharedPtr response
@@ -234,14 +569,14 @@ void MG400ServiceServer::DO(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::DOExecute(
+void MG400InterfaceNode::dOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const DOExecute::Request::SharedPtr request,
   DOExecute::Response::SharedPtr response
@@ -255,14 +590,14 @@ void MG400ServiceServer::DOExecute(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::toolDO(
+void MG400InterfaceNode::toolDO(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ToolDO::Request::SharedPtr request,
   ToolDO::Response::SharedPtr response
@@ -276,14 +611,14 @@ void MG400ServiceServer::toolDO(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::toolDOExecute(
+void MG400InterfaceNode::toolDOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ToolDOExecute::Request::SharedPtr request,
   ToolDOExecute::Response::SharedPtr response
@@ -297,14 +632,14 @@ void MG400ServiceServer::toolDOExecute(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::AO(
+void MG400InterfaceNode::aO(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const AO::Request::SharedPtr request,
   AO::Response::SharedPtr response
@@ -318,14 +653,14 @@ void MG400ServiceServer::AO(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::AOExecute(
+void MG400InterfaceNode::aOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const AOExecute::Request::SharedPtr request,
   AOExecute::Response::SharedPtr response
@@ -339,14 +674,14 @@ void MG400ServiceServer::AOExecute(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::accJ(
+void MG400InterfaceNode::accJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const AccJ::Request::SharedPtr request,
   AccJ::Response::SharedPtr response
@@ -360,14 +695,14 @@ void MG400ServiceServer::accJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::accL(
+void MG400InterfaceNode::accL(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const AccL::Request::SharedPtr request,
   AccL::Response::SharedPtr response
@@ -381,14 +716,14 @@ void MG400ServiceServer::accL(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::speedJ(
+void MG400InterfaceNode::speedJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SpeedJ::Request::SharedPtr request,
   SpeedJ::Response::SharedPtr response
@@ -402,14 +737,14 @@ void MG400ServiceServer::speedJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::speedL(
+void MG400InterfaceNode::speedL(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SpeedL::Request::SharedPtr request,
   SpeedL::Response::SharedPtr response
@@ -423,14 +758,14 @@ void MG400ServiceServer::speedL(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::arch(
+void MG400InterfaceNode::arch(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Arch::Request::SharedPtr request,
   Arch::Response::SharedPtr response
@@ -444,14 +779,14 @@ void MG400ServiceServer::arch(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::cp(
+void MG400InterfaceNode::cp(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const CP::Request::SharedPtr request,
   CP::Response::SharedPtr response
@@ -465,14 +800,14 @@ void MG400ServiceServer::cp(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::limZ(
+void MG400InterfaceNode::limZ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const LimZ::Request::SharedPtr request,
   LimZ::Response::SharedPtr response
@@ -486,14 +821,14 @@ void MG400ServiceServer::limZ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::setArmOrientation(
+void MG400InterfaceNode::setArmOrientation(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SetArmOrientation::Request::SharedPtr request,
   SetArmOrientation::Response::SharedPtr response
@@ -514,14 +849,14 @@ void MG400ServiceServer::setArmOrientation(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::powerOn(
+void MG400InterfaceNode::powerOn(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const PowerOn::Request::SharedPtr request,
   PowerOn::Response::SharedPtr response
@@ -534,14 +869,14 @@ void MG400ServiceServer::powerOn(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::runScript(
+void MG400InterfaceNode::runScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const RunScript::Request::SharedPtr request,
   RunScript::Response::SharedPtr response
@@ -555,14 +890,14 @@ void MG400ServiceServer::runScript(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::stopScript(
+void MG400InterfaceNode::stopScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const StopScript::Request::SharedPtr request,
   StopScript::Response::SharedPtr response
@@ -575,14 +910,14 @@ void MG400ServiceServer::stopScript(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::pauseScript(
+void MG400InterfaceNode::pauseScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const PauseScript::Request::SharedPtr request,
   PauseScript::Response::SharedPtr response
@@ -595,14 +930,14 @@ void MG400ServiceServer::pauseScript(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::continueScript(
+void MG400InterfaceNode::continueScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ContinueScript::Request::SharedPtr request,
   ContinueScript::Response::SharedPtr response
@@ -615,14 +950,14 @@ void MG400ServiceServer::continueScript(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::setSafeSkin(
+void MG400InterfaceNode::setSafeSkin(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SetSafeSkin::Request::SharedPtr request,
   SetSafeSkin::Response::SharedPtr response
@@ -636,14 +971,14 @@ void MG400ServiceServer::setSafeSkin(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::setObstacleAvoid(
+void MG400InterfaceNode::setObstacleAvoid(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SetObstacleAvoid::Request::SharedPtr request,
   SetObstacleAvoid::Response::SharedPtr response
@@ -657,14 +992,14 @@ void MG400ServiceServer::setObstacleAvoid(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::setCollisionLevel(
+void MG400InterfaceNode::setCollisionLevel(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const SetCollisionLevel::Request::SharedPtr request,
   SetCollisionLevel::Response::SharedPtr response
@@ -678,14 +1013,14 @@ void MG400ServiceServer::setCollisionLevel(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::emergencyStop(
+void MG400InterfaceNode::emergencyStop(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const EmergencyStop::Request::SharedPtr request,
   EmergencyStop::Response::SharedPtr response
@@ -699,7 +1034,7 @@ void MG400ServiceServer::emergencyStop(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
@@ -708,7 +1043,7 @@ void MG400ServiceServer::emergencyStop(
 
 // real time
 
-void MG400ServiceServer::movJ(
+void MG400InterfaceNode::movJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const MovJ::Request::SharedPtr request,
   MovJ::Response::SharedPtr response
@@ -723,14 +1058,14 @@ void MG400ServiceServer::movJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::movL(
+void MG400InterfaceNode::movL(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const MovL::Request::SharedPtr request,
   MovL::Response::SharedPtr response
@@ -745,14 +1080,14 @@ void MG400ServiceServer::movL(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::servoJ(
+void MG400InterfaceNode::servoJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ServoJ::Request::SharedPtr request,
   ServoJ::Response::SharedPtr response
@@ -767,14 +1102,14 @@ void MG400ServiceServer::servoJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::jump(
+void MG400InterfaceNode::jump(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Jump::Request::SharedPtr request,
   Jump::Response::SharedPtr response
@@ -793,14 +1128,14 @@ void MG400ServiceServer::jump(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::arc(
+void MG400InterfaceNode::arc(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Arc::Request::SharedPtr request,
   Arc::Response::SharedPtr response
@@ -821,14 +1156,14 @@ void MG400ServiceServer::arc(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::servoP(
+void MG400InterfaceNode::servoP(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const ServoP::Request::SharedPtr request,
   ServoP::Response::SharedPtr response
@@ -843,14 +1178,14 @@ void MG400ServiceServer::servoP(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::relMovJ(
+void MG400InterfaceNode::relMovJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const RelMovJ::Request::SharedPtr request,
   RelMovJ::Response::SharedPtr response
@@ -865,14 +1200,14 @@ void MG400ServiceServer::relMovJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::relMovL(
+void MG400InterfaceNode::relMovL(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const RelMovL::Request::SharedPtr request,
   RelMovL::Response::SharedPtr response
@@ -886,14 +1221,14 @@ void MG400ServiceServer::relMovL(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::jointMovJ(
+void MG400InterfaceNode::jointMovJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const JointMovJ::Request::SharedPtr request,
   JointMovJ::Response::SharedPtr response
@@ -908,14 +1243,14 @@ void MG400ServiceServer::jointMovJ(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::sync(
+void MG400InterfaceNode::sync(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const Sync::Request::SharedPtr request,
   Sync::Response::SharedPtr response
@@ -928,14 +1263,14 @@ void MG400ServiceServer::sync(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::startTrace(
+void MG400InterfaceNode::startTrace(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const StartTrace::Request::SharedPtr request,
   StartTrace::Response::SharedPtr response
@@ -949,14 +1284,14 @@ void MG400ServiceServer::startTrace(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::startPath(
+void MG400InterfaceNode::startPath(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const StartPath::Request::SharedPtr request,
   StartPath::Response::SharedPtr response
@@ -975,14 +1310,14 @@ void MG400ServiceServer::startPath(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::startFCTrace(
+void MG400InterfaceNode::startFCTrace(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const StartFCTrace::Request::SharedPtr request,
   StartFCTrace::Response::SharedPtr response
@@ -996,14 +1331,14 @@ void MG400ServiceServer::startFCTrace(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
   }
 }
 
-void MG400ServiceServer::moveJog(
+void MG400InterfaceNode::moveJog(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const MoveJog::Request::SharedPtr request,
   MoveJog::Response::SharedPtr response
@@ -1015,7 +1350,7 @@ void MG400ServiceServer::moveJog(
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
-      LOGGER,
+      this->get_logger(),
       e.what()
     );
     response->res = -1;
