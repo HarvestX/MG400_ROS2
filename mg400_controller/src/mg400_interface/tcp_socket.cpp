@@ -39,6 +39,19 @@ TcpClient::~TcpClient()
   this->close();
 }
 
+void TcpClient::close()
+{
+  if (this->fd_ < 0) {
+    // TcpClient not connected
+    // Do nothing
+    return;
+  }
+
+  ::close(this->fd_);
+  this->is_connected_ = false;
+  this->fd_ = -1;
+}
+
 void TcpClient::connect()
 {
   if (this->fd_ < 0) {
