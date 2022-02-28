@@ -39,7 +39,7 @@ set(srv_files
     "srv/MovJ.srv"
     "srv/MovL.srv"
     "srv/PauseScript.srv"
-    "srv/PayLoad.srv"
+    "srv/Payload.srv"
     "srv/PowerOn.srv"
     "srv/RelMovJ.srv"
     "srv/RelMovL.srv"
