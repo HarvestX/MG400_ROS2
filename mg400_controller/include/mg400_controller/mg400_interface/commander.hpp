@@ -92,7 +92,7 @@ public:
 
   void init() noexcept;
 
-  bool isEnable() const;
+  bool isEnabled() const;
 
   bool isConnected() const;
 

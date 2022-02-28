@@ -18,7 +18,27 @@
 namespace mg400_interface
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400ServiceServer");
+void MG400ServiceServer::getJonitState(double * js)
+{
+  this->commander_->getCurrentJointStates(js);
+}
 
+bool MG400ServiceServer::isEnabled() const
+{
+  return this->commander_->isEnabled();
+}
+
+bool MG400ServiceServer::isConnected() const
+{
+  return this->commander_->isConnected();
+}
+
+void MG400ServiceServer::getToolVectorActual(double * val)
+{
+  this->commander_->getToolVectorActual(val);
+}
+
+// dashboard
 void MG400ServiceServer::enableRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const EnableRobot::Request::SharedPtr request,

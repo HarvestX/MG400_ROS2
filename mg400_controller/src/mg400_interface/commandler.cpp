@@ -115,7 +115,7 @@ void Commander::init()
   }
 }
 
-bool Commander::isEnable() const
+bool Commander::isEnabled() const
 {
   return this->real_time_data_.robot_mode == 5;
 }
