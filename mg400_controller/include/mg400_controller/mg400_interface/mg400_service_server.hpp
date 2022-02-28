@@ -85,6 +85,54 @@ private:
   double trajectory_duration_;
   std::unique_ptr<Commander> commander_;
 
+  rclcpp::Service<EnableRobot>::SharedPtr enable_robot_srv;
+  rclcpp::Service<DisableRobot>::SharedPtr disable_robot_srv_;
+  rclcpp::Service<ClearError>::SharedPtr clear_error_srv_;
+  rclcpp::Service<ResetRobot>::SharedPtr reset_robot_srv_;
+  rclcpp::Service<SpeedFactor>::SharedPtr speed_factor_srv_;
+  rclcpp::Service<User>::SharedPtr user_srv_;
+  rclcpp::Service<Tool>::SharedPtr tool_srv_;
+  rclcpp::Service<RobotMode>::SharedPtr robot_mode_srv_;
+  rclcpp::Service<Payload>::SharedPtr payload_srv_;
+  rclcpp::Service<DO>::SharedPtr do_srv_;
+  rclcpp::Service<DOExecute>::SharedPtr do_execute_srv_;
+  rclcpp::Service<ToolDO>::SharedPtr tool_do_srv_;
+  rclcpp::Service<ToolDOExecute>::SharedPtr tool_do_execute_srv_;
+  rclcpp::Service<AO>::SharedPtr ao_srv_;
+  rclcpp::Service<AOExecute>::SharedPtr ao_execute_srv_;
+  rclcpp::Service<AccJ>::SharedPtr acc_j_srv_;
+  rclcpp::Service<AccL>::SharedPtr acc_l_srv_;
+  rclcpp::Service<SpeedJ>::SharedPtr speed_j_srv_;
+  rclcpp::Service<SpeedL>::SharedPtr speed_l_srv_;
+  rclcpp::Service<Arch>::SharedPtr arch_srv_;
+  rclcpp::Service<CP>::SharedPtr cp_srv_;
+  rclcpp::Service<LimZ>::SharedPtr lim_z_srv_;
+  rclcpp::Service<SetArmOrientation>::SharedPtr set_arm_orientation_srv_;
+  rclcpp::Service<PowerOn>::SharedPtr power_on_srv_;
+  rclcpp::Service<RunScript>::SharedPtr run_script_srv_;
+  rclcpp::Service<StopScript>::SharedPtr stop_script_srv_;
+  rclcpp::Service<PauseScript>::SharedPtr pause_script_srv_;
+  rclcpp::Service<ContinueScript>::SharedPtr continue_script_srv_;
+  rclcpp::Service<SetSafeSkin>::SharedPtr set_safe_skin_srv_;
+  rclcpp::Service<SetObstacleAvoid>::SharedPtr set_obstacle_avoid_srv_;
+  rclcpp::Service<SetCollisionLevel>::SharedPtr set_collistion_level_srv_;
+  rclcpp::Service<EmergencyStop>::SharedPtr emergency_stop_srv_;
+
+  rclcpp::Service<MovJ>::SharedPtr mov_j_srv_;
+  rclcpp::Service<MovL>::SharedPtr mov_l_srv_;
+  rclcpp::Service<Jump>::SharedPtr jump_srv_;
+  rclcpp::Service<Arc>::SharedPtr arc_srv_;
+  rclcpp::Service<Sync>::SharedPtr sync_srv_;
+  rclcpp::Service<Circle>::SharedPtr circle_srv_;
+  rclcpp::Service<ServoJ>::SharedPtr servo_j_srv_;
+  rclcpp::Service<StartTrace>::SharedPtr start_trace_srv_;
+  rclcpp::Service<StartPath>::SharedPtr start_path_srv_;
+  rclcpp::Service<MoveJog>::SharedPtr move_jog_srv_;
+  rclcpp::Service<ServoP>::SharedPtr servo_p_srv_;
+  rclcpp::Service<RelMovJ>::SharedPtr rel_mov_j_srv_;
+  rclcpp::Service<RelMovL>::SharedPtr rel_mov_l_srv_;
+  rclcpp::Service<JointMovJ>::SharedPtr joint_mov_j_srv_;
+
 public:
   MG400ServiceServer();
   ~MG400ServiceServer();
