@@ -13,17 +13,40 @@
 // limitations under the License.
 
 
+#include "mg400_controller/convert.hpp"
 #include "mg400_controller/mg400_interface/component.hpp"
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals;
 
 Component::Component(
   const rclcpp::NodeOptions & options
 )
 : Node("mg400_interface", "mg400_interface", options)
 {
-  this->enable_robot_srv = this->create_service<EnableRobot>(
+  std::string ip;
+  this->declare_parameter<std::string>("ip_address", "192.168.1.6");
+  this->get_parameter("ip_address", ip);
+
+  commander_ = std::make_unique<Commander>(ip);
+  commander_->init();
+
+  auto publish_js = [this]() -> void {
+      double position[6];
+      this->getJonitState(position);
+      this->joint_state_pub_->publish(
+        convert::toJointState(
+          position[0],
+          position[1],
+          position[2],
+          position[3]
+        )
+      );
+    };
+  this->js_timer_ = create_wall_timer(100ms, publish_js);
+
+  this->enable_robot_srv_ = this->create_service<EnableRobot>(
     "enable_robot",
     std::bind(
       &Component::enableRobot, this,

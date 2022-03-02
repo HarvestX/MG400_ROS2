@@ -80,7 +80,11 @@ private:
   double goal_[6];
   std::unique_ptr<Commander> commander_;
 
-  rclcpp::Service<EnableRobot>::SharedPtr enable_robot_srv;
+  rclcpp::TimerBase::SharedPtr js_timer_;
+
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+
+  rclcpp::Service<EnableRobot>::SharedPtr enable_robot_srv_;
   rclcpp::Service<DisableRobot>::SharedPtr disable_robot_srv_;
   rclcpp::Service<ClearError>::SharedPtr clear_error_srv_;
   rclcpp::Service<ResetRobot>::SharedPtr reset_robot_srv_;
