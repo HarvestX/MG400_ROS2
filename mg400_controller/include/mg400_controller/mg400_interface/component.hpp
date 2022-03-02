@@ -158,7 +158,7 @@ protected:
     const std::shared_ptr<rmw_request_id_t>,
     const ClearError::Request::SharedPtr,
     ClearError::Response::SharedPtr
-  ) ;
+  );
   void resetRobot(
     const std::shared_ptr<rmw_request_id_t>,
     const ResetRobot::Request::SharedPtr,
