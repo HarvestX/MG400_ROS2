@@ -407,6 +407,7 @@ void Component::disableRobot(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     this->commander_->disableRobot();
     response->res = 0;
@@ -427,6 +428,7 @@ void Component::clearError(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     this->commander_->clearError();
     response->res = 0;
@@ -447,6 +449,7 @@ void Component::resetRobot(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     this->commander_->resetRobot();
     response->res = 0;
@@ -527,6 +530,7 @@ void Component::robotMode(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "RobotMode()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -869,6 +873,7 @@ void Component::powerOn(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "PowerOn()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -910,6 +915,7 @@ void Component::stopScript(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "StopScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -930,6 +936,7 @@ void Component::pauseScript(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "PauseScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -950,6 +957,7 @@ void Component::continueScript(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "ContinueScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -1033,6 +1041,7 @@ void Component::emergencyStop(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     char cmd[100];
     sprintf(cmd, "EmergencyStop()");
@@ -1291,6 +1300,7 @@ void Component::sync(
 )
 {
   (void)request_header; // for linter
+  (void)request; // for linter
   try {
     const char * cmd = "Sync()";
     this->commander_->realSendCmd(cmd, strlen(cmd));
