@@ -46,7 +46,7 @@ void Commander::getToolVectorActual(double * val)
   this->mutex_.unlock();
 }
 
-void Commander::recvTask()
+void Commander::recvTask() noexcept
 {
   while (this->is_running_) {
     try {
@@ -99,7 +99,7 @@ void Commander::recvTask()
   }
 }
 
-void Commander::init()
+void Commander::init() noexcept
 {
   try {
     this->is_running_ = true;
@@ -115,12 +115,12 @@ void Commander::init()
   }
 }
 
-bool Commander::isEnabled() const
+bool Commander::isEnabled() const noexcept
 {
   return this->real_time_data_.robot_mode == 5;
 }
 
-bool Commander::isConnected() const
+bool Commander::isConnected() const noexcept
 {
   return this->dash_board_tcp_->isConnected() && this->real_time_tcp_->isConnected();
 }
@@ -218,20 +218,13 @@ void Commander::servoP(double x, double y, double z, double a, double b, double 
   this->real_time_tcp_->send(cmd, strlen(cmd));
 }
 
-void Commander::servoP(double x, double y, double z, double a, double b, double c)
-{
-  char cmd[100];
-  sprintf(cmd, "ServoP(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", x, y, z, a, b, c);
-  this->real_time_tcp_->send(cmd, strlen(cmd));
-}
-
 void Commander::dashSendCmd(const char * cmd, uint32_t len)
 {
-  this->dash_board_tcp_->send(cmd, strlen(cmd));
+  this->dash_board_tcp_->send(cmd, len);
 }
 
 void Commander::realSendCmd(const char * cmd, uint32_t len)
 {
-  this->real_time_tcp_->send(cmd, strlen(cmd));
+  this->real_time_tcp_->send(cmd, len);
 }
 } // namespace mg400_interface

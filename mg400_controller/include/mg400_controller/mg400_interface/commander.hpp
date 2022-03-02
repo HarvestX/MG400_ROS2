@@ -92,9 +92,9 @@ public:
 
   void init() noexcept;
 
-  bool isEnabled() const;
+  bool isEnabled() const noexcept;
 
-  bool isConnected() const;
+  bool isConnected() const noexcept;
 
   void enableRobot();
 

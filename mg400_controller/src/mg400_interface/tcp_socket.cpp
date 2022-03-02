@@ -152,7 +152,7 @@ bool TcpClient::recv(void * buf, uint32_t len, uint32_t timeout)
       throw TcpClientException(
               this->toString() + std::string(" ::read() ") + strerror(errno)
       );
-    } else if (err = 0) {
+    } else if (err == 0) {
       this->disConnect();
       throw TcpClientException(
               this->toString() + std::string(" tcp server has disconnected.")
