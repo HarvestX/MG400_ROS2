@@ -52,6 +52,7 @@ target_sources(
 target_include_directories(${LIB_TARGET} PRIVATE include)
 ament_target_dependencies(${LIB_TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 set_property(TARGET ${LIB_TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
+install(TARGETS ${LIB_TARGET} DESTINATION lib/${LIB_PROJECT_NAME})
 
 # Create node
 add_executable(${TARGET})
@@ -64,6 +65,7 @@ target_include_directories(${TARGET} PRIVATE include)
 ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
 set(THIS_CREATED_LIB_DEPENDS ${THIS_CREATED_LIB_DEPENDS} ${TARGET})
+install(TARGETS ${TARGET} DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
