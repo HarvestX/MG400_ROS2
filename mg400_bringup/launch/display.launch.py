@@ -13,54 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from ament_index_python.packages import get_package_share_path
-
 from launch import LaunchDescription
-from launch.substitutions.command import Command
-from launch.substitutions.find_executable import FindExecutable
-from launch.substitutions.path_join_substitution import PathJoinSubstitution
 
 from launch_ros.actions.node import Node
+
+from mg400_bringup.node_generator import robot_state_publisher as rsp
+from mg400_bringup.node_generator import rviz2
 
 
 def generate_launch_description():
     """Launch rviz display."""
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name='xacro')]),
-            ' ',
-            str(
-                get_package_share_path('mg400_description') /
-                'urdf' /
-                'mg400_description.urdf.xacro'
-            )
-        ],
-    )
-    robot_description = {'robot_description': robot_description_content}
-    rviz_config_file = str(
-        get_package_share_path('mg400_bringup') /
-        'rviz' /
-        'display.rviz'
-    )
-
-    robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[robot_description],
-    )
+    robot_state_publisher_node: Node = rsp.load_node()
     joint_state_publisher_gui_node = Node(
         package='mg400_controller',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
     )
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', rviz_config_file],
-    )
+    rviz_node: Node = rviz2.load_node('display.rviz')
 
     return LaunchDescription([
         joint_state_publisher_gui_node,
