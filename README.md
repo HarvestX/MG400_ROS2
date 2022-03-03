@@ -57,4 +57,4 @@ ros2 launch mg400_bringup mg400.launch
 ## References
 ### Official ROS1 package
 - [Official ROS1 package](https://github.com/Dobot-Arm/MG400_ROS)
-- [Connection trouble shouting](https://drive.google.com/file/d/1XZdcXGPddbkGDYDBaovpLm1Mz8kck3Tj/view)
+- [Connection trouble shooting](https://drive.google.com/file/d/1XZdcXGPddbkGDYDBaovpLm1Mz8kck3Tj/view)
