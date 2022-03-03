@@ -13,10 +13,12 @@
 // limitations under the License.
 
 #include <cerrno>
+#include <utility>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/select.h>
 #include "mg400_controller/mg400_interface/tcp_socket.hpp"
 
 namespace mg400_interface
@@ -56,7 +58,7 @@ void TcpClient::connect()
 {
   if (this->fd_ < 0) {
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (this->fd_) {
+    if (this->fd_ < 0) {
       throw TcpClientException(
               this->toString() + std::string(" socket : ") + strerror(errno)
       );

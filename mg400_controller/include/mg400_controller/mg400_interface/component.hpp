@@ -148,6 +148,8 @@ public:
   bool isConnected() const;
 
 protected:
+  void publishJointState();
+
   void enableRobot(
     const std::shared_ptr<rmw_request_id_t>,
     const EnableRobot::Request::SharedPtr,
