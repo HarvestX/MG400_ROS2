@@ -24,7 +24,6 @@ from launch_ros.actions.node import Node
 
 def load_node(namespace: str = '') -> Node:
     """Load node."""
-
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name='xacro')]),

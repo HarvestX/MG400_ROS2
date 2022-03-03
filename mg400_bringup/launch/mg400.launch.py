@@ -27,7 +27,7 @@ def generate_launch_description():
 
     robot_state_publisher_node: Node = rsp.load_node(namespace)
 
-    rviz_node:Node= rviz2.load_node('mg400.rviz')
+    rviz_node: Node = rviz2.load_node('mg400.rviz')
 
     mg400_interface_node = Node(
         package='mg400_controller',
