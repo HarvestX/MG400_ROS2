@@ -1,4 +1,4 @@
-"""Display robot joint states."""
+"""Load robot state publisher node."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,32 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from ament_index_python.packages import get_package_share_path
 
-from launch import LaunchDescription
 from launch.substitutions.command import Command
 from launch.substitutions.find_executable import FindExecutable
 from launch.substitutions.path_join_substitution import PathJoinSubstitution
 
 from launch_ros.actions.node import Node
 
-from mg400_bringup.node_generator import robot_state_publisher as rsp
-from mg400_bringup.node_generator import rviz2
 
+def load_node(namespace: str = '') -> Node:
+    """Load node."""
 
-def generate_launch_description():
-    """Launch rviz display."""
-    robot_state_publisher_node: Node = rsp.load_node()
-    joint_state_publisher_gui_node = Node(
-        package='mg400_controller',
-        executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui',
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name='xacro')]),
+            ' ',
+            str(
+                get_package_share_path('mg400_description') /
+                'urdf' /
+                'mg400_description.urdf.xacro'
+            )
+        ],
     )
-    rviz_node: Node = rviz2.load_node('display.rviz')
+    robot_description = {'robot_description': robot_description_content}
 
-    return LaunchDescription([
-        joint_state_publisher_gui_node,
-        robot_state_publisher_node,
-        rviz_node,
-    ])
+    return Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        namespace=namespace,
+        parameters=[robot_description],
+    )
