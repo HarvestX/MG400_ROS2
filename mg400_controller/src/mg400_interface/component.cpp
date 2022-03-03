@@ -23,7 +23,7 @@ using namespace std::chrono_literals;
 Component::Component(
   const rclcpp::NodeOptions & options
 )
-: Node("mg400_interface", "mg400_interface", options)
+: Node("mg400_interface", options)
 {
   std::string ip;
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");
@@ -32,19 +32,11 @@ Component::Component(
   commander_ = std::make_unique<Commander>(ip);
   commander_->init();
 
-  auto publish_js = [this]() -> void {
-      double position[6];
-      this->getJonitState(position);
-      this->joint_state_pub_->publish(
-        convert::toJointState(
-          position[0],
-          position[1],
-          position[2],
-          position[3]
-        )
-      );
-    };
-  this->js_timer_ = create_wall_timer(100ms, publish_js);
+  this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
+    "joint_states",
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile()
+  );
+  this->js_timer_ = this->create_wall_timer(100ms, std::bind(&Component::publishJointState, this));
 
   this->enable_robot_srv_ = this->create_service<EnableRobot>(
     "enable_robot",
@@ -399,6 +391,19 @@ bool Component::isConnected() const
 void Component::getToolVectorActual(double * val)
 {
   this->commander_->getToolVectorActual(val);
+}
+
+void Component::publishJointState()
+{
+  double joint_state[6];
+  this->getJonitState(joint_state);
+
+  this->joint_state_pub_->publish(
+    convert::toJointState(
+      joint_state[0], joint_state[1],
+      joint_state[2], joint_state[3]
+    )
+  );
 }
 
 // dashboard
