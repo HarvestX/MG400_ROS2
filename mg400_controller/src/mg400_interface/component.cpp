@@ -23,7 +23,7 @@ using namespace std::chrono_literals;
 Component::Component(
   const rclcpp::NodeOptions & options
 )
-: Node("mg400_interface", "mg400_interface", options)
+: Node("mg400_interface", options)
 {
   std::string ip;
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");

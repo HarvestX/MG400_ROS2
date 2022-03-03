@@ -47,6 +47,7 @@ def generate_launch_description():
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
+        namespace='mg400',
         parameters=[robot_description],
     )
     rviz_node = Node(
@@ -59,6 +60,7 @@ def generate_launch_description():
     mg400_interface_node = Node(
         package='mg400_controller',
         executable='mg400_interface',
+        namespace='mg400',
         name='mg400_controller',
     )
 
