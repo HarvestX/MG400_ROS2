@@ -8,6 +8,8 @@
     "rviz",
     "urdf",
     "xacro",
-    "bringup"
+    "bringup",
+    "geochelone",
+    "colcon"
   ]
 }

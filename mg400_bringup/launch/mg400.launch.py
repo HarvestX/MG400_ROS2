@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from launch import LaunchDescription
+from launch.actions import Shutdown
 
 from launch_ros.actions.node import Node
 
@@ -34,6 +35,7 @@ def generate_launch_description():
         executable='mg400_interface',
         namespace=namespace,
         name='mg400_controller',
+        on_exit=Shutdown(),
     )
 
     return LaunchDescription([

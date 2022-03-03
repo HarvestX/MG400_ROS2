@@ -13,12 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable
+
 from ament_index_python.packages import get_package_share_path
+
+from launch.actions import Shutdown
 
 from launch_ros.actions.node import Node
 
 
-def load_node(config_filename: str = '') -> Node:
+def load_node(
+    config_filename: str = '',
+    on_exit: Callable = Shutdown,
+) -> Node:
     """Load node."""
     rviz_config_file = str(
         get_package_share_path('mg400_bringup') /
@@ -31,4 +38,5 @@ def load_node(config_filename: str = '') -> Node:
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config_file],
+        on_exit=on_exit(),
     )
