@@ -2,7 +2,10 @@
 [![Licence](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # MG400_ROS2
-Dobot MG400 ROS2 Repository
+Dobot MG400 ROS2 Repository.
+
+![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/display.png?raw=true)
+
 
 ## Requirements
 - Linux OS
@@ -48,7 +51,7 @@ ros2 launch mg400_bringup display.launch
 
 ### Launch main system (MG400 should be connected via LAN cable.)
 ```bash
-ros  launch mg400_bringup mg400.launch
+ros2 launch mg400_bringup mg400.launch
 ```
 
 ## References
