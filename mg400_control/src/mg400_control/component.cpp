@@ -13,17 +13,17 @@
 // limitations under the License.
 
 
-#include "mg400_controller/convert.hpp"
-#include "mg400_controller/mg400_interface/component.hpp"
+#include "mg400_control/convert.hpp"
+#include "mg400_control/mg400_control/component.hpp"
 
-namespace mg400_interface
+namespace mg400_control
 {
 using namespace std::chrono_literals;
 
 Component::Component(
   const rclcpp::NodeOptions & options
 )
-: Node("mg400_interface", options)
+: Node("mg400_control", options)
 {
   std::string ip;
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");
@@ -1428,4 +1428,4 @@ void Component::moveJog(
     response->res = -1;
   }
 }
-} // namespace mg400_interface
+} // namespace mg400_control

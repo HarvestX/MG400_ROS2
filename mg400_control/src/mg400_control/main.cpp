@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_controller/mg400_interface/component.hpp"
+#include "mg400_control/mg400_control/component.hpp"
 
 int main(int argc, char * argv[])
 {
@@ -25,7 +25,7 @@ int main(int argc, char * argv[])
   rclcpp::NodeOptions options;
 
   auto node =
-    std::make_shared<mg400_interface::Component>(options);
+    std::make_shared<mg400_control::Component>(options);
   rclcpp::spin(node);
   rclcpp::shutdown();
 

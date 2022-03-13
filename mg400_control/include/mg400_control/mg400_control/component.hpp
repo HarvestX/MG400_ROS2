@@ -68,10 +68,10 @@
 
 #include <mg400_msgs/msg/robot_status.hpp>
 
-#include "mg400_controller/mg400_interface/commander.hpp"
+#include "mg400_control/mg400_control/commander.hpp"
 
 
-namespace mg400_interface
+namespace mg400_control
 {
 using namespace mg400_msgs::srv;
 class Component : public rclcpp::Node
@@ -387,4 +387,4 @@ protected:
     MoveJog::Response::SharedPtr
   );
 };
-} // namespace mg400_interface
+} // namespace mg400_control
