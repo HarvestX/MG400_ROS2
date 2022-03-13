@@ -7,12 +7,6 @@ on:
       - "**.md"
     branches:
       - main
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-  schedule:
-    - cron: "0 2 * * 0" # Weekly on Sundays at 02:00
 
 jobs:
   ci:
@@ -35,6 +29,6 @@ jobs:
           import-token: ${{ secrets.GITHUB_TOKEN }}
           package-name: |
             mg400_bringup
-            mg400_controller
+            mg400_control
             mg400_description
             mg400_msgs
