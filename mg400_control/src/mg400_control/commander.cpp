@@ -14,7 +14,7 @@
 
 #include "mg400_controller/mg400_interface/commander.hpp"
 
-namespace mg400_interface
+namespace mg400_control
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400Commander");
 
