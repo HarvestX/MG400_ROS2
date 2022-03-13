@@ -19,9 +19,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include "mg400_controller/mg400_interface/tcp_socket.hpp"
+#include "mg400_control/mg400_control/tcp_socket.hpp"
 
-namespace mg400_interface
+namespace mg400_control
 {
 
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
@@ -171,4 +171,4 @@ std::string TcpClient::toString()
   return this->ip_ + ":" + std::to_string(this->port_);
 }
 
-} // namespace mg400_interface
+} // namespace mg400_control

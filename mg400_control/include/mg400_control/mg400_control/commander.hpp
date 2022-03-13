@@ -15,9 +15,9 @@
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
-#include "mg400_controller/mg400_interface/tcp_socket.hpp"
+#include "mg400_control/mg400_control/tcp_socket.hpp"
 
-namespace mg400_interface
+namespace mg400_control
 {
 
 #pragma pack(push, 1)
@@ -137,4 +137,4 @@ private:
     return deg * M_PI / 180.0;
   }
 };
-} // namespace mg400_interface
+} // namespace mg400_control

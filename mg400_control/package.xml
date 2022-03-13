@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>mg400_controller</name>
+  <name>mg400_control</name>
   <version>0.0.0</version>
-  <description>Dobot MG400 API controller package.</description>
+  <description>Dobot MG400 API control package.</description>
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
   <license>Apache License 2.0</license>
 

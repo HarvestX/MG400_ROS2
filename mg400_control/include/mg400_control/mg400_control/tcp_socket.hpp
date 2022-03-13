@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <rclcpp/rclcpp.hpp>
 
-namespace mg400_interface
+namespace mg400_control
 {
 
 class TcpClientException : public std::logic_error
@@ -54,4 +54,4 @@ public:
   bool recv(void *, uint32_t, uint32_t);
   std::string toString();
 };
-} // namespace mg400_interface
+} // namespace mg400_control

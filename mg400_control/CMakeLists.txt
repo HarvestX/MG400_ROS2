@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(mg400_controller)
+project(mg400_control)
 
 # Default to C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -20,6 +20,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# Joint State Publsher GUI Node =====================================
 set(TARGET joint_state_publisher_gui)
 add_executable(${TARGET})
 target_sources(
@@ -35,37 +36,51 @@ ament_target_dependencies(
   ${TARGET} #
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
-install(TARGETS ${TARGET} DESTINATION lib/${PROJECT_NAME})
 
-# Create MG400 Interface
-set(TARGET mg400_interface)
-set(LIB_TARGET mg400_interface_component)
+# Append excutable to list
+set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
+# End Joint State Publisher GUI Node ================================
+
+# MG400 Control Node ================================================
+set(TARGET mg400_control)
+set(LIB_TARGET mg400_control_component)
 
 # Create library
 add_library(${LIB_TARGET} STATIC)
+# cmake-format: off
 target_sources(
   ${LIB_TARGET} #
-  PRIVATE src/${TARGET}/component.cpp #
-          src/${TARGET}/commander.cpp #
-          src/${TARGET}/tcp_socket.cpp #
+  PRIVATE
+    src/${TARGET}/component.cpp
+    src/${TARGET}/commander.cpp
+    src/${TARGET}/tcp_socket.cpp
 )
+# cmake-format: on
 target_include_directories(${LIB_TARGET} PRIVATE include)
 ament_target_dependencies(${LIB_TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 set_property(TARGET ${LIB_TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
-install(TARGETS ${LIB_TARGET} DESTINATION lib/${LIB_PROJECT_NAME})
 
-# Create node
+# Create Node
 add_executable(${TARGET})
+# cmake-format: off
 target_sources(
-  ${TARGET} #
-  PRIVATE src/${TARGET}/main.cpp #
+  ${TARGET}
+  PRIVATE
+    src/${TARGET}/main.cpp
 )
+# cmake-format: on
 target_link_libraries(${TARGET} ${LIB_TARGET})
 target_include_directories(${TARGET} PRIVATE include)
 ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
-set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
-set(THIS_CREATED_LIB_DEPENDS ${THIS_CREATED_LIB_DEPENDS} ${TARGET})
-install(TARGETS ${TARGET} DESTINATION lib/${PROJECT_NAME})
+
+# Append library and excutable to list
+set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${LIB_TARGET})
+set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
+# End MG400 Control Node ============================================
+
+# Install targets ===================================================
+install(TARGETS ${THIS_CREATED_EXEC_LIST} DESTINATION lib/${PROJECT_NAME})
+# End Install targets ===============================================
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

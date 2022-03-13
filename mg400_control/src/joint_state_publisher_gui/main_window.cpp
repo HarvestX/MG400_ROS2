@@ -14,7 +14,7 @@
 
 #include "main_window.hpp"
 #include "ui_main_window.h"
-#include "mg400_controller/convert.hpp"
+#include "mg400_control/convert.hpp"
 #include <QApplication>
 
 MainWindow::MainWindow(

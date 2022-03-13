@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_controller/mg400_interface/commander.hpp"
+#include "mg400_control/mg400_control/commander.hpp"
 
-namespace mg400_interface
+namespace mg400_control
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400Commander");
 
@@ -227,4 +227,4 @@ void Commander::realSendCmd(const char * cmd, uint32_t len)
 {
   this->real_time_tcp_->send(cmd, len);
 }
-} // namespace mg400_interface
+} // namespace mg400_control
