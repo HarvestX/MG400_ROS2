@@ -1,0 +1,95 @@
+name: lint
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+
+jobs:
+  ament_lint_general:
+    runs-on: ${{ matrix.os }}
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-focal-ros-galactic-ros-base-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        ros_distribution: [galactic]
+        linter: [copyright, xmllint]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ros-tooling/setup-ros@v0.2
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+      - name: "Install dependencies"
+        run: |
+          bash setup.bash
+      - name: Linter
+        uses: ros-tooling/action-ros-lint@v0.1
+        with:
+          distribution: ${{ matrix.ros_distribution }}
+          linter: ${{ matrix.linter }}
+          package-name: |
+            mg400_bringup
+            mg400_control
+            mg400_description
+            mg400_msgs
+
+  ament_lint_cpp:
+    runs-on: ${{ matrix.os }}
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-focal-ros-galactic-ros-base-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        ros_distribution: [galactic]
+        linter: [cppcheck, cpplint, uncrustify]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ros-tooling/setup-ros@v0.2
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+      - name: "Install dependencies"
+        run: |
+          bash setup.bash
+      - name: Linter
+        uses: ros-tooling/action-ros-lint@v0.1
+        with:
+          distribution: ${{ matrix.ros_distribution }}
+          linter: ${{ matrix.linter }}
+          package-name: |
+            mg400_bringup
+            mg400_control
+            mg400_description
+            mg400_msgs
+
+  ament_lint_python:
+    runs-on: ${{ matrix.os }}
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-focal-ros-galactic-ros-base-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        ros_distribution: [galactic]
+        linter: [mypy, pep257, flake8]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ros-tooling/setup-ros@v0.2
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+      - name: "Install dependencies"
+        run: |
+          bash setup.bash
+      - name: Linter
+        uses: ros-tooling/action-ros-lint@v0.1
+        with:
+          distribution: ${{ matrix.ros_distribution }}
+          linter: ${{ matrix.linter }}
+          package-name: |
+            mg400_bringup
+            mg400_control
+            mg400_description
+            mg400_msgs
