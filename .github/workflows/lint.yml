@@ -45,7 +45,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
         ros_distribution: [galactic]
-        linter: [cppcheck, cpplint, uncrustify]
+        linter: [cppcheck, uncrustify]
     steps:
       - uses: actions/checkout@v2
       - uses: ros-tooling/setup-ros@v0.2
