@@ -16,7 +16,7 @@
 from launch import LaunchDescription
 
 from launch.actions import Shutdown
-from launch_ros.actions.node import Node
+from launch_ros.actions import Node
 
 from mg400_bringup.node_generator import robot_state_publisher as rsp
 from mg400_bringup.node_generator import rviz2
@@ -26,7 +26,7 @@ def generate_launch_description():
     """Launch rviz display."""
     robot_state_publisher_node: Node = rsp.load_node()
     joint_state_publisher_gui_node = Node(
-        package='mg400_controller',
+        package='mg400_control',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
         on_exit=Shutdown(),

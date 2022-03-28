@@ -19,7 +19,7 @@ from launch.substitutions.command import Command
 from launch.substitutions.find_executable import FindExecutable
 from launch.substitutions.path_join_substitution import PathJoinSubstitution
 
-from launch_ros.actions.node import Node
+from launch_ros.actions import Node
 
 
 def load_node(namespace: str = '') -> Node:

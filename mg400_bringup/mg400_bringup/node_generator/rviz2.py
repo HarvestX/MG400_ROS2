@@ -19,11 +19,11 @@ from ament_index_python.packages import get_package_share_path
 
 from launch.actions import Shutdown
 
-from launch_ros.actions.node import Node
+from launch_ros.actions import Node
 
 
 def load_node(
-    config_filename: str = '',
+    config_filename: str,
     on_exit: Callable = Shutdown,
 ) -> Node:
     """Load node."""
