@@ -24,7 +24,9 @@ from mg400_bringup.node_generator import rviz2
 
 def generate_launch_description():
     """Launch rviz display."""
-    robot_state_publisher_node: Node = rsp.load_node()
+    robot_state_publisher_node: Node = rsp.load_node(
+        filename='mg400_description.urdf.xacro',
+    )
     joint_state_publisher_gui_node = Node(
         package='mg400_control',
         executable='joint_state_publisher_gui',

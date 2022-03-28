@@ -15,14 +15,16 @@
 
 from ament_index_python.packages import get_package_share_path
 
-from launch.substitutions.command import Command
-from launch.substitutions.find_executable import FindExecutable
-from launch.substitutions.path_join_substitution import PathJoinSubstitution
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    PathJoinSubstitution
+)
 
 from launch_ros.actions import Node
 
 
-def load_node(namespace: str = '') -> Node:
+def load_node(filename: str, namespace: str = '') -> Node:
     """Load node."""
     robot_description_content = Command(
         [
@@ -31,7 +33,7 @@ def load_node(namespace: str = '') -> Node:
             str(
                 get_package_share_path('mg400_description') /
                 'urdf' /
-                'mg400_description.urdf.xacro'
+                filename
             )
         ],
     )

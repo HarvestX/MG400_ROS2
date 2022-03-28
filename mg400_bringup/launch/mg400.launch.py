@@ -26,7 +26,10 @@ def generate_launch_description():
     """Launch rviz display."""
     namespace: str = 'mg400'
 
-    robot_state_publisher_node: Node = rsp.load_node(namespace)
+    robot_state_publisher_node: Node = rsp.load_node(
+        filename='mg400_description.urdf.xacro',
+        namespace=namespace
+    )
 
     rviz_node: Node = rviz2.load_node('mg400.rviz')
 
