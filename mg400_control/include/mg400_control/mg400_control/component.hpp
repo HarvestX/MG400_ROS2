@@ -139,7 +139,7 @@ public:
 
   void init();
 
-  void getJonitState(double *);
+  void getJointState(double *);
 
   void getToolVectorActual(double *);
 
