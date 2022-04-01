@@ -373,7 +373,7 @@ Component::~Component()
 
 }
 
-void Component::getJonitState(double * js)
+void Component::getJointState(double * js)
 {
   this->commander_->getCurrentJointStates(js);
 }
@@ -396,7 +396,7 @@ void Component::getToolVectorActual(double * val)
 void Component::publishJointState()
 {
   double joint_state[6];
-  this->getJonitState(joint_state);
+  this->getJointState(joint_state);
 
   this->joint_state_pub_->publish(
     convert::toJointState(
