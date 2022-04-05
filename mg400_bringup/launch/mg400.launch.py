@@ -27,7 +27,7 @@ def generate_launch_description():
     namespace: str = 'mg400'
 
     robot_state_publisher_node: Node = rsp.load_node(
-        filename='mg400_description.urdf.xacro',
+        filename='mg400.urdf.xacro',
         namespace=namespace
     )
 
