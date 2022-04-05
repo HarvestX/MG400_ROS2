@@ -35,7 +35,7 @@ def generate_launch_description():
 
     mg400_interface_node = Node(
         package='mg400_control',
-        executable='mg400_interface',
+        executable='mg400_control',
         namespace=namespace,
         name='mg400_control',
         on_exit=Shutdown(),
