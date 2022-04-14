@@ -38,6 +38,18 @@ cd ~/ros2_ws
 colcon build
 ```
 
+## Connect to MG400
+Connect PC and MG400 to the same Ethernet via LAN cable.
+MG400 needs the emergency stop switch.
+
+### IP address settings
+Set the PC's Ethernet IPv4 IP address to a fixed IP somewhere on 192.168.1.0/24 other than 192.168.1.6
+(Example: 192.168.1.10, See https://linuxfan.info/ubuntu-2004-desktop-static-ip-address)
+No need to fill in the "Gateway" and "DNS".
+![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/display.png?raw=true)
+
+Check the circle light on the base of MG400 blink blue.
+
 ## Launch Ros2 System
 Before launch MG400 scripts, open new terminal and type followings.
 ```bash
@@ -52,6 +64,13 @@ ros2 launch mg400_bringup display.launch
 ### Launch main system (MG400 should be connected via LAN cable.)
 ```bash
 ros2 launch mg400_bringup mg400.launch
+```
+
+### Test the sample program
+Launch main system with other terminal.
+Allow enough space around the robot as it moves.
+```bash
+. sample.bash
 ```
 
 ## Running Utilities
