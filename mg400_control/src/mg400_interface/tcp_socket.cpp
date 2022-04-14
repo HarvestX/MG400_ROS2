@@ -19,7 +19,7 @@
 #include <sys/select.h>
 #include <cerrno>
 #include <utility>
-#include "mg400_control/mg400_control/tcp_socket.hpp"
+#include "mg400_control/mg400_interface/tcp_socket.hpp"
 
 namespace mg400_control
 {

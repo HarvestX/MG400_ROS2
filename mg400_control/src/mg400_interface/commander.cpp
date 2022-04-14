@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_control/mg400_control/commander.hpp"
+#include "mg400_control/mg400_interface/commander.hpp"
 
 namespace mg400_control
 {

@@ -69,7 +69,7 @@
 
 #include <mg400_msgs/msg/robot_status.hpp>
 
-#include "mg400_control/mg400_control/commander.hpp"
+#include "mg400_control/mg400_interface/commander.hpp"
 
 
 namespace mg400_control
