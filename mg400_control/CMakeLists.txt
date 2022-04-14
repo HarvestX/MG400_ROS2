@@ -98,6 +98,24 @@ set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${LIB_TARGET})
 set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
 # End MG400 Control Node ============================================
 
+# RealTimePacketChecker =============================================
+set(TARGET realtime_packet_checker)
+add_executable(${TARGET})
+# cmake-format: off
+target_sources(
+  ${TARGET}
+  PRIVATE
+    src/${TARGET}/main.cpp
+)
+# cmake-format: on
+target_link_libraries(${TARGET} mg400_interface)
+target_include_directories(${TARGET} PRIVATE include)
+ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+# Append exeutable to list
+set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
+# End RealTime Packet Checker =======================================
+
 # Install targets ===================================================
 install(TARGETS ${THIS_CREATED_EXEC_LIST} DESTINATION lib/${PROJECT_NAME})
 # End Install targets ===============================================

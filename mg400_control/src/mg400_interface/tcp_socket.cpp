@@ -21,7 +21,7 @@
 #include <utility>
 #include "mg400_control/mg400_interface/tcp_socket.hpp"
 
-namespace mg400_control
+namespace mg400_interface
 {
 
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
@@ -166,4 +166,4 @@ std::string TcpClient::toString()
   return this->ip_ + ":" + std::to_string(this->port_);
 }
 
-}  // namespace mg400_control
+}  // namespace mg400_interface

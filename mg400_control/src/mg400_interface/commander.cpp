@@ -14,7 +14,7 @@
 
 #include "mg400_control/mg400_interface/commander.hpp"
 
-namespace mg400_control
+namespace mg400_interface
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("MG400Commander");
 
@@ -244,4 +244,9 @@ void Commander::realSendCmd(const char * cmd, uint32_t len)
 {
   this->real_time_tcp_->send(cmd, len);
 }
-}  // namespace mg400_control
+
+RealTimeData Commander::getRealTimeData()
+{
+  return this->real_time_data_;
+}
+}  // namespace mg400_interface

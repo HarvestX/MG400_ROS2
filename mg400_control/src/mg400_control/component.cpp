@@ -32,7 +32,7 @@ Component::Component(
     this->get_logger(),
     "IP address: %s", ip.c_str());
 
-  commander_ = std::make_unique<Commander>(ip);
+  commander_ = std::make_unique<mg400_interface::Commander>(ip);
   commander_->init();
 
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
@@ -391,7 +391,7 @@ void Component::resetRobot(
   try {
     this->commander_->resetRobot();
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -409,7 +409,7 @@ void Component::speedFactor(
   try {
     this->commander_->speedFactor(request->ratio);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -429,7 +429,7 @@ void Component::user(
     snprintf(cmd, sizeof(cmd), "User(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -449,7 +449,7 @@ void Component::tool(
     snprintf(cmd, sizeof(cmd), "Tool(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -469,7 +469,7 @@ void Component::robotMode(
     const char * cmd = "RobotMode()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -491,7 +491,7 @@ void Component::payload(
       "PayLoad(%0.3f, %0.3f)", request->weight, request->inertia);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -513,7 +513,7 @@ void Component::dO(
       "DO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -535,7 +535,7 @@ void Component::dOExecute(
       "DOExecute(%d, %d)", request->index, request->status);
     commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -557,7 +557,7 @@ void Component::toolDO(
       "ToolDO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -579,7 +579,7 @@ void Component::toolDOExecute(
       "ToolDOExecute(%d, %d)", request->index, request->status);
     commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -601,7 +601,7 @@ void Component::aO(
       "AO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -623,7 +623,7 @@ void Component::aOExecute(
       static_cast<float>(request->value));
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -643,7 +643,7 @@ void Component::accJ(
     snprintf(cmd, sizeof(cmd), "AccJ(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -663,7 +663,7 @@ void Component::accL(
     snprintf(cmd, sizeof(cmd), "AccL(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -683,7 +683,7 @@ void Component::speedJ(
     snprintf(cmd, sizeof(cmd), "SpeedJ(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -703,7 +703,7 @@ void Component::speedL(
     snprintf(cmd, sizeof(cmd), "SpeedL(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -723,7 +723,7 @@ void Component::arch(
     snprintf(cmd, sizeof(cmd), "Arch(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -743,7 +743,7 @@ void Component::cp(
     snprintf(cmd, sizeof(cmd), "CP(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -763,7 +763,7 @@ void Component::limZ(
     snprintf(cmd, sizeof(cmd), "LimZ(%d)", request->value);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -787,7 +787,7 @@ void Component::setArmOrientation(
       request->for_n, request->config_6);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -807,7 +807,7 @@ void Component::powerOn(
     const char * cmd = "PowerOn()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -829,7 +829,7 @@ void Component::runScript(
       "RunScript(%s)", request->project_name.c_str());
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -849,7 +849,7 @@ void Component::stopScript(
     const char * cmd = "StopScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -869,7 +869,7 @@ void Component::pauseScript(
     const char * cmd = "PauseScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -889,7 +889,7 @@ void Component::continueScript(
     const char * cmd = "ContinueScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -909,7 +909,7 @@ void Component::setSafeSkin(
     snprintf(cmd, sizeof(cmd), "SetSafeSkin(%d)", request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -929,7 +929,7 @@ void Component::setObstacleAvoid(
     snprintf(cmd, sizeof(cmd), "SetObstacleAvoid(%d)", request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -949,7 +949,7 @@ void Component::setCollisionLevel(
     snprintf(cmd, sizeof(cmd), "SetCollisionLevel(%d)", request->level);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -970,7 +970,7 @@ void Component::emergencyStop(
     snprintf(cmd, sizeof(cmd), "EmergencyStop()");
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -992,7 +992,7 @@ void Component::movJ(
       request->x, request->y, request->z,
       request->a, request->b, request->c);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1012,7 +1012,7 @@ void Component::movL(
       request->x, request->y, request->z,
       request->a, request->b, request->c);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1032,7 +1032,7 @@ void Component::servoJ(
       request->j1, request->j2, request->j3,
       request->j4, request->j5, request->j6);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1060,7 +1060,7 @@ void Component::arc(
       request->rx2, request->ry2, request->rz2);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1090,7 +1090,7 @@ void Component::circle(
       request->rx2, request->ry2, request->rz2);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1115,7 +1115,7 @@ void Component::jump(
       request->offset4, request->offset5, request->offset6);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1135,7 +1135,7 @@ void Component::servoP(
       request->x, request->y, request->z,
       request->a, request->b, request->c);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1155,7 +1155,7 @@ void Component::relMovJ(
       request->offset1, request->offset2, request->offset3,
       request->offset4, request->offset5, request->offset6);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1174,7 +1174,7 @@ void Component::relMovL(
     this->commander_->relMovL(
       request->x, request->y, request->z);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1194,7 +1194,7 @@ void Component::jointMovJ(
       request->j1, request->j2, request->j3,
       request->j4, request->j5, request->j6);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1214,7 +1214,7 @@ void Component::sync(
     const char * cmd = "Sync()";
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1234,7 +1234,7 @@ void Component::startTrace(
     snprintf(cmd, sizeof(cmd), "StartTrace(%s)", request->trace_name.c_str());
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1258,7 +1258,7 @@ void Component::startPath(
       request->cart);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1278,7 +1278,7 @@ void Component::startFCTrace(
     snprintf(cmd, sizeof(cmd), "StartFCTrace(%s)", request->trace_name.c_str());
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
@@ -1296,7 +1296,7 @@ void Component::moveJog(
   try {
     this->commander_->moveJog(request->axis_id);
     response->res = 0;
-  } catch (const TcpClientException & e) {
+  } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
