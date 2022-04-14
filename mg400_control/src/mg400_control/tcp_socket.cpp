@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cerrno>
-#include <utility>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
+#include <cerrno>
+#include <utility>
 #include "mg400_control/mg400_control/tcp_socket.hpp"
 
 namespace mg400_control
@@ -60,8 +60,7 @@ void TcpClient::connect()
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (this->fd_ < 0) {
       throw TcpClientException(
-              this->toString() + std::string(" socket : ") + strerror(errno)
-      );
+              this->toString() + std::string(" socket : ") + strerror(errno));
     }
   }
 
@@ -72,18 +71,19 @@ void TcpClient::connect()
   addr.sin_family = AF_INET;
   addr.sin_port = htons(this->port_);
 
-  if (::connect(this->fd_, (sockaddr *)&addr, sizeof(addr)) < 0) {
+  if (::connect(
+      this->fd_,
+      reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0)
+  {
     throw  TcpClientException(
-            this->toString() + std::string(" connect : ") + strerror(errno)
-    );
+            this->toString() + std::string(" connect : ") + strerror(errno));
   }
 
   this->is_connected_ = true;
 
   RCLCPP_INFO(
     LOGGER,
-    "%s : connected successfully", this->toString().c_str()
-  );
+    "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpClient::disConnect()
@@ -109,17 +109,15 @@ void TcpClient::send(const void * buf, uint32_t len)
   RCLCPP_INFO(
     LOGGER,
     "send : %s",
-    (const char *)buf
-  );
+    (const char *)buf);
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {
-    int err = (int)::send(fd_, tmp, len, MSG_NOSIGNAL);
+    int err = static_cast<int>(::send(fd_, tmp, len, MSG_NOSIGNAL));
     if (err < 0) {
       this->disConnect();
       throw TcpClientException(
-              this->toString() + std::string(" ::send() ") + strerror(errno)
-      );
+              this->toString() + std::string(" ::send() ") + strerror(errno));
     }
     len -= err;
     tmp += err;
@@ -128,7 +126,7 @@ void TcpClient::send(const void * buf, uint32_t len)
 
 bool TcpClient::recv(void * buf, uint32_t len, uint32_t timeout)
 {
-  uint8_t * tmp = (uint8_t *)buf;
+  uint8_t * tmp = reinterpret_cast<uint8_t *>(buf);
   fd_set read_fds;
   timeval tv = {0, 0};
 
@@ -142,23 +140,20 @@ bool TcpClient::recv(void * buf, uint32_t len, uint32_t timeout)
     if (err < 0) {
       this->disConnect();
       throw TcpClientException(
-              this->toString() + std::string(" select() : ") + strerror(errno)
-      );
+              this->toString() + std::string(" select() : ") + strerror(errno));
     } else if (err == 0) {
       return false;
     }
 
-    err = (int)::read(fd_, tmp, len);
+    err = static_cast<int>(::read(fd_, tmp, len));
     if (err < 0) {
       this->disConnect();
       throw TcpClientException(
-              this->toString() + std::string(" ::read() ") + strerror(errno)
-      );
+              this->toString() + std::string(" ::read() ") + strerror(errno));
     } else if (err == 0) {
       this->disConnect();
       throw TcpClientException(
-              this->toString() + std::string(" tcp server has disconnected.")
-      );
+              this->toString() + std::string(" tcp server has disconnected."));
     }
     len -= err;
     tmp += err;
@@ -171,4 +166,4 @@ std::string TcpClient::toString()
   return this->ip_ + ":" + std::to_string(this->port_);
 }
 
-} // namespace mg400_control
+}  // namespace mg400_control

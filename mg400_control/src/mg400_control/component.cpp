@@ -28,350 +28,265 @@ Component::Component(
   std::string ip;
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");
   this->get_parameter("ip_address", ip);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "IP address: %s", ip.c_str());
 
   commander_ = std::make_unique<Commander>(ip);
   commander_->init();
 
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states",
-    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile()
-  );
-  this->js_timer_ = this->create_wall_timer(100ms, std::bind(&Component::publishJointState, this));
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  this->js_timer_ = this->create_wall_timer(
+    100ms,
+    std::bind(&Component::publishJointState, this));
 
-  this->enable_robot_srv_ = this->create_service<EnableRobot>(
+  this->enable_robot_srv_ = this->create_service<mg400_msgs::srv::EnableRobot>(
     "enable_robot",
     std::bind(
       &Component::enableRobot, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->disable_robot_srv_ = this->create_service<DisableRobot>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->disable_robot_srv_ = this->create_service<mg400_msgs::srv::DisableRobot>(
     "disable_robot",
     std::bind(
       &Component::disableRobot, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->clear_error_srv_ = this->create_service<ClearError>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->clear_error_srv_ = this->create_service<mg400_msgs::srv::ClearError>(
     "clear_error",
     std::bind(
       &Component::clearError, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->reset_robot_srv_ = this->create_service<ResetRobot>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->reset_robot_srv_ = this->create_service<mg400_msgs::srv::ResetRobot>(
     "reset_robot",
     std::bind(
       &Component::resetRobot, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->speed_factor_srv_ = this->create_service<SpeedFactor>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->speed_factor_srv_ = this->create_service<mg400_msgs::srv::SpeedFactor>(
     "speed_factor",
     std::bind(
       &Component::speedFactor, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->user_srv_ = this->create_service<User>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->user_srv_ = this->create_service<mg400_msgs::srv::User>(
     "user",
     std::bind(
       &Component::user, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->tool_srv_ = this->create_service<Tool>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->tool_srv_ = this->create_service<mg400_msgs::srv::Tool>(
     "tool",
     std::bind(
       &Component::tool, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->robot_mode_srv_ = this->create_service<RobotMode>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->robot_mode_srv_ = this->create_service<mg400_msgs::srv::RobotMode>(
     "robot_mode",
     std::bind(
       &Component::robotMode, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->payload_srv_ = this->create_service<Payload>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->payload_srv_ = this->create_service<mg400_msgs::srv::Payload>(
     "payload",
     std::bind(
       &Component::payload, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->do_srv_ = this->create_service<DO>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->do_srv_ = this->create_service<mg400_msgs::srv::DO>(
     "DO",
     std::bind(
       &Component::dO, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->do_execute_srv_ = this->create_service<DOExecute>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->do_execute_srv_ = this->create_service<mg400_msgs::srv::DOExecute>(
     "DO_execute",
     std::bind(
       &Component::dOExecute, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->tool_do_srv_ = this->create_service<ToolDO>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->tool_do_srv_ = this->create_service<mg400_msgs::srv::ToolDO>(
     "tool_DO",
     std::bind(
       &Component::toolDO, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->tool_do_execute_srv_ = this->create_service<ToolDOExecute>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->tool_do_execute_srv_ =
+    this->create_service<mg400_msgs::srv::ToolDOExecute>(
     "tool_DO_execute",
     std::bind(
       &Component::toolDOExecute, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->ao_srv_ = this->create_service<AO>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->ao_srv_ = this->create_service<mg400_msgs::srv::AO>(
     "AO",
     std::bind(
       &Component::aO, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->ao_execute_srv_ = this->create_service<AOExecute>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->ao_execute_srv_ = this->create_service<mg400_msgs::srv::AOExecute>(
     "AO_execute",
     std::bind(
       &Component::aOExecute, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->acc_j_srv_ = this->create_service<AccJ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->acc_j_srv_ = this->create_service<mg400_msgs::srv::AccJ>(
     "acc_j",
     std::bind(
       &Component::accJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->acc_l_srv_ = this->create_service<AccL>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->acc_l_srv_ = this->create_service<mg400_msgs::srv::AccL>(
     "acc_l",
     std::bind(
       &Component::accL, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->speed_j_srv_ = this->create_service<SpeedJ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->speed_j_srv_ = this->create_service<mg400_msgs::srv::SpeedJ>(
     "speed_j",
     std::bind(
       &Component::speedJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->speed_l_srv_ = this->create_service<SpeedL>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->speed_l_srv_ = this->create_service<mg400_msgs::srv::SpeedL>(
     "speed_l",
     std::bind(
       &Component::speedL, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->arch_srv_ = this->create_service<Arch>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->arch_srv_ = this->create_service<mg400_msgs::srv::Arch>(
     "arch",
     std::bind(
       &Component::arch, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->cp_srv_ = this->create_service<CP>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->cp_srv_ = this->create_service<mg400_msgs::srv::CP>(
     "cp",
     std::bind(
       &Component::cp, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->lim_z_srv_ = this->create_service<LimZ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->lim_z_srv_ = this->create_service<mg400_msgs::srv::LimZ>(
     "lim_z",
     std::bind(
       &Component::limZ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->set_arm_orientation_srv_ = this->create_service<SetArmOrientation>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->set_arm_orientation_srv_ =
+    this->create_service<mg400_msgs::srv::SetArmOrientation>(
     "set_arm_orientation",
     std::bind(
       &Component::setArmOrientation, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->power_on_srv_ = this->create_service<PowerOn>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->power_on_srv_ = this->create_service<mg400_msgs::srv::PowerOn>(
     "power_on",
     std::bind(
       &Component::powerOn, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->run_script_srv_ = this->create_service<RunScript>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->run_script_srv_ = this->create_service<mg400_msgs::srv::RunScript>(
     "run_script",
     std::bind(
       &Component::runScript, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->stop_script_srv_ = this->create_service<StopScript>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->stop_script_srv_ = this->create_service<mg400_msgs::srv::StopScript>(
     "stop_script",
     std::bind(
       &Component::stopScript, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->pause_script_srv_ = this->create_service<PauseScript>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->pause_script_srv_ = this->create_service<mg400_msgs::srv::PauseScript>(
     "pause_script",
     std::bind(
       &Component::pauseScript, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->continue_script_srv_ = this->create_service<ContinueScript>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->continue_script_srv_ =
+    this->create_service<mg400_msgs::srv::ContinueScript>(
     "continue_script",
     std::bind(
       &Component::continueScript, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->set_safe_skin_srv_ = this->create_service<SetSafeSkin>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->set_safe_skin_srv_ = this->create_service<mg400_msgs::srv::SetSafeSkin>(
     "set_safe_skin",
     std::bind(
       &Component::setSafeSkin, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->set_obstacle_avoid_srv_ = this->create_service<SetObstacleAvoid>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->set_obstacle_avoid_srv_ =
+    this->create_service<mg400_msgs::srv::SetObstacleAvoid>(
     "set_obstacle_avoid",
     std::bind(
       &Component::setObstacleAvoid, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->set_collistion_level_srv_ = this->create_service<SetCollisionLevel>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->set_collistion_level_srv_ =
+    this->create_service<mg400_msgs::srv::SetCollisionLevel>(
     "set_collision_level",
     std::bind(
       &Component::setCollisionLevel, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->emergency_stop_srv_ = this->create_service<EmergencyStop>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->emergency_stop_srv_ =
+    this->create_service<mg400_msgs::srv::EmergencyStop>(
     "emergency_stop",
     std::bind(
       &Component::emergencyStop, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-  this->mov_j_srv_ = this->create_service<MovJ>(
+  this->mov_j_srv_ = this->create_service<mg400_msgs::srv::MovJ>(
     "mov_j",
     std::bind(
       &Component::movJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->mov_l_srv_ = this->create_service<MovL>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->mov_l_srv_ = this->create_service<mg400_msgs::srv::MovL>(
     "mov_l",
     std::bind(
       &Component::movL, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->jump_srv_ = this->create_service<Jump>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->jump_srv_ = this->create_service<mg400_msgs::srv::Jump>(
     "jump",
     std::bind(
       &Component::jump, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->arc_srv_ = this->create_service<Arc>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->arc_srv_ = this->create_service<mg400_msgs::srv::Arc>(
     "arc",
     std::bind(
       &Component::arc, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->sync_srv_ = this->create_service<Sync>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->sync_srv_ = this->create_service<mg400_msgs::srv::Sync>(
     "sync",
     std::bind(
       &Component::sync, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->circle_srv_ = this->create_service<Circle>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->circle_srv_ = this->create_service<mg400_msgs::srv::Circle>(
     "circle",
     std::bind(
       &Component::circle, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->servo_j_srv_ = this->create_service<ServoJ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->servo_j_srv_ = this->create_service<mg400_msgs::srv::ServoJ>(
     "servo_j",
     std::bind(
       &Component::servoJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->start_trace_srv_ = this->create_service<StartTrace>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->start_trace_srv_ = this->create_service<mg400_msgs::srv::StartTrace>(
     "start_trace",
     std::bind(
       &Component::startTrace, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->start_path_srv_ = this->create_service<StartPath>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->start_path_srv_ = this->create_service<mg400_msgs::srv::StartPath>(
     "start_path",
     std::bind(
       &Component::startPath, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->move_jog_srv_ = this->create_service<MoveJog>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->move_jog_srv_ = this->create_service<mg400_msgs::srv::MoveJog>(
     "move_jog",
     std::bind(
       &Component::moveJog, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->servo_p_srv_ = this->create_service<ServoP>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->servo_p_srv_ = this->create_service<mg400_msgs::srv::ServoP>(
     "servo_p",
     std::bind(
       &Component::servoP, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->rel_mov_j_srv_ = this->create_service<RelMovJ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->rel_mov_j_srv_ = this->create_service<mg400_msgs::srv::RelMovJ>(
     "rel_mov_j",
     std::bind(
       &Component::relMovJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->rel_mov_l_srv_ = this->create_service<RelMovL>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->rel_mov_l_srv_ = this->create_service<mg400_msgs::srv::RelMovL>(
     "rel_mov_l",
     std::bind(
       &Component::relMovL, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
-  this->joint_mov_j_srv_ = this->create_service<JointMovJ>(
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->joint_mov_j_srv_ = this->create_service<mg400_msgs::srv::JointMovJ>(
     "joint_mov_j",
     std::bind(
       &Component::jointMovJ, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3
-    )
-  );
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
   RCLCPP_INFO(
     this->get_logger(),
-    "Ready"
-  );
+    "Ready");
 }
 
 Component::~Component()
-{
-
-}
+{}
 
 void Component::getJointState(double * js)
 {
@@ -401,28 +316,25 @@ void Component::publishJointState()
   this->joint_state_pub_->publish(
     convert::toJointState(
       joint_state[0], joint_state[1],
-      joint_state[2], joint_state[3]
-    )
-  );
+      joint_state[2], joint_state[3]));
 }
 
 // dashboard
 void Component::enableRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const EnableRobot::Request::SharedPtr request,
-  EnableRobot::Response::SharedPtr response
+  const mg400_msgs::srv::EnableRobot::Request::SharedPtr request,
+  mg400_msgs::srv::EnableRobot::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     this->commander_->enableRobot();
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     this->commander_->clearError();
     response->res = -1;
   }
@@ -430,20 +342,19 @@ void Component::enableRobot(
 
 void Component::disableRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const DisableRobot::Request::SharedPtr request,
-  DisableRobot::Response::SharedPtr response
+  const mg400_msgs::srv::DisableRobot::Request::SharedPtr request,
+  mg400_msgs::srv::DisableRobot::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     this->commander_->disableRobot();
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     this->commander_->clearError();
     response->res = -1;
   }
@@ -451,20 +362,19 @@ void Component::disableRobot(
 
 void Component::clearError(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ClearError::Request::SharedPtr request,
-  ClearError::Response::SharedPtr response
+  const mg400_msgs::srv::ClearError::Request::SharedPtr request,
+  mg400_msgs::srv::ClearError::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     this->commander_->clearError();
     response->res = 0;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     this->commander_->clearError();
     response->res = -1;
   }
@@ -472,93 +382,89 @@ void Component::clearError(
 
 void Component::resetRobot(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ResetRobot::Request::SharedPtr request,
-  ResetRobot::Response::SharedPtr response
+  const mg400_msgs::srv::ResetRobot::Request::SharedPtr request,
+  mg400_msgs::srv::ResetRobot::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     this->commander_->resetRobot();
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::speedFactor(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SpeedFactor::Request::SharedPtr request,
-  SpeedFactor::Response::SharedPtr response
+  const mg400_msgs::srv::SpeedFactor::Request::SharedPtr request,
+  mg400_msgs::srv::SpeedFactor::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->speedFactor(request->ratio);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::user(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const User::Request::SharedPtr request,
-  User::Response::SharedPtr response
+  const mg400_msgs::srv::User::Request::SharedPtr request,
+  mg400_msgs::srv::User::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "User(%d)", request->index);
+    snprintf(cmd, sizeof(cmd), "User(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::tool(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Tool::Request::SharedPtr request,
-  Tool::Response::SharedPtr response
+  const mg400_msgs::srv::Tool::Request::SharedPtr request,
+  mg400_msgs::srv::Tool::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "Tool(%d)", request->index);
+    snprintf(cmd, sizeof(cmd), "Tool(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::robotMode(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const RobotMode::Request::SharedPtr request,
-  RobotMode::Response::SharedPtr response
+  const mg400_msgs::srv::RobotMode::Request::SharedPtr request,
+  mg400_msgs::srv::RobotMode::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "RobotMode()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -566,342 +472,337 @@ void Component::robotMode(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::payload(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Payload::Request::SharedPtr request,
-  Payload::Response::SharedPtr response
+  const mg400_msgs::srv::Payload::Request::SharedPtr request,
+  mg400_msgs::srv::Payload::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "PayLoad(%0.3f, %0.3f)", request->weight, request->inertia);
+    snprintf(
+      cmd, sizeof(cmd),
+      "PayLoad(%0.3f, %0.3f)", request->weight, request->inertia);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::dO(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const DO::Request::SharedPtr request,
-  DO::Response::SharedPtr response
+  const mg400_msgs::srv::DO::Request::SharedPtr request,
+  mg400_msgs::srv::DO::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "DO(%d, %d)", request->index, request->status);
+    snprintf(
+      cmd, sizeof(cmd),
+      "DO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::dOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const DOExecute::Request::SharedPtr request,
-  DOExecute::Response::SharedPtr response
+  const mg400_msgs::srv::DOExecute::Request::SharedPtr request,
+  mg400_msgs::srv::DOExecute::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "DOExecute(%d, %d)", request->index, request->status);
+    snprintf(
+      cmd, sizeof(cmd),
+      "DOExecute(%d, %d)", request->index, request->status);
     commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::toolDO(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ToolDO::Request::SharedPtr request,
-  ToolDO::Response::SharedPtr response
+  const mg400_msgs::srv::ToolDO::Request::SharedPtr request,
+  mg400_msgs::srv::ToolDO::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "ToolDO(%d, %d)", request->index, request->status);
+    snprintf(
+      cmd, sizeof(cmd),
+      "ToolDO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::toolDOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ToolDOExecute::Request::SharedPtr request,
-  ToolDOExecute::Response::SharedPtr response
+  const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr request,
+  mg400_msgs::srv::ToolDOExecute::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "ToolDOExecute(%d, %d)", request->index, request->status);
+    snprintf(
+      cmd, sizeof(cmd),
+      "ToolDOExecute(%d, %d)", request->index, request->status);
     commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::aO(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const AO::Request::SharedPtr request,
-  AO::Response::SharedPtr response
+  const mg400_msgs::srv::AO::Request::SharedPtr request,
+  mg400_msgs::srv::AO::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "AO(%d, %d)", request->index, request->status);
+    snprintf(
+      cmd, sizeof(cmd),
+      "AO(%d, %d)", request->index, request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::aOExecute(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const AOExecute::Request::SharedPtr request,
-  AOExecute::Response::SharedPtr response
+  const mg400_msgs::srv::AOExecute::Request::SharedPtr request,
+  mg400_msgs::srv::AOExecute::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "AOExecute(%d, %0.3f)", request->index, static_cast<float>(request->value));
+    snprintf(
+      cmd, sizeof(cmd), "AOExecute(%d, %0.3f)", request->index,
+      static_cast<float>(request->value));
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::accJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const AccJ::Request::SharedPtr request,
-  AccJ::Response::SharedPtr response
+  const mg400_msgs::srv::AccJ::Request::SharedPtr request,
+  mg400_msgs::srv::AccJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "AccJ(%d)", request->r);
+    snprintf(cmd, sizeof(cmd), "AccJ(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::accL(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const AccL::Request::SharedPtr request,
-  AccL::Response::SharedPtr response
+  const mg400_msgs::srv::AccL::Request::SharedPtr request,
+  mg400_msgs::srv::AccL::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "AccL(%d)", request->r);
+    snprintf(cmd, sizeof(cmd), "AccL(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::speedJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SpeedJ::Request::SharedPtr request,
-  SpeedJ::Response::SharedPtr response
+  const mg400_msgs::srv::SpeedJ::Request::SharedPtr request,
+  mg400_msgs::srv::SpeedJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "SpeedJ(%d)", request->r);
+    snprintf(cmd, sizeof(cmd), "SpeedJ(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::speedL(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SpeedL::Request::SharedPtr request,
-  SpeedL::Response::SharedPtr response
+  const mg400_msgs::srv::SpeedL::Request::SharedPtr request,
+  mg400_msgs::srv::SpeedL::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "SpeedL(%d)", request->r);
+    snprintf(cmd, sizeof(cmd), "SpeedL(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::arch(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Arch::Request::SharedPtr request,
-  Arch::Response::SharedPtr response
+  const mg400_msgs::srv::Arch::Request::SharedPtr request,
+  mg400_msgs::srv::Arch::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "Arch(%d)", request->index);
+    snprintf(cmd, sizeof(cmd), "Arch(%d)", request->index);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::cp(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const CP::Request::SharedPtr request,
-  CP::Response::SharedPtr response
+  const mg400_msgs::srv::CP::Request::SharedPtr request,
+  mg400_msgs::srv::CP::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "CP(%d)", request->r);
+    snprintf(cmd, sizeof(cmd), "CP(%d)", request->r);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::limZ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const LimZ::Request::SharedPtr request,
-  LimZ::Response::SharedPtr response
+  const mg400_msgs::srv::LimZ::Request::SharedPtr request,
+  mg400_msgs::srv::LimZ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "LimZ(%d)", request->value);
+    snprintf(cmd, sizeof(cmd), "LimZ(%d)", request->value);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::setArmOrientation(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SetArmOrientation::Request::SharedPtr request,
-  SetArmOrientation::Response::SharedPtr response
+  const mg400_msgs::srv::SetArmOrientation::Request::SharedPtr request,
+  mg400_msgs::srv::SetArmOrientation::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(
-      cmd,
+    snprintf(
+      cmd, sizeof(cmd),
       "SetArmOrientation(%d,%d,%d,%d)",
-      request->lor_r,
-      request->uor_d,
-      request->for_n,
-      request->config_6
-    );
+      request->lor_r, request->uor_d,
+      request->for_n, request->config_6);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::powerOn(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const PowerOn::Request::SharedPtr request,
-  PowerOn::Response::SharedPtr response
+  const mg400_msgs::srv::PowerOn::Request::SharedPtr request,
+  mg400_msgs::srv::PowerOn::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "PowerOn()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -909,41 +810,41 @@ void Component::powerOn(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::runScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const RunScript::Request::SharedPtr request,
-  RunScript::Response::SharedPtr response
+  const mg400_msgs::srv::RunScript::Request::SharedPtr request,
+  mg400_msgs::srv::RunScript::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "RunScript(%s)", request->project_name.c_str());
+    snprintf(
+      cmd, sizeof(cmd),
+      "RunScript(%s)", request->project_name.c_str());
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::stopScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const StopScript::Request::SharedPtr request,
-  StopScript::Response::SharedPtr response
+  const mg400_msgs::srv::StopScript::Request::SharedPtr request,
+  mg400_msgs::srv::StopScript::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "StopScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -951,20 +852,19 @@ void Component::stopScript(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::pauseScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const PauseScript::Request::SharedPtr request,
-  PauseScript::Response::SharedPtr response
+  const mg400_msgs::srv::PauseScript::Request::SharedPtr request,
+  mg400_msgs::srv::PauseScript::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "PauseScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -972,20 +872,19 @@ void Component::pauseScript(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::continueScript(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ContinueScript::Request::SharedPtr request,
-  ContinueScript::Response::SharedPtr response
+  const mg400_msgs::srv::ContinueScript::Request::SharedPtr request,
+  mg400_msgs::srv::ContinueScript::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "ContinueScript()";
     this->commander_->dashSendCmd(cmd, strlen(cmd));
@@ -993,93 +892,88 @@ void Component::continueScript(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::setSafeSkin(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SetSafeSkin::Request::SharedPtr request,
-  SetSafeSkin::Response::SharedPtr response
+  const mg400_msgs::srv::SetSafeSkin::Request::SharedPtr request,
+  mg400_msgs::srv::SetSafeSkin::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "SetSafeSkin(%d)", request->status);
+    snprintf(cmd, sizeof(cmd), "SetSafeSkin(%d)", request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::setObstacleAvoid(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SetObstacleAvoid::Request::SharedPtr request,
-  SetObstacleAvoid::Response::SharedPtr response
+  const mg400_msgs::srv::SetObstacleAvoid::Request::SharedPtr request,
+  mg400_msgs::srv::SetObstacleAvoid::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "SetObstacleAvoid(%d)", request->status);
+    snprintf(cmd, sizeof(cmd), "SetObstacleAvoid(%d)", request->status);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::setCollisionLevel(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const SetCollisionLevel::Request::SharedPtr request,
-  SetCollisionLevel::Response::SharedPtr response
+  const mg400_msgs::srv::SetCollisionLevel::Request::SharedPtr request,
+  mg400_msgs::srv::SetCollisionLevel::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "SetCollisionLevel(%d)", request->level);
+    snprintf(cmd, sizeof(cmd), "SetCollisionLevel(%d)", request->level);
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::emergencyStop(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const EmergencyStop::Request::SharedPtr request,
-  EmergencyStop::Response::SharedPtr response
+  const mg400_msgs::srv::EmergencyStop::Request::SharedPtr request,
+  mg400_msgs::srv::EmergencyStop::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "EmergencyStop()");
+    snprintf(cmd, sizeof(cmd), "EmergencyStop()");
     this->commander_->dashSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
@@ -1088,247 +982,234 @@ void Component::emergencyStop(
 
 void Component::movJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const MovJ::Request::SharedPtr request,
-  MovJ::Response::SharedPtr response
+  const mg400_msgs::srv::MovJ::Request::SharedPtr request,
+  mg400_msgs::srv::MovJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->movJ(
       request->x, request->y, request->z,
-      request->a, request->b, request->c
-    );
+      request->a, request->b, request->c);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::movL(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const MovL::Request::SharedPtr request,
-  MovL::Response::SharedPtr response
+  const mg400_msgs::srv::MovL::Request::SharedPtr request,
+  mg400_msgs::srv::MovL::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->movL(
       request->x, request->y, request->z,
-      request->a, request->b, request->c
-    );
+      request->a, request->b, request->c);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::servoJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ServoJ::Request::SharedPtr request,
-  ServoJ::Response::SharedPtr response
+  const mg400_msgs::srv::ServoJ::Request::SharedPtr request,
+  mg400_msgs::srv::ServoJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->servoJ(
       request->j1, request->j2, request->j3,
-      request->j4, request->j5, request->j6
-    );
+      request->j4, request->j5, request->j6);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::arc(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Arc::Request::SharedPtr request,
-  Arc::Response::SharedPtr response
+  const mg400_msgs::srv::Arc::Request::SharedPtr request,
+  mg400_msgs::srv::Arc::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(
+    snprintf(
       cmd,
-      "Arc(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
+      sizeof(cmd),
+      "Arc(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,"
+      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
       request->x1, request->y1, request->z1,
       request->rx1, request->ry1, request->rz1,
       request->x2, request->y2, request->z2,
-      request->rx2, request->ry2, request->rz2
-    );
+      request->rx2, request->ry2, request->rz2);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::circle(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Circle::Request::SharedPtr request,
-  Circle::Response::SharedPtr response
+  const mg400_msgs::srv::Circle::Request::SharedPtr request,
+  mg400_msgs::srv::Circle::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(
-      cmd, "Circle(%d, %0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
+    snprintf(
+      cmd,
+      sizeof(cmd),
+      "Circle(%d, "
+      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,"
+      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
       request->count,
       request->x1, request->y1, request->z1,
       request->rx1, request->ry1, request->rz1,
       request->x2, request->y2, request->z2,
-      request->rx2, request->ry2, request->rz2
-    );
+      request->rx2, request->ry2, request->rz2);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::jump(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Jump::Request::SharedPtr request,
-  Jump::Response::SharedPtr response
+  const mg400_msgs::srv::Jump::Request::SharedPtr request,
+  mg400_msgs::srv::Jump::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(
+    snprintf(
       cmd,
+      sizeof(cmd),
       "Jump(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
       request->offset1, request->offset2, request->offset3,
-      request->offset4, request->offset5, request->offset6
-    );
+      request->offset4, request->offset5, request->offset6);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::servoP(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const ServoP::Request::SharedPtr request,
-  ServoP::Response::SharedPtr response
+  const mg400_msgs::srv::ServoP::Request::SharedPtr request,
+  mg400_msgs::srv::ServoP::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->servoP(
       request->x, request->y, request->z,
-      request->a, request->b, request->c
-    );
+      request->a, request->b, request->c);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::relMovJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const RelMovJ::Request::SharedPtr request,
-  RelMovJ::Response::SharedPtr response
+  const mg400_msgs::srv::RelMovJ::Request::SharedPtr request,
+  mg400_msgs::srv::RelMovJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->relMovJ(
       request->offset1, request->offset2, request->offset3,
-      request->offset4, request->offset5, request->offset6
-    );
+      request->offset4, request->offset5, request->offset6);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::relMovL(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const RelMovL::Request::SharedPtr request,
-  RelMovL::Response::SharedPtr response
+  const mg400_msgs::srv::RelMovL::Request::SharedPtr request,
+  mg400_msgs::srv::RelMovL::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->relMovL(
-      request->x, request->y, request->z
-    );
+      request->x, request->y, request->z);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::jointMovJ(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const JointMovJ::Request::SharedPtr request,
-  JointMovJ::Response::SharedPtr response
+  const mg400_msgs::srv::JointMovJ::Request::SharedPtr request,
+  mg400_msgs::srv::JointMovJ::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->jointMovJ(
       request->j1, request->j2, request->j3,
-      request->j4, request->j5, request->j6
-    );
+      request->j4, request->j5, request->j6);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::sync(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const Sync::Request::SharedPtr request,
-  Sync::Response::SharedPtr response
+  const mg400_msgs::srv::Sync::Request::SharedPtr request,
+  mg400_msgs::srv::Sync::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
-  (void)request; // for linter
+  (void)request_header;  // for linter
+  (void)request;  // for linter
   try {
     const char * cmd = "Sync()";
     this->commander_->realSendCmd(cmd, strlen(cmd));
@@ -1336,96 +1217,90 @@ void Component::sync(
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::startTrace(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const StartTrace::Request::SharedPtr request,
-  StartTrace::Response::SharedPtr response
+  const mg400_msgs::srv::StartTrace::Request::SharedPtr request,
+  mg400_msgs::srv::StartTrace::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "StartTrace(%s)", request->trace_name.c_str());
+    snprintf(cmd, sizeof(cmd), "StartTrace(%s)", request->trace_name.c_str());
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::startPath(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const StartPath::Request::SharedPtr request,
-  StartPath::Response::SharedPtr response
+  const mg400_msgs::srv::StartPath::Request::SharedPtr request,
+  mg400_msgs::srv::StartPath::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(
-      cmd, "StartPath(%s,%d,%d)",
+    snprintf(
+      cmd, sizeof(cmd), "StartPath(%s,%d,%d)",
       request->trace_name.c_str(),
       request->const_val,
-      request->cart
-    );
+      request->cart);
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::startFCTrace(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const StartFCTrace::Request::SharedPtr request,
-  StartFCTrace::Response::SharedPtr response
+  const mg400_msgs::srv::StartFCTrace::Request::SharedPtr request,
+  mg400_msgs::srv::StartFCTrace::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     char cmd[100];
-    sprintf(cmd, "StartFCTrace(%s)", request->trace_name.c_str());
+    snprintf(cmd, sizeof(cmd), "StartFCTrace(%s)", request->trace_name.c_str());
     this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
 
 void Component::moveJog(
   const std::shared_ptr<rmw_request_id_t> request_header,
-  const MoveJog::Request::SharedPtr request,
-  MoveJog::Response::SharedPtr response
+  const mg400_msgs::srv::MoveJog::Request::SharedPtr request,
+  mg400_msgs::srv::MoveJog::Response::SharedPtr response
 )
 {
-  (void)request_header; // for linter
+  (void)request_header;  // for linter
   try {
     this->commander_->moveJog(request->axis_id);
     response->res = 0;
   } catch (const TcpClientException & e) {
     RCLCPP_ERROR(
       this->get_logger(),
-      e.what()
-    );
+      e.what());
     response->res = -1;
   }
 }
-} // namespace mg400_control
+}  // namespace mg400_control

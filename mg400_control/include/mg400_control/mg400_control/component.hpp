@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
@@ -73,7 +74,6 @@
 
 namespace mg400_control
 {
-using namespace mg400_msgs::srv;
 class Component : public rclcpp::Node
 {
 private:
@@ -84,53 +84,59 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
-  rclcpp::Service<EnableRobot>::SharedPtr enable_robot_srv_;
-  rclcpp::Service<DisableRobot>::SharedPtr disable_robot_srv_;
-  rclcpp::Service<ClearError>::SharedPtr clear_error_srv_;
-  rclcpp::Service<ResetRobot>::SharedPtr reset_robot_srv_;
-  rclcpp::Service<SpeedFactor>::SharedPtr speed_factor_srv_;
-  rclcpp::Service<User>::SharedPtr user_srv_;
-  rclcpp::Service<Tool>::SharedPtr tool_srv_;
-  rclcpp::Service<RobotMode>::SharedPtr robot_mode_srv_;
-  rclcpp::Service<Payload>::SharedPtr payload_srv_;
-  rclcpp::Service<DO>::SharedPtr do_srv_;
-  rclcpp::Service<DOExecute>::SharedPtr do_execute_srv_;
-  rclcpp::Service<ToolDO>::SharedPtr tool_do_srv_;
-  rclcpp::Service<ToolDOExecute>::SharedPtr tool_do_execute_srv_;
-  rclcpp::Service<AO>::SharedPtr ao_srv_;
-  rclcpp::Service<AOExecute>::SharedPtr ao_execute_srv_;
-  rclcpp::Service<AccJ>::SharedPtr acc_j_srv_;
-  rclcpp::Service<AccL>::SharedPtr acc_l_srv_;
-  rclcpp::Service<SpeedJ>::SharedPtr speed_j_srv_;
-  rclcpp::Service<SpeedL>::SharedPtr speed_l_srv_;
-  rclcpp::Service<Arch>::SharedPtr arch_srv_;
-  rclcpp::Service<CP>::SharedPtr cp_srv_;
-  rclcpp::Service<LimZ>::SharedPtr lim_z_srv_;
-  rclcpp::Service<SetArmOrientation>::SharedPtr set_arm_orientation_srv_;
-  rclcpp::Service<PowerOn>::SharedPtr power_on_srv_;
-  rclcpp::Service<RunScript>::SharedPtr run_script_srv_;
-  rclcpp::Service<StopScript>::SharedPtr stop_script_srv_;
-  rclcpp::Service<PauseScript>::SharedPtr pause_script_srv_;
-  rclcpp::Service<ContinueScript>::SharedPtr continue_script_srv_;
-  rclcpp::Service<SetSafeSkin>::SharedPtr set_safe_skin_srv_;
-  rclcpp::Service<SetObstacleAvoid>::SharedPtr set_obstacle_avoid_srv_;
-  rclcpp::Service<SetCollisionLevel>::SharedPtr set_collistion_level_srv_;
-  rclcpp::Service<EmergencyStop>::SharedPtr emergency_stop_srv_;
+  rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
+  rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
+  rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr clear_error_srv_;
+  rclcpp::Service<mg400_msgs::srv::ResetRobot>::SharedPtr reset_robot_srv_;
+  rclcpp::Service<mg400_msgs::srv::SpeedFactor>::SharedPtr speed_factor_srv_;
+  rclcpp::Service<mg400_msgs::srv::User>::SharedPtr user_srv_;
+  rclcpp::Service<mg400_msgs::srv::Tool>::SharedPtr tool_srv_;
+  rclcpp::Service<mg400_msgs::srv::RobotMode>::SharedPtr robot_mode_srv_;
+  rclcpp::Service<mg400_msgs::srv::Payload>::SharedPtr payload_srv_;
+  rclcpp::Service<mg400_msgs::srv::DO>::SharedPtr do_srv_;
+  rclcpp::Service<mg400_msgs::srv::DOExecute>::SharedPtr do_execute_srv_;
+  rclcpp::Service<mg400_msgs::srv::ToolDO>::SharedPtr tool_do_srv_;
+  rclcpp::Service<mg400_msgs::srv::ToolDOExecute>::SharedPtr
+    tool_do_execute_srv_;
+  rclcpp::Service<mg400_msgs::srv::AO>::SharedPtr ao_srv_;
+  rclcpp::Service<mg400_msgs::srv::AOExecute>::SharedPtr ao_execute_srv_;
+  rclcpp::Service<mg400_msgs::srv::AccJ>::SharedPtr acc_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::AccL>::SharedPtr acc_l_srv_;
+  rclcpp::Service<mg400_msgs::srv::SpeedJ>::SharedPtr speed_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::SpeedL>::SharedPtr speed_l_srv_;
+  rclcpp::Service<mg400_msgs::srv::Arch>::SharedPtr arch_srv_;
+  rclcpp::Service<mg400_msgs::srv::CP>::SharedPtr cp_srv_;
+  rclcpp::Service<mg400_msgs::srv::LimZ>::SharedPtr lim_z_srv_;
+  rclcpp::Service<mg400_msgs::srv::SetArmOrientation>::SharedPtr
+    set_arm_orientation_srv_;
+  rclcpp::Service<mg400_msgs::srv::PowerOn>::SharedPtr power_on_srv_;
+  rclcpp::Service<mg400_msgs::srv::RunScript>::SharedPtr run_script_srv_;
+  rclcpp::Service<mg400_msgs::srv::StopScript>::SharedPtr stop_script_srv_;
+  rclcpp::Service<mg400_msgs::srv::PauseScript>::SharedPtr pause_script_srv_;
+  rclcpp::Service<mg400_msgs::srv::ContinueScript>::SharedPtr
+    continue_script_srv_;
+  rclcpp::Service<mg400_msgs::srv::SetSafeSkin>::SharedPtr set_safe_skin_srv_;
+  rclcpp::Service<mg400_msgs::srv::SetObstacleAvoid>::SharedPtr
+    set_obstacle_avoid_srv_;
+  rclcpp::Service<mg400_msgs::srv::SetCollisionLevel>::SharedPtr
+    set_collistion_level_srv_;
+  rclcpp::Service<mg400_msgs::srv::EmergencyStop>::SharedPtr
+    emergency_stop_srv_;
 
-  rclcpp::Service<MovJ>::SharedPtr mov_j_srv_;
-  rclcpp::Service<MovL>::SharedPtr mov_l_srv_;
-  rclcpp::Service<Jump>::SharedPtr jump_srv_;
-  rclcpp::Service<Arc>::SharedPtr arc_srv_;
-  rclcpp::Service<Sync>::SharedPtr sync_srv_;
-  rclcpp::Service<Circle>::SharedPtr circle_srv_;
-  rclcpp::Service<ServoJ>::SharedPtr servo_j_srv_;
-  rclcpp::Service<StartTrace>::SharedPtr start_trace_srv_;
-  rclcpp::Service<StartPath>::SharedPtr start_path_srv_;
-  rclcpp::Service<MoveJog>::SharedPtr move_jog_srv_;
-  rclcpp::Service<ServoP>::SharedPtr servo_p_srv_;
-  rclcpp::Service<RelMovJ>::SharedPtr rel_mov_j_srv_;
-  rclcpp::Service<RelMovL>::SharedPtr rel_mov_l_srv_;
-  rclcpp::Service<JointMovJ>::SharedPtr joint_mov_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::MovL>::SharedPtr mov_l_srv_;
+  rclcpp::Service<mg400_msgs::srv::Jump>::SharedPtr jump_srv_;
+  rclcpp::Service<mg400_msgs::srv::Arc>::SharedPtr arc_srv_;
+  rclcpp::Service<mg400_msgs::srv::Sync>::SharedPtr sync_srv_;
+  rclcpp::Service<mg400_msgs::srv::Circle>::SharedPtr circle_srv_;
+  rclcpp::Service<mg400_msgs::srv::ServoJ>::SharedPtr servo_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::StartTrace>::SharedPtr start_trace_srv_;
+  rclcpp::Service<mg400_msgs::srv::StartPath>::SharedPtr start_path_srv_;
+  rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
+  rclcpp::Service<mg400_msgs::srv::ServoP>::SharedPtr servo_p_srv_;
+  rclcpp::Service<mg400_msgs::srv::RelMovJ>::SharedPtr rel_mov_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::RelMovL>::SharedPtr rel_mov_l_srv_;
+  rclcpp::Service<mg400_msgs::srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
 
 public:
   explicit Component(
@@ -152,239 +158,192 @@ protected:
 
   void enableRobot(
     const std::shared_ptr<rmw_request_id_t>,
-    const EnableRobot::Request::SharedPtr,
-    EnableRobot::Response::SharedPtr
-  );
+    const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
+    mg400_msgs::srv::EnableRobot::Response::SharedPtr);
   void disableRobot(
     const std::shared_ptr<rmw_request_id_t>,
-    const DisableRobot::Request::SharedPtr,
-    DisableRobot::Response::SharedPtr
-  );
+    const mg400_msgs::srv::DisableRobot::Request::SharedPtr,
+    mg400_msgs::srv::DisableRobot::Response::SharedPtr);
   void clearError(
     const std::shared_ptr<rmw_request_id_t>,
-    const ClearError::Request::SharedPtr,
-    ClearError::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ClearError::Request::SharedPtr,
+    mg400_msgs::srv::ClearError::Response::SharedPtr);
   void resetRobot(
     const std::shared_ptr<rmw_request_id_t>,
-    const ResetRobot::Request::SharedPtr,
-    ResetRobot::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
+    mg400_msgs::srv::ResetRobot::Response::SharedPtr);
   void speedFactor(
     const std::shared_ptr<rmw_request_id_t>,
-    const SpeedFactor::Request::SharedPtr,
-    SpeedFactor::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SpeedFactor::Request::SharedPtr,
+    mg400_msgs::srv::SpeedFactor::Response::SharedPtr);
   void user(
     const std::shared_ptr<rmw_request_id_t>,
-    const User::Request::SharedPtr,
-    User::Response::SharedPtr
-  );
+    const mg400_msgs::srv::User::Request::SharedPtr,
+    mg400_msgs::srv::User::Response::SharedPtr);
   void tool(
     const std::shared_ptr<rmw_request_id_t>,
-    const Tool::Request::SharedPtr,
-    Tool::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Tool::Request::SharedPtr,
+    mg400_msgs::srv::Tool::Response::SharedPtr);
   void robotMode(
     const std::shared_ptr<rmw_request_id_t>,
-    const RobotMode::Request::SharedPtr,
-    RobotMode::Response::SharedPtr
-  );
+    const mg400_msgs::srv::RobotMode::Request::SharedPtr,
+    mg400_msgs::srv::RobotMode::Response::SharedPtr);
   void payload(
     const std::shared_ptr<rmw_request_id_t>,
-    const Payload::Request::SharedPtr,
-    Payload::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Payload::Request::SharedPtr,
+    mg400_msgs::srv::Payload::Response::SharedPtr);
   void dO(
     const std::shared_ptr<rmw_request_id_t>,
-    const DO::Request::SharedPtr,
-    DO::Response::SharedPtr
-  );
+    const mg400_msgs::srv::DO::Request::SharedPtr,
+    mg400_msgs::srv::DO::Response::SharedPtr);
   void dOExecute(
     const std::shared_ptr<rmw_request_id_t>,
-    const DOExecute::Request::SharedPtr,
-    DOExecute::Response::SharedPtr
-  );
+    const mg400_msgs::srv::DOExecute::Request::SharedPtr,
+    mg400_msgs::srv::DOExecute::Response::SharedPtr);
   void toolDO(
     const std::shared_ptr<rmw_request_id_t>,
-    const ToolDO::Request::SharedPtr,
-    ToolDO::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ToolDO::Request::SharedPtr,
+    mg400_msgs::srv::ToolDO::Response::SharedPtr);
   void toolDOExecute(
     const std::shared_ptr<rmw_request_id_t>,
-    const ToolDOExecute::Request::SharedPtr,
-    ToolDOExecute::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr,
+    mg400_msgs::srv::ToolDOExecute::Response::SharedPtr);
   void aO(
     const std::shared_ptr<rmw_request_id_t>,
-    const AO::Request::SharedPtr,
-    AO::Response::SharedPtr
-  );
+    const mg400_msgs::srv::AO::Request::SharedPtr,
+    mg400_msgs::srv::AO::Response::SharedPtr);
   void aOExecute(
     const std::shared_ptr<rmw_request_id_t>,
-    const AOExecute::Request::SharedPtr,
-    AOExecute::Response::SharedPtr
-  );
+    const mg400_msgs::srv::AOExecute::Request::SharedPtr,
+    mg400_msgs::srv::AOExecute::Response::SharedPtr);
   void accJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const AccJ::Request::SharedPtr,
-    AccJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::AccJ::Request::SharedPtr,
+    mg400_msgs::srv::AccJ::Response::SharedPtr);
   void accL(
     const std::shared_ptr<rmw_request_id_t>,
-    const AccL::Request::SharedPtr,
-    AccL::Response::SharedPtr
-  );
+    const mg400_msgs::srv::AccL::Request::SharedPtr,
+    mg400_msgs::srv::AccL::Response::SharedPtr);
   void speedJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const SpeedJ::Request::SharedPtr,
-    SpeedJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SpeedJ::Request::SharedPtr,
+    mg400_msgs::srv::SpeedJ::Response::SharedPtr);
   void speedL(
     const std::shared_ptr<rmw_request_id_t>,
-    const SpeedL::Request::SharedPtr,
-    SpeedL::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SpeedL::Request::SharedPtr,
+    mg400_msgs::srv::SpeedL::Response::SharedPtr);
   void arch(
     const std::shared_ptr<rmw_request_id_t>,
-    const Arch::Request::SharedPtr,
-    Arch::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Arch::Request::SharedPtr,
+    mg400_msgs::srv::Arch::Response::SharedPtr);
   void cp(
     const std::shared_ptr<rmw_request_id_t>,
-    const CP::Request::SharedPtr,
-    CP::Response::SharedPtr
-  );
+    const mg400_msgs::srv::CP::Request::SharedPtr,
+    mg400_msgs::srv::CP::Response::SharedPtr);
   void limZ(
     const std::shared_ptr<rmw_request_id_t>,
-    const LimZ::Request::SharedPtr,
-    LimZ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::LimZ::Request::SharedPtr,
+    mg400_msgs::srv::LimZ::Response::SharedPtr);
   void setArmOrientation(
     const std::shared_ptr<rmw_request_id_t>,
-    const SetArmOrientation::Request::SharedPtr,
-    SetArmOrientation::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SetArmOrientation::Request::SharedPtr,
+    mg400_msgs::srv::SetArmOrientation::Response::SharedPtr);
   void powerOn(
     const std::shared_ptr<rmw_request_id_t>,
-    const PowerOn::Request::SharedPtr,
-    PowerOn::Response::SharedPtr
-  );
+    const mg400_msgs::srv::PowerOn::Request::SharedPtr,
+    mg400_msgs::srv::PowerOn::Response::SharedPtr);
   void runScript(
     const std::shared_ptr<rmw_request_id_t>,
-    const RunScript::Request::SharedPtr,
-    RunScript::Response::SharedPtr
-  );
+    const mg400_msgs::srv::RunScript::Request::SharedPtr,
+    mg400_msgs::srv::RunScript::Response::SharedPtr);
   void stopScript(
     const std::shared_ptr<rmw_request_id_t>,
-    const StopScript::Request::SharedPtr,
-    StopScript::Response::SharedPtr
-  );
+    const mg400_msgs::srv::StopScript::Request::SharedPtr,
+    mg400_msgs::srv::StopScript::Response::SharedPtr);
   void pauseScript(
     const std::shared_ptr<rmw_request_id_t>,
-    const PauseScript::Request::SharedPtr,
-    PauseScript::Response::SharedPtr
-  );
+    const mg400_msgs::srv::PauseScript::Request::SharedPtr,
+    mg400_msgs::srv::PauseScript::Response::SharedPtr);
   void continueScript(
     const std::shared_ptr<rmw_request_id_t>,
-    const ContinueScript::Request::SharedPtr,
-    ContinueScript::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ContinueScript::Request::SharedPtr,
+    mg400_msgs::srv::ContinueScript::Response::SharedPtr);
   void setSafeSkin(
     const std::shared_ptr<rmw_request_id_t>,
-    const SetSafeSkin::Request::SharedPtr,
-    SetSafeSkin::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SetSafeSkin::Request::SharedPtr,
+    mg400_msgs::srv::SetSafeSkin::Response::SharedPtr);
   void setObstacleAvoid(
     const std::shared_ptr<rmw_request_id_t>,
-    const SetObstacleAvoid::Request::SharedPtr,
-    SetObstacleAvoid::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SetObstacleAvoid::Request::SharedPtr,
+    mg400_msgs::srv::SetObstacleAvoid::Response::SharedPtr);
   void setCollisionLevel(
     const std::shared_ptr<rmw_request_id_t>,
-    const SetCollisionLevel::Request::SharedPtr,
-    SetCollisionLevel::Response::SharedPtr
-  );
+    const mg400_msgs::srv::SetCollisionLevel::Request::SharedPtr,
+    mg400_msgs::srv::SetCollisionLevel::Response::SharedPtr);
   void emergencyStop(
     const std::shared_ptr<rmw_request_id_t>,
-    const EmergencyStop::Request::SharedPtr,
-    EmergencyStop::Response::SharedPtr
-  );
+    const mg400_msgs::srv::EmergencyStop::Request::SharedPtr,
+    mg400_msgs::srv::EmergencyStop::Response::SharedPtr);
 
   void movJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const MovJ::Request::SharedPtr,
-    MovJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::MovJ::Request::SharedPtr,
+    mg400_msgs::srv::MovJ::Response::SharedPtr);
   void movL(
     const std::shared_ptr<rmw_request_id_t>,
-    const MovL::Request::SharedPtr,
-    MovL::Response::SharedPtr
-  );
+    const mg400_msgs::srv::MovL::Request::SharedPtr,
+    mg400_msgs::srv::MovL::Response::SharedPtr);
   void jointMovJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const JointMovJ::Request::SharedPtr,
-    JointMovJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::JointMovJ::Request::SharedPtr,
+    mg400_msgs::srv::JointMovJ::Response::SharedPtr);
   void jump(
     const std::shared_ptr<rmw_request_id_t>,
-    const Jump::Request::SharedPtr,
-    Jump::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Jump::Request::SharedPtr,
+    mg400_msgs::srv::Jump::Response::SharedPtr);
   void relMovJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const RelMovJ::Request::SharedPtr,
-    RelMovJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::RelMovJ::Request::SharedPtr,
+    mg400_msgs::srv::RelMovJ::Response::SharedPtr);
   void relMovL(
     const std::shared_ptr<rmw_request_id_t>,
-    const RelMovL::Request::SharedPtr,
-    RelMovL::Response::SharedPtr
-  );
+    const mg400_msgs::srv::RelMovL::Request::SharedPtr,
+    mg400_msgs::srv::RelMovL::Response::SharedPtr);
   void arc(
     const std::shared_ptr<rmw_request_id_t>,
-    const Arc::Request::SharedPtr,
-    Arc::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Arc::Request::SharedPtr,
+    mg400_msgs::srv::Arc::Response::SharedPtr);
   void circle(
     const std::shared_ptr<rmw_request_id_t>,
-    const Circle::Request::SharedPtr,
-    Circle::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Circle::Request::SharedPtr,
+    mg400_msgs::srv::Circle::Response::SharedPtr);
   void servoJ(
     const std::shared_ptr<rmw_request_id_t>,
-    const ServoJ::Request::SharedPtr,
-    ServoJ::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ServoJ::Request::SharedPtr,
+    mg400_msgs::srv::ServoJ::Response::SharedPtr);
   void servoP(
     const std::shared_ptr<rmw_request_id_t>,
-    const ServoP::Request::SharedPtr,
-    ServoP::Response::SharedPtr
-  );
+    const mg400_msgs::srv::ServoP::Request::SharedPtr,
+    mg400_msgs::srv::ServoP::Response::SharedPtr);
   void sync(
     const std::shared_ptr<rmw_request_id_t>,
-    const Sync::Request::SharedPtr,
-    Sync::Response::SharedPtr
-  );
+    const mg400_msgs::srv::Sync::Request::SharedPtr,
+    mg400_msgs::srv::Sync::Response::SharedPtr);
   void startTrace(
     const std::shared_ptr<rmw_request_id_t>,
-    const StartTrace::Request::SharedPtr,
-    StartTrace::Response::SharedPtr
-  );
+    const mg400_msgs::srv::StartTrace::Request::SharedPtr,
+    mg400_msgs::srv::StartTrace::Response::SharedPtr);
   void startPath(
     const std::shared_ptr<rmw_request_id_t>,
-    const StartPath::Request::SharedPtr,
-    StartPath::Response::SharedPtr
-  );
+    const mg400_msgs::srv::StartPath::Request::SharedPtr,
+    mg400_msgs::srv::StartPath::Response::SharedPtr);
   void startFCTrace(
     const std::shared_ptr<rmw_request_id_t>,
-    const StartFCTrace::Request::SharedPtr,
-    StartFCTrace::Response::SharedPtr
-  );
+    const mg400_msgs::srv::StartFCTrace::Request::SharedPtr,
+    mg400_msgs::srv::StartFCTrace::Response::SharedPtr);
   void moveJog(
     const std::shared_ptr<rmw_request_id_t>,
-    const MoveJog::Request::SharedPtr,
-    MoveJog::Response::SharedPtr
-  );
+    const mg400_msgs::srv::MoveJog::Request::SharedPtr,
+    mg400_msgs::srv::MoveJog::Response::SharedPtr);
 };
-} // namespace mg400_control
+}  // namespace mg400_control

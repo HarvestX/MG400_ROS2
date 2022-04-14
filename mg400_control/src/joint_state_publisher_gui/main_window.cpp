@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <QApplication>
 #include "main_window.hpp"
 #include "ui_main_window.h"
 #include "mg400_control/convert.hpp"
-#include <QApplication>
 
 MainWindow::MainWindow(
   const rclcpp::NodeOptions & node_options,
@@ -28,9 +28,9 @@ MainWindow::MainWindow(
   using namespace std::chrono_literals;
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states",
-    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile()
-  );
-  this->timer_ = this->create_wall_timer(100ms, std::bind(&MainWindow::publishJointStates, this));
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  this->timer_ = this->create_wall_timer(
+    100ms, std::bind(&MainWindow::publishJointStates, this));
 
   this->ui_->setupUi(this);
 
@@ -49,13 +49,25 @@ MainWindow::MainWindow(
   this->ui_->j3_slider->setValue(std::abs(J3_MIN) / (J3_MAX - J3_MIN) * 1000);
   this->ui_->j4_slider->setValue(std::abs(J4_MIN) / (J4_MAX - J4_MIN) * 1000);
 
-  this->connect(this->ui_->j1_slider, &QSlider::valueChanged, this, &MainWindow::j1ValueChange);
-  this->connect(this->ui_->j2_slider, &QSlider::valueChanged, this, &MainWindow::j2ValueChange);
-  this->connect(this->ui_->j3_slider, &QSlider::valueChanged, this, &MainWindow::j3ValueChange);
-  this->connect(this->ui_->j4_slider, &QSlider::valueChanged, this, &MainWindow::j4ValueChange);
+  this->connect(
+    this->ui_->j1_slider,
+    &QSlider::valueChanged, this, &MainWindow::j1ValueChange);
+  this->connect(
+    this->ui_->j2_slider,
+    &QSlider::valueChanged, this, &MainWindow::j2ValueChange);
+  this->connect(
+    this->ui_->j3_slider,
+    &QSlider::valueChanged, this, &MainWindow::j3ValueChange);
+  this->connect(
+    this->ui_->j4_slider,
+    &QSlider::valueChanged, this, &MainWindow::j4ValueChange);
 
-  this->connect(this->ui_->random_btn, &QPushButton::clicked, this, &MainWindow::randomBtn);
-  this->connect(this->ui_->center_btn, &QPushButton::clicked, this, &MainWindow::centerBtn);
+  this->connect(
+    this->ui_->random_btn,
+    &QPushButton::clicked, this, &MainWindow::randomBtn);
+  this->connect(
+    this->ui_->center_btn,
+    &QPushButton::clicked, this, &MainWindow::centerBtn);
 }
 
 MainWindow::~MainWindow()
@@ -111,7 +123,7 @@ void MainWindow::j1ValueChange(int value)
 {
   char txt[50];
   this->j1_ = J1_MIN + (J1_MAX - J1_MIN) * value * 1e-3;
-  sprintf(txt, "%0.3f", this->j1_);
+  snprintf(txt, sizeof(txt), "%0.3f", this->j1_);
   ui_->j1_txt->setText(txt);
 }
 
@@ -119,7 +131,7 @@ void MainWindow::j2ValueChange(int value)
 {
   char txt[50];
   this->j2_ = J2_MIN + (J2_MAX - J2_MIN) * value * 1e-3;
-  sprintf(txt, "%0.3f", this->j2_);
+  snprintf(txt, sizeof(txt), "%0.3f", this->j2_);
   ui_->j2_txt->setText(txt);
 }
 
@@ -127,7 +139,7 @@ void MainWindow::j3ValueChange(int value)
 {
   char txt[50];
   this->j3_ = J3_MIN + (J3_MAX - J3_MIN) * value * 1e-3;
-  sprintf(txt, "%0.3f", this->j3_);
+  snprintf(txt, sizeof(txt), "%0.3f", this->j3_);
   ui_->j3_txt->setText(txt);
 }
 
@@ -135,7 +147,7 @@ void MainWindow::j4ValueChange(int value)
 {
   char txt[50];
   this->j4_ = J4_MIN + (J4_MAX - J4_MIN) * value * 1e-3;
-  sprintf(txt, "%0.3f", this->j4_);
+  snprintf(txt, sizeof(txt), "%0.3f", this->j4_);
   ui_->j4_txt->setText(txt);
 }
 
@@ -143,9 +155,6 @@ void MainWindow::publishJointStates()
 {
   this->joint_state_pub_->publish(
     convert::toJointState(
-      this->j1_,
-      this->j2_,
-      this->j3_,
-      this->j4_
-  ));
+      this->j1_, this->j2_,
+      this->j3_, this->j4_));
 }
