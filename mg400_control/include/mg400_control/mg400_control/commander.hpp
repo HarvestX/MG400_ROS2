@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <string>
 
 #include <rclcpp/rclcpp.hpp>
 #include "mg400_control/mg400_control/tcp_socket.hpp"
@@ -139,4 +140,4 @@ private:
     return deg * M_PI / 180.0;
   }
 };
-} // namespace mg400_control
+}  // namespace mg400_control
