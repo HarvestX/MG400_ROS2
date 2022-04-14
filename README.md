@@ -54,6 +54,12 @@ ros2 launch mg400_bringup display.launch
 ros2 launch mg400_bringup mg400.launch
 ```
 
+## Running Utilities
+### TCP Packet Checker
+```bash
+ros2 run mg400_control realtime_packet_checker
+```
+
 ## References
 ### Official ROS1 package
 - [Official ROS1 package](https://github.com/Dobot-Arm/MG400_ROS)
