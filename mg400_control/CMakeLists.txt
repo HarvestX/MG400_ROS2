@@ -20,6 +20,27 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# MG400 Interface ===================================================
+set(TARGET mg400_interface)
+
+# Create library
+add_library(${TARGET} STATIC)
+# cmake-format: off
+target_sources(
+  ${TARGET} #
+  PRIVATE
+    src/${TARGET}/commander.cpp
+    src/${TARGET}/tcp_socket.cpp
+)
+# cmake-format: on
+target_include_directories(${TARGET} PRIVATE include)
+ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
+set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Append excutable to list
+set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${TARGET})
+# MG400 Interface ===================================================
+
 # Joint State Publsher GUI Node =====================================
 set(TARGET joint_state_publisher_gui)
 add_executable(${TARGET})
@@ -52,11 +73,10 @@ target_sources(
   ${LIB_TARGET} #
   PRIVATE
     src/${TARGET}/component.cpp
-    src/${TARGET}/commander.cpp
-    src/${TARGET}/tcp_socket.cpp
 )
 # cmake-format: on
 target_include_directories(${LIB_TARGET} PRIVATE include)
+target_link_libraries(${LIB_TARGET} ${THIS_CREATED_LIBRARY_LIST})
 ament_target_dependencies(${LIB_TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 set_property(TARGET ${LIB_TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -77,6 +97,24 @@ ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
 set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${LIB_TARGET})
 set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
 # End MG400 Control Node ============================================
+
+# RealTimePacketChecker =============================================
+set(TARGET realtime_packet_checker)
+add_executable(${TARGET})
+# cmake-format: off
+target_sources(
+  ${TARGET}
+  PRIVATE
+    src/${TARGET}/main.cpp
+)
+# cmake-format: on
+target_link_libraries(${TARGET} mg400_interface)
+target_include_directories(${TARGET} PRIVATE include)
+ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+# Append exeutable to list
+set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
+# End RealTime Packet Checker =======================================
 
 # Install targets ===================================================
 install(TARGETS ${THIS_CREATED_EXEC_LIST} DESTINATION lib/${PROJECT_NAME})

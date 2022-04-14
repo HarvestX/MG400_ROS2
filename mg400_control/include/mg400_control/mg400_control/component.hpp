@@ -69,7 +69,7 @@
 
 #include <mg400_msgs/msg/robot_status.hpp>
 
-#include "mg400_control/mg400_control/commander.hpp"
+#include "mg400_control/mg400_interface/commander.hpp"
 
 
 namespace mg400_control
@@ -78,7 +78,7 @@ class Component : public rclcpp::Node
 {
 private:
   double goal_[6];
-  std::unique_ptr<Commander> commander_;
+  std::unique_ptr<mg400_interface::Commander> commander_;
 
   rclcpp::TimerBase::SharedPtr js_timer_;
 
