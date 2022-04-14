@@ -15,6 +15,7 @@
 #pragma once
 
 #include <unistd.h>
+#include <string>
 #include <rclcpp/rclcpp.hpp>
 
 namespace mg400_control
@@ -41,8 +42,7 @@ private:
 public:
   TcpClient(
     std::string,
-    uint16_t
-  );
+    uint16_t);
 
   ~TcpClient();
 
@@ -54,4 +54,4 @@ public:
   bool recv(void *, uint32_t, uint32_t);
   std::string toString();
 };
-} // namespace mg400_control
+}  // namespace mg400_control

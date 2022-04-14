@@ -14,17 +14,15 @@
 
 #pragma once
 
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
 namespace convert
 {
 std::unique_ptr<sensor_msgs::msg::JointState> toJointState(
-  const double & j1,
-  const double & j2,
-  const double & j3,
-  const double & j4
-)
+  const double & j1, const double & j2,
+  const double & j3, const double & j4)
 {
   auto msg = std::make_unique<sensor_msgs::msg::JointState>();
   msg->header.stamp = rclcpp::Clock().now();
@@ -42,16 +40,16 @@ std::unique_ptr<sensor_msgs::msg::JointState> toJointState(
   };
 
   msg->position = {
-    j1, // j1
-    j2, // j2_1
-    j2, // j2_2
-    j3 - j2, // j3_1
-    -j2, // j3_2
-    -j3, // j4_1
-    j3, // j4_2
-    j4 // j5
+    j1,       // j1
+    j2,       // j2_1
+    j2,       // j2_2
+    j3 - j2,  // j3_1
+    -j2,      // j3_2
+    -j3,      // j4_1
+    j3,       // j4_2
+    j4        // j5
   };
 
   return msg;
 }
-} // namespace convert
+}  // namespace convert

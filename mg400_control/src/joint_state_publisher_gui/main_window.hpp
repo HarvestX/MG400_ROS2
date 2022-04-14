@@ -54,8 +54,7 @@ private:
 public:
   explicit MainWindow(
     const rclcpp::NodeOptions & node_options,
-    QWidget * parent = nullptr
-  );
+    QWidget * parent = nullptr);
   ~MainWindow() override;
 
 private:

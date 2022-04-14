@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 #include <rclcpp/rclcpp.hpp>
 #include "mg400_control/mg400_control/tcp_socket.hpp"
 
