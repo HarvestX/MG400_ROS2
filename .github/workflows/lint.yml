@@ -18,6 +18,8 @@ jobs:
         ros_distribution: [galactic]
         linter: [copyright, xmllint]
     steps:
+      - name: Work around permission issue
+        run: git config --global --add safe.directory /__w/MG400_ROS2/MG400_ROS2
       - uses: actions/checkout@v2
       - uses: ros-tooling/setup-ros@v0.2
         with:
@@ -44,6 +46,8 @@ jobs:
         ros_distribution: [galactic]
         linter: [cppcheck, uncrustify]
     steps:
+      - name: Work around permission issue
+        run: git config --global --add safe.directory /__w/MG400_ROS2/MG400_ROS2
       - uses: actions/checkout@v2
       - uses: ros-tooling/setup-ros@v0.2
         with:
@@ -70,6 +74,8 @@ jobs:
         ros_distribution: [galactic]
         linter: [mypy, pep257, flake8]
     steps:
+      - name: Work around permission issue
+        run: git config --global --add safe.directory /__w/MG400_ROS2/MG400_ROS2
       - uses: actions/checkout@v2
       - uses: ros-tooling/setup-ros@v0.2
         with:
