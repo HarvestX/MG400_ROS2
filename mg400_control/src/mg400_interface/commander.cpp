@@ -153,12 +153,28 @@ void Commander::speedFactor(int ratio)
   this->dash_board_tcp_->send(cmd, strlen(cmd));
 }
 
+/**
+ * @brief Point to point movement, the target point is Cartesan point
+ *
+ * @param x X-axis coordinates, unit: m
+ * @param y Y-axis coordinates, unit: m
+ * @param z Z-axis coordinates, unit: m
+ * @param a A-axis coordinates, unit: rad
+ * @param b B-axis coordinates, unit: rad
+ * @param c C-axis coordinates, unit: rad
+ */
 void Commander::movJ(double x, double y, double z, double a, double b, double c)
 {
   char cmd[100];
   snprintf(
     cmd, sizeof(cmd),
-    "MovJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)", x, y, z, a, b, c);
+    "MovJ(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
+    this->m2mm(z),
+    this->m2mm(x),
+    this->m2mm(y),
+    this->rad2Deg(a),
+    this->rad2Deg(b),
+    this->rad2Deg(c));
   this->real_time_tcp_->send(cmd, strlen(cmd));
 }
 

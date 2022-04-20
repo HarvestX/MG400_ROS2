@@ -141,5 +141,15 @@ private:
   {
     return deg * M_PI / 180.0;
   }
+
+  static inline double mm2m(double unit_mm)
+  {
+    return unit_mm * 1e-3;
+  }
+
+  static inline double m2mm(double unit_m)
+  {
+    return unit_m * 1e-3;
+  }
 };
 }  // namespace mg400_interface
