@@ -98,6 +98,42 @@ set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${LIB_TARGET})
 set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
 # End MG400 Control Node ============================================
 
+# MG400 Joy Node ====================================================
+set(TARGET mg400_joy)
+set(LIB_TARGET mg400_joy_component)
+
+# Create library
+add_library(${LIB_TARGET} STATIC)
+# cmake-format: off
+target_sources(
+  ${LIB_TARGET} #
+  PRIVATE
+    src/${TARGET}/component.cpp
+)
+# cmake-format: on
+target_include_directories(${LIB_TARGET} PRIVATE include)
+target_link_libraries(${LIB_TARGET} ${THIS_CREATED_LIBRARY_LIST})
+ament_target_dependencies(${LIB_TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
+set_property(TARGET ${LIB_TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Create Node
+add_executable(${TARGET})
+# cmake-format: off
+target_sources(
+  ${TARGET}
+  PRIVATE
+    src/${TARGET}/main.cpp
+)
+# cmake-format: on
+target_link_libraries(${TARGET} ${LIB_TARGET})
+target_include_directories(${TARGET} PRIVATE include)
+ament_target_dependencies(${TARGET} ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+# Append library and excutable to list
+set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${LIB_TARGET})
+set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
+# End MG400 Joy Node ================================================
+
 # RealTimePacketChecker =============================================
 set(TARGET realtime_packet_checker)
 add_executable(${TARGET})
