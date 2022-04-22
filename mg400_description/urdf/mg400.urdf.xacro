@@ -79,7 +79,7 @@
       name="j0"
       type="fixed">
     <origin
-       xyz="-0.005 0 0.0224" 
+       xyz="-0.005 0 0.224" 
        rpy="0 0 0" />
     <parent link="base_link" />
     <child link="software_origin_link" />
