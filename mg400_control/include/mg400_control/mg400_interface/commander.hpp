@@ -125,6 +125,10 @@ public:
 
   void servoP(double, double, double, double, double, double);
 
+  void arc(double, double, double, double, double, double, double, double, double, double, double, double);
+
+  void circle(double, double, double, double, double, double, double, double, double, double, double, double);
+
   void dashSendCmd(const char *, uint32_t);
 
   void realSendCmd(const char *, uint32_t);
@@ -149,7 +153,7 @@ private:
 
   static inline double m2mm(double unit_m)
   {
-    return unit_m * 1e-3;
+    return unit_m * 1e3;
   }
 };
 }  // namespace mg400_interface
