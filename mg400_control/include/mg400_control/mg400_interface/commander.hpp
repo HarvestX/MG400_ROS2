@@ -125,9 +125,13 @@ public:
 
   void servoP(double, double, double, double, double, double);
 
-  void arc(double, double, double, double, double, double, double, double, double, double, double, double);
+  void arc(
+    double, double, double, double, double, double, double, double, double, double, double,
+    double);
 
-  void circle(double, double, double, double, double, double, double, double, double, double, double, double);
+  void circle(
+    double, double, double, double, double, double, double, double, double, double,
+    double, double);
 
   void dashSendCmd(const char *, uint32_t);
 

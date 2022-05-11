@@ -274,7 +274,8 @@ void Commander::relMovJ(
 void Commander::relMovL(double x, double y, double z)
 {
   char cmd[100];
-  snprintf(cmd, sizeof(cmd), "RelMovL(%0.3f,%0.3f,%0.3f)",
+  snprintf(
+    cmd, sizeof(cmd), "RelMovL(%0.3f,%0.3f,%0.3f)",
     this->m2mm(x),
     this->m2mm(y),
     this->m2mm(z));
