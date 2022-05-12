@@ -1048,17 +1048,11 @@ void Component::arc(
 {
   (void)request_header;  // for linter
   try {
-    char cmd[100];
-    snprintf(
-      cmd,
-      sizeof(cmd),
-      "Arc(%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,"
-      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
+    this->commander_->arc(
       request->x1, request->y1, request->z1,
       request->rx1, request->ry1, request->rz1,
       request->x2, request->y2, request->z2,
       request->rx2, request->ry2, request->rz2);
-    this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
@@ -1076,19 +1070,11 @@ void Component::circle(
 {
   (void)request_header;  // for linter
   try {
-    char cmd[100];
-    snprintf(
-      cmd,
-      sizeof(cmd),
-      "Circle(%d, "
-      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,"
-      "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f)",
-      request->count,
+    this->commander_->circle(
       request->x1, request->y1, request->z1,
       request->rx1, request->ry1, request->rz1,
       request->x2, request->y2, request->z2,
       request->rx2, request->ry2, request->rz2);
-    this->commander_->realSendCmd(cmd, strlen(cmd));
     response->res = 0;
   } catch (const mg400_interface::TcpClientException & e) {
     RCLCPP_ERROR(
