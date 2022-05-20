@@ -140,6 +140,12 @@ void Commander::clearError()
   this->dash_board_tcp_->send(cmd, strlen(cmd));
 }
 
+void Commander::getErrorID()
+{
+  const char * cmd = "getErrorID()";
+  this->dash_board_tcp_->send(cmd, strlen(cmd));
+}
+
 void Commander::resetRobot()
 {
   const char * cmd = "ResetRobot()";

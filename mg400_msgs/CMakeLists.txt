@@ -24,6 +24,7 @@ set(srv_files
     "srv/Arc.srv"
     "srv/Circle.srv"
     "srv/ClearError.srv"
+    "srv/GetErrorID.srv"
     "srv/ContinueScript.srv"
     "srv/CP.srv"
     "srv/DisableRobot.srv"

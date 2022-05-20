@@ -57,6 +57,11 @@ Component::Component(
     std::bind(
       &Component::clearError, this,
       std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  this->get_error_id_srv_ = this->create_service<mg400_msgs::srv::GetErrorID>(
+    "get_error_id",
+    std::bind(
+      &Component::getErrorID, this,
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   this->reset_robot_srv_ = this->create_service<mg400_msgs::srv::ResetRobot>(
     "reset_robot",
     std::bind(
@@ -376,6 +381,26 @@ void Component::clearError(
       this->get_logger(),
       e.what());
     this->commander_->clearError();
+    response->res = -1;
+  }
+}
+
+void Component::getErrorID(
+  const std::shared_ptr<rmw_request_id_t> request_header,
+  const mg400_msgs::srv::GetErrorID::Request::SharedPtr request,
+  mg400_msgs::srv::GetErrorID::Response::SharedPtr response
+)
+{
+  (void)request_header;  // for linter
+  (void)request;  // for linter
+  try {
+    this->commander_->getErrorID();
+    response->res = 0;
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      e.what());
+    this->commander_->getErrorID();
     response->res = -1;
   }
 }

@@ -103,6 +103,8 @@ public:
 
   void disableRobot();
 
+  void getErrorID();
+
   void clearError();
 
   void resetRobot();

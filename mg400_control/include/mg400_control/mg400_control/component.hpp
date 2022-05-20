@@ -21,6 +21,7 @@
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/srv/get_error_id.hpp>
 #include <mg400_msgs/srv/reset_robot.hpp>
 #include <mg400_msgs/srv/speed_factor.hpp>
 #include <mg400_msgs/srv/user.hpp>
@@ -87,6 +88,7 @@ private:
   rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr clear_error_srv_;
+  rclcpp::Service<mg400_msgs::srv::GetErrorID>::SharedPtr get_error_id_srv_;
   rclcpp::Service<mg400_msgs::srv::ResetRobot>::SharedPtr reset_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::SpeedFactor>::SharedPtr speed_factor_srv_;
   rclcpp::Service<mg400_msgs::srv::User>::SharedPtr user_srv_;
@@ -168,6 +170,10 @@ protected:
     const std::shared_ptr<rmw_request_id_t>,
     const mg400_msgs::srv::ClearError::Request::SharedPtr,
     mg400_msgs::srv::ClearError::Response::SharedPtr);
+  void getErrorID(
+    const std::shared_ptr<rmw_request_id_t>,
+    const mg400_msgs::srv::GetErrorID::Request::SharedPtr,
+    mg400_msgs::srv::GetErrorID::Response::SharedPtr);
   void resetRobot(
     const std::shared_ptr<rmw_request_id_t>,
     const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
