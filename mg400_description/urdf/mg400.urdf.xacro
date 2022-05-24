@@ -2,12 +2,9 @@
 <robot
     xmlns:xacro="http://ros.org/wiki/xacro"
     name="mg400">
-  <!-- Import Rviz colors -->
-  <xacro:include filename="$(find mg400_description)/xacro/materials.xacro" />
-
   <!-- constants -->
   <xacro:include
-      filename="$(find mg400_description)/xacro/constants.xacro"
+      filename="$(find mg400_description)/urdf/common/constants.xacro"
       ns="const" />
 
   <!-- Base path for meshes -->
@@ -16,31 +13,37 @@
       value="mg400_description/meshes" />
   <xacro:property
       name="MESH_BASE_LINK"
-      value="${BASE_PATH}/base_link.stl" />
+      value="${BASE_PATH}/base_link.dae" />
   <xacro:property
       name="MESH_LINK_1"
-      value="${BASE_PATH}/link1.stl" />
+      value="${BASE_PATH}/link1.dae" />
   <xacro:property
       name="MESH_LINK_2_1"
-      value="${BASE_PATH}/link2_1.stl" />
+      value="${BASE_PATH}/link2_1.dae" />
   <xacro:property
       name="MESH_LINK_2_2"
-      value="${BASE_PATH}/link2_2.stl" />
+      value="${BASE_PATH}/link2_2.dae" />
   <xacro:property
       name="MESH_LINK_3_1"
-      value="${BASE_PATH}/link3_1.stl" />
+      value="${BASE_PATH}/link3_1.dae" />
   <xacro:property
       name="MESH_LINK_3_2"
-      value="${BASE_PATH}/link3_2.stl" />
+      value="${BASE_PATH}/link3_2.dae" />
   <xacro:property
       name="MESH_LINK_4_1"
-      value="${BASE_PATH}/link4_1.stl" />
+      value="${BASE_PATH}/link4_1.dae" />
   <xacro:property
       name="MESH_LINK_4_2"
-      value="${BASE_PATH}/link4_2.stl" />
+      value="${BASE_PATH}/link4_2.dae" />
+  <xacro:property
+      name="MESH_LINK_4_3"
+      value="${BASE_PATH}/link4_3.dae" />
   <xacro:property
       name="MESH_LINK_5"
-      value="${BASE_PATH}/link5.stl" />
+      value="${BASE_PATH}/link5.dae" />
+  <xacro:property
+      name="MESH_SHAFT"
+      value="${BASE_PATH}/shaft.dae" />
 
   <link name="base_link">
     <inertial>
@@ -63,24 +66,15 @@
       <geometry>
         <mesh filename="package://${MESH_BASE_LINK}" />
       </geometry>
-      <material name="white" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_BASE_LINK}" />
-      </geometry>
-    </collision>
   </link>
-  
-  <joint 
+
+  <joint
       name="j0"
       type="fixed">
     <origin
-       xyz="-0.005 0 0.224" 
-       rpy="0 0 0" />
+        xyz="-0.005 0 0.224"
+        rpy="0 0 0" />
     <parent link="base_link" />
     <child link="software_origin_link" />
   </joint>
@@ -108,16 +102,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_1}" />
       </geometry>
-      <material name="grey" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_1}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -157,16 +142,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_2_1}" />
       </geometry>
-      <material name="black" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_2_1}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -206,16 +182,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_3_1}" />
       </geometry>
-      <material name="black" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_3_1}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -255,16 +222,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_4_1}" />
       </geometry>
-      <material name="white" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_4_1}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -281,6 +239,26 @@
         upper="3.14"
         effort="0"
         velocity="0" />
+  </joint>
+
+  <link name="link4_3">
+    <visual>
+      <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://${MESH_LINK_4_3}" />
+      </geometry>
+    </visual>
+  </link>
+  <joint
+      name="j4_3"
+      type="fixed">
+    <origin
+        xyz="0 0 ${2 * const.SCALE_MM}"
+        rpy="0 0 0" />
+    <parent link="link5" />
+    <child link="link4_3" />
   </joint>
 
   <link name="link5">
@@ -304,40 +282,27 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_5}" />
       </geometry>
-      <material name="grey" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_5}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
       name="j5_1"
       type="fixed">
     <origin
-        xyz="0.0659996239003897 0.0170000000000371 0.031000800715573"
+        xyz="0.066 0.017 0.031"
         rpy="0 0 0" />
     <parent link="link4_1" />
     <child link="link5" />
-    <axis xyz="0 0 1" />
   </joint>
 
   <link name="end_effector_shaft">
     <visual>
       <origin
           xyz="0 0 0"
-          rpy="0 0 0" />
+          rpy="${180.0 * const.TO_RADIAN} 0 0" />
       <geometry>
-        <cylinder
-            radius="${4.0 * const.SCALE_MM}"
-            length="${15.0 * const.SCALE_MM}" />
+        <mesh filename="package://${MESH_SHAFT}" />
       </geometry>
-      <material name="red" />
     </visual>
     <collision>
       <origin
@@ -388,16 +353,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_2_2}" />
       </geometry>
-      <material name="white" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_2_2}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -437,16 +393,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_3_2}" />
       </geometry>
-      <material name="black" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_3_2}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
@@ -486,16 +433,7 @@
       <geometry>
         <mesh filename="package://${MESH_LINK_4_2}" />
       </geometry>
-      <material name="white" />
     </visual>
-    <collision>
-      <origin
-          xyz="0 0 0"
-          rpy="0 0 0" />
-      <geometry>
-        <mesh filename="package://${MESH_LINK_4_2}" />
-      </geometry>
-    </collision>
   </link>
 
   <joint
