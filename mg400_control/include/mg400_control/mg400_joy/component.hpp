@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <chrono>
+#include <unistd.h>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>

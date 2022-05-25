@@ -47,25 +47,33 @@ void JoyComponent::joyCallback(const sensor_msgs::msg::Joy::UniquePtr joy_msg)
 
 void JoyComponent::joyClearError()
 {
-  if(this->button_->circle){
+  if (this->button_->circle) {
     auto request = std::make_shared<mg400_msgs::srv::ClearError::Request>();
     using namespace std::literals::chrono_literals;
     while (!clear_error_clnt_->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        RCLCPP_ERROR(
+          rclcpp::get_logger(
+            "rclcpp"), "Interrupted while waiting for the service. Exiting.");
         return;
       }
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
     }
-    auto result = clear_error_clnt_->async_send_request(request);
-
+    using ServiceResponseFuture =
+      rclcpp::Client<mg400_msgs::srv::ClearError>::SharedFuture;
+    auto response_received_callback = [this](ServiceResponseFuture future) {
+        auto result = future.get();
+        RCLCPP_INFO(this->get_logger(), "Result: %d", result->res);
+      };
+    auto future_result = clear_error_clnt_->async_send_request(request, response_received_callback);
     RCLCPP_INFO(
-    this->get_logger(),
-    "circle.");
-  }else{
+      this->get_logger(),
+      "circle.");
+    sleep(1);
+  } else {
     RCLCPP_INFO(
-    this->get_logger(),
-    "Not circle.");
+      this->get_logger(),
+      "Not circle.");
   }
 }
 
