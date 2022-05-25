@@ -23,7 +23,8 @@ MainWindow::MainWindow(
 )
 : QWidget(parent),
   rclcpp::Node("joint_state_publisher_gui", node_options),
-  ui_(new Ui::MainWindow)
+  ui_(new Ui::MainWindow),
+  prefix_(this->declare_parameter("prefix", ""))
 {
   using namespace std::chrono_literals;
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
@@ -81,20 +82,20 @@ void MainWindow::randomBtn()
   int32_t val;
 
   val = random() % 1000;
-  j1ValueChange(val);
-  ui_->j1_slider->setValue(val);
+  this->j1ValueChange(val);
+  this->ui_->j1_slider->setValue(val);
 
   val = random() % 1000;
-  j2ValueChange(val);
-  ui_->j2_slider->setValue(val);
+  this->j2ValueChange(val);
+  this->ui_->j2_slider->setValue(val);
 
   val = random() % 1000;
-  j3ValueChange(val);
-  ui_->j3_slider->setValue(val);
+  this->j3ValueChange(val);
+  this->ui_->j3_slider->setValue(val);
 
   val = random() % 1000;
-  j4ValueChange(val);
-  ui_->j4_slider->setValue(val);
+  this->j4ValueChange(val);
+  this->ui_->j4_slider->setValue(val);
 }
 
 void MainWindow::centerBtn()
@@ -155,6 +156,6 @@ void MainWindow::publishJointStates()
 {
   this->joint_state_pub_->publish(
     convert::toJointState(
-      this->j1_, this->j2_,
-      this->j3_, this->j4_));
+      this->j1_, this->j2_, this->j3_, this->j4_,
+      this->prefix_));
 }
