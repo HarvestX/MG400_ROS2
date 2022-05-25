@@ -51,6 +51,8 @@ private:
   double j3_;
   double j4_;
 
+  const std::string prefix_;
+
 public:
   explicit MainWindow(
     const rclcpp::NodeOptions & node_options,

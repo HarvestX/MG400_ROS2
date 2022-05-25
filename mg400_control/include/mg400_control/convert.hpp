@@ -22,21 +22,23 @@ namespace convert
 {
 std::unique_ptr<sensor_msgs::msg::JointState> toJointState(
   const double & j1, const double & j2,
-  const double & j3, const double & j4)
+  const double & j3, const double & j4,
+  const std::string & prefix = ""
+)
 {
   auto msg = std::make_unique<sensor_msgs::msg::JointState>();
   msg->header.stamp = rclcpp::Clock().now();
-  msg->header.frame_id = "base_link";
+  msg->header.frame_id = prefix + "mg400_base_link";
 
   msg->name = {
-    "j1",
-    "j2_1",
-    "j2_2",
-    "j3_1",
-    "j3_2",
-    "j4_1",
-    "j4_2",
-    "j5"
+    prefix + "mg400_j1",
+    prefix + "mg400_j2_1",
+    prefix + "mg400_j2_2",
+    prefix + "mg400_j3_1",
+    prefix + "mg400_j3_2",
+    prefix + "mg400_j4_1",
+    prefix + "mg400_j4_2",
+    prefix + "mg400_j5"
   };
 
   msg->position = {
