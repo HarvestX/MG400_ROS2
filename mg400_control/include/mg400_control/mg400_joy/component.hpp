@@ -15,8 +15,10 @@
 #pragma once
 
 #include <memory>
+#include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
+#include <mg400_msgs/srv/clear_error.hpp>
 
 
 namespace mg400_joy
@@ -91,10 +93,13 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
   std::unique_ptr<JoyButton> button_;
 
+  rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr clear_error_clnt_;
+
 public:
   explicit JoyComponent(const rclcpp::NodeOptions &);
 
 private:
+  void joyClearError();
   void joyCallback(const sensor_msgs::msg::Joy::UniquePtr);
   void displayInfo() const noexcept;
   void updateButton(

@@ -25,6 +25,8 @@ JoyComponent::JoyComponent(const rclcpp::NodeOptions & node_options)
     rclcpp::SensorDataQoS(),
     std::bind(&JoyComponent::joyCallback, this, std::placeholders::_1));
 
+  this->clear_error_clnt_ = this->create_client<mg400_msgs::srv::ClearError>("/clear_error");
+
   RCLCPP_INFO(
     this->get_logger(),
     "Ready.");
@@ -36,9 +38,35 @@ void JoyComponent::joyCallback(const sensor_msgs::msg::Joy::UniquePtr joy_msg)
 
   this->displayInfo();
 
+  this->joyClearError();
+
   // TODO: Call jog service here
   // You can access the state of each button as follows
   // this->button_->circle;
+}
+
+void JoyComponent::joyClearError()
+{
+  if(this->button_->circle){
+    auto request = std::make_shared<mg400_msgs::srv::ClearError::Request>();
+    using namespace std::literals::chrono_literals;
+    while (!clear_error_clnt_->wait_for_service(1s)) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        return;
+      }
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+    }
+    auto result = clear_error_clnt_->async_send_request(request);
+
+    RCLCPP_INFO(
+    this->get_logger(),
+    "circle.");
+  }else{
+    RCLCPP_INFO(
+    this->get_logger(),
+    "Not circle.");
+  }
 }
 
 void JoyComponent::displayInfo() const noexcept
