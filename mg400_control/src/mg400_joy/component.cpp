@@ -26,6 +26,7 @@ JoyComponent::JoyComponent(const rclcpp::NodeOptions & node_options)
     std::bind(&JoyComponent::joyCallback, this, std::placeholders::_1));
 
   this->clear_error_clnt_ = this->create_client<mg400_msgs::srv::ClearError>("/clear_error");
+  this->move_jog_clnt_ = this->create_client<mg400_msgs::srv::MoveJog>("/move_jog");
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -39,6 +40,8 @@ void JoyComponent::joyCallback(const sensor_msgs::msg::Joy::UniquePtr joy_msg)
   this->displayInfo();
 
   this->joyClearError();
+
+  this->joyMoveJog();
 
   // TODO: Call jog service here
   // You can access the state of each button as follows
@@ -75,6 +78,41 @@ void JoyComponent::joyClearError()
       this->get_logger(),
       "Not circle.");
   }
+}
+
+void JoyComponent::joyMoveJog()
+{
+  auto request = std::make_shared<mg400_msgs::srv::MoveJog::Request>();
+  double lx = this->button_->lstick_x;
+  double ly = this->button_->lstick_y;
+  double rx = this->button_->rstick_x;
+  double ry = this->button_->rstick_y;
+  std::vector<double> input = {lx, fabs(lx), ly, fabs(ly), rx, fabs(rx), ry, fabs(ry)};
+  std::vector<double>::iterator iter = std::max_element(input.begin(), input.end());
+  if (*iter < 0.05) {
+    return;
+  }
+  size_t index = std::distance(input.begin(), iter);
+  std::vector<std::string> axis_vec = {"j1-", "j1+", "j2+", "j2-", "j3-", "j3+", "j4+", "j4-"};
+  request->axis_id = axis_vec[index];
+  using namespace std::literals::chrono_literals;
+  while (!move_jog_clnt_->wait_for_service(1s)) {
+    if (!rclcpp::ok()) {
+      RCLCPP_ERROR(
+        rclcpp::get_logger(
+          "rclcpp"), "Interrupted while waiting for the service. Exiting.");
+      return;
+    }
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+  }
+  using ServiceResponseFuture =
+    rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedFuture;
+  auto response_received_callback = [this](ServiceResponseFuture future) {
+      auto result = future.get();
+      RCLCPP_INFO(this->get_logger(), "Result: %d", result->res);
+    };
+  auto future_result = move_jog_clnt_->async_send_request(request, response_received_callback);
+  sleep(1);
 }
 
 void JoyComponent::displayInfo() const noexcept

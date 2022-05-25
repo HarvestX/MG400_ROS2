@@ -20,6 +20,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/srv/move_jog.hpp>
 
 
 namespace mg400_joy
@@ -95,12 +96,14 @@ private:
   std::unique_ptr<JoyButton> button_;
 
   rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr clear_error_clnt_;
+  rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_clnt_;
 
 public:
   explicit JoyComponent(const rclcpp::NodeOptions &);
 
 private:
   void joyClearError();
+  void joyMoveJog();
   void joyCallback(const sensor_msgs::msg::Joy::UniquePtr);
   void displayInfo() const noexcept;
   void updateButton(
