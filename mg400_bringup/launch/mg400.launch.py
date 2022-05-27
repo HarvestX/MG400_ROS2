@@ -1,4 +1,4 @@
-"""Display robot joint states."""
+"""Launch robot controller."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,35 +14,45 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import Shutdown
+from launch.actions import (
+    Shutdown,
+    DeclareLaunchArgument,
+)
+from launch.substitutions import LaunchConfiguration
+from launch.substitutions import TextSubstitution
 
 from launch_ros.actions import Node
 
 from mg400_bringup.node_generator import robot_state_publisher as rsp
 from mg400_bringup.node_generator import rviz2
 
+from typing import List
+
 
 def generate_launch_description():
     """Launch rviz display."""
     namespace: str = 'mg400'
+    launch_args = [
+        DeclareLaunchArgument(
+            'ip_address',
+            default_value=TextSubstitution(
+                text='192.168.1.6')),
+    ]
+    ip_address = LaunchConfiguration('ip_address')
 
-    robot_state_publisher_node: Node = rsp.load_node(
-        filename='mg400.urdf.xacro',
-        namespace=namespace
-    )
+    nodes: List[Node] = [
+        rsp.load_node(
+            filename='mg400.urdf.xacro',
+            namespace=namespace),
+        rviz2.load_node('mg400.rviz'),
+        Node(
+            package='mg400_control',
+            executable='mg400_control',
+            namespace=namespace,
+            name='mg400_control',
+            on_exit=Shutdown(),
+            parameters=[{
+                'ip_address': ip_address, }]),
+    ]
 
-    rviz_node: Node = rviz2.load_node('mg400.rviz')
-
-    mg400_interface_node = Node(
-        package='mg400_control',
-        executable='mg400_control',
-        namespace=namespace,
-        name='mg400_control',
-        on_exit=Shutdown(),
-    )
-
-    return LaunchDescription([
-        mg400_interface_node,
-        robot_state_publisher_node,
-        rviz_node,
-    ])
+    return LaunchDescription(launch_args + nodes)
