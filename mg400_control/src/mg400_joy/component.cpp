@@ -25,8 +25,12 @@ JoyComponent::JoyComponent(const rclcpp::NodeOptions & node_options)
     rclcpp::SensorDataQoS(),
     std::bind(&JoyComponent::joyCallback, this, std::placeholders::_1));
 
-  this->clear_error_clnt_ = this->create_client<mg400_msgs::srv::ClearError>("/clear_error");
-  this->move_jog_clnt_ = this->create_client<mg400_msgs::srv::MoveJog>("/move_jog");
+  this->clear_error_clnt_ = this->create_client<mg400_msgs::srv::ClearError>("clear_error");
+  this->move_jog_clnt_ = this->create_client<mg400_msgs::srv::MoveJog>("move_jog");
+  this->enable_robot_clnt_ = this->create_client<mg400_msgs::srv::EnableRobot>("enable_robot");
+  this->disable_robot_clnt_ = this->create_client<mg400_msgs::srv::DisableRobot>("disable_robot");
+
+  this->robot_state = 0;
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -40,6 +44,8 @@ void JoyComponent::joyCallback(const sensor_msgs::msg::Joy::UniquePtr joy_msg)
   this->displayInfo();
 
   this->joyClearError();
+
+  this->joyEnableDisable();
 
   this->joyMoveJog();
 
@@ -72,11 +78,67 @@ void JoyComponent::joyClearError()
     RCLCPP_INFO(
       this->get_logger(),
       "circle.");
+    if (robot_state==0){
+      this->robot_state = 1;
+    }
     sleep(1);
   } else {
     RCLCPP_INFO(
       this->get_logger(),
       "Not circle.");
+  }
+}
+
+void JoyComponent::joyEnableDisable()
+{
+  if (this->button_->start) {
+    if (this->robot_state < 2){
+      auto request = std::make_shared<mg400_msgs::srv::EnableRobot::Request>();
+      using namespace std::literals::chrono_literals;
+      while (!enable_robot_clnt_->wait_for_service(1s)) {
+        if (!rclcpp::ok()) {
+          RCLCPP_ERROR(
+            rclcpp::get_logger(
+              "rclcpp"), "Interrupted while waiting for the service. Exiting.");
+          return;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+      }
+      using ServiceResponseFuture =
+        rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedFuture;
+      auto response_received_callback = [this](ServiceResponseFuture future) {
+          auto result = future.get();
+          RCLCPP_INFO(this->get_logger(), "Result: %d", result->res);
+        };
+      auto future_result = enable_robot_clnt_->async_send_request(
+        request,
+        response_received_callback);
+      this->robot_state = 2;
+      sleep(1);
+    } else {
+      auto request = std::make_shared<mg400_msgs::srv::DisableRobot::Request>();
+      using namespace std::literals::chrono_literals;
+      while (!disable_robot_clnt_->wait_for_service(1s)) {
+        if (!rclcpp::ok()) {
+          RCLCPP_ERROR(
+            rclcpp::get_logger(
+              "rclcpp"), "Interrupted while waiting for the service. Exiting.");
+          return;
+        }
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+      }
+      using ServiceResponseFuture =
+        rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedFuture;
+      auto response_received_callback = [this](ServiceResponseFuture future) {
+          auto result = future.get();
+          RCLCPP_INFO(this->get_logger(), "Result: %d", result->res);
+        };
+      auto future_result = disable_robot_clnt_->async_send_request(
+        request,
+        response_received_callback);
+      this->robot_state = 1;
+      sleep(1);
+    }
   }
 }
 
@@ -90,11 +152,18 @@ void JoyComponent::joyMoveJog()
   std::vector<double> input = {lx, fabs(lx), ly, fabs(ly), rx, fabs(rx), ry, fabs(ry)};
   std::vector<double>::iterator iter = std::max_element(input.begin(), input.end());
   if (*iter < 0.05) {
-    return;
+    if (this->robot_state!=3) {
+      return;
+    } else {
+      request->axis_id = "";
+      this->robot_state = 2;
+    }
+  } else {
+    size_t index = std::distance(input.begin(), iter);
+    std::vector<std::string> axis_vec = {"j1-", "j1+", "j2-", "j2+", "j4-", "j4+", "j3-", "j3+"};
+    request->axis_id = axis_vec[index];
+    this->robot_state = 3;
   }
-  size_t index = std::distance(input.begin(), iter);
-  std::vector<std::string> axis_vec = {"j1-", "j1+", "j2+", "j2-", "j3-", "j3+", "j4+", "j4-"};
-  request->axis_id = axis_vec[index];
   using namespace std::literals::chrono_literals;
   while (!move_jog_clnt_->wait_for_service(1s)) {
     if (!rclcpp::ok()) {
@@ -112,7 +181,6 @@ void JoyComponent::joyMoveJog()
       RCLCPP_INFO(this->get_logger(), "Result: %d", result->res);
     };
   auto future_result = move_jog_clnt_->async_send_request(request, response_received_callback);
-  sleep(1);
 }
 
 void JoyComponent::displayInfo() const noexcept

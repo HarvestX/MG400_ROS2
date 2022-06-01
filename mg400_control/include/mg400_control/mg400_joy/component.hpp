@@ -21,6 +21,8 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
+#include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/disable_robot.hpp>
 
 
 namespace mg400_joy
@@ -97,12 +99,17 @@ private:
 
   rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr clear_error_clnt_;
   rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_clnt_;
+  rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_clnt_;
+  rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_clnt_;
+
+  uint64_t robot_state;
 
 public:
   explicit JoyComponent(const rclcpp::NodeOptions &);
 
 private:
   void joyClearError();
+  void joyEnableDisable();
   void joyMoveJog();
   void joyCallback(const sensor_msgs::msg::Joy::UniquePtr);
   void displayInfo() const noexcept;
