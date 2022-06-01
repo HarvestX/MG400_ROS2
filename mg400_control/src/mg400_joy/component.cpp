@@ -78,7 +78,7 @@ void JoyComponent::joyClearError()
     RCLCPP_INFO(
       this->get_logger(),
       "circle.");
-    if (robot_state==0){
+    if (robot_state == 0) {
       this->robot_state = 1;
     }
     sleep(1);
@@ -92,7 +92,7 @@ void JoyComponent::joyClearError()
 void JoyComponent::joyEnableDisable()
 {
   if (this->button_->start) {
-    if (this->robot_state < 2){
+    if (this->robot_state < 2) {
       auto request = std::make_shared<mg400_msgs::srv::EnableRobot::Request>();
       using namespace std::literals::chrono_literals;
       while (!enable_robot_clnt_->wait_for_service(1s)) {
@@ -152,7 +152,7 @@ void JoyComponent::joyMoveJog()
   std::vector<double> input = {lx, fabs(lx), ly, fabs(ly), rx, fabs(rx), ry, fabs(ry)};
   std::vector<double>::iterator iter = std::max_element(input.begin(), input.end());
   if (*iter < 0.05) {
-    if (this->robot_state!=3) {
+    if (this->robot_state != 3) {
       return;
     } else {
       request->axis_id = "";
