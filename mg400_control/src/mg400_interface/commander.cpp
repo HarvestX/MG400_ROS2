@@ -142,7 +142,7 @@ void Commander::clearError()
 
 void Commander::getErrorID()
 {
-  const char * cmd = "getErrorID()";
+  const char * cmd = "GetErrorID()";
   this->dash_board_tcp_->send(cmd, strlen(cmd));
 }
 
