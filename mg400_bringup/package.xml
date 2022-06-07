@@ -11,6 +11,7 @@
   <depend>robot_state_publisher</depend>
 
   <exec_depend>xacro</exec_depend>
+  <exec_depend>joy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
