@@ -1,0 +1,5 @@
+repositories:
+  PlayStation-JoyInterface-ROS2:
+    type: git
+    url: git@github.com:HarvestX/PlayStation-JoyInterface-ROS2.git
+    version: main
