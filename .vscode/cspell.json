@@ -10,6 +10,7 @@
     "xacro",
     "bringup",
     "geochelone",
-    "colcon"
+    "colcon",
+    "dpad"
   ]
 }
