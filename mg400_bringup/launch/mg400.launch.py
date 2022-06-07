@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+
 from launch import LaunchDescription
 from launch.actions import (
-    Shutdown,
     DeclareLaunchArgument,
+    Shutdown,
 )
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
@@ -25,8 +27,6 @@ from launch_ros.actions import Node
 
 from mg400_bringup.node_generator import robot_state_publisher as rsp
 from mg400_bringup.node_generator import rviz2
-
-from typing import List
 
 
 def generate_launch_description():
