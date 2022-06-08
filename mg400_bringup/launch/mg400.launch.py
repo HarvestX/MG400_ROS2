@@ -15,13 +15,20 @@
 
 from typing import List
 
+from ament_index_python.packages import get_package_share_path
+
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     Shutdown,
+    IncludeLaunchDescription,
+    TimerAction,
 )
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
+from launch.launch_description import LaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.conditions import IfCondition
 
 from launch_ros.actions import Node
 
@@ -32,11 +39,17 @@ from mg400_bringup.node_generator import rviz2
 def generate_launch_description():
     """Launch rviz display."""
     namespace: str = 'mg400'
+    this_pkg = 'mg400_bringup'
+    joy = LaunchConfiguration('joy')
     launch_args = [
         DeclareLaunchArgument(
             'ip_address',
             default_value=TextSubstitution(
                 text='192.168.1.6')),
+        DeclareLaunchArgument(
+            'joy',
+            default_value='false',
+            description='Determines if joy.launch is called.')
     ]
     ip_address = LaunchConfiguration('ip_address')
 
@@ -54,5 +67,22 @@ def generate_launch_description():
             parameters=[{
                 'ip_address': ip_address, }]),
     ]
+    timer_action = [
+        TimerAction(
+            period=1.0,
+            actions=[
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(
+                        str(
+                            get_package_share_path(this_pkg) /
+                            'launch' /
+                            'joy.launch.py'
+                        ),
+                    ),
+                    condition=IfCondition(joy)
+                ),
+            ]
+        )
+    ]
 
-    return LaunchDescription(launch_args + nodes)
+    return LaunchDescription(launch_args + nodes + timer_action)
