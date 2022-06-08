@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/usr/include/**",
+        "/opt/ros/galactic/include/**",
+        "${workspaceFolder}/../../PlayStation-JoyInterface-ROS2/p9n_interface/include/**",
+        "${workspaceFolder}/../mg400_common/include/**",
+        "${HOME}/ws_galactic/install/mg400_msgs/include/**",
+        "${workspaceFolder}/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "c99",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}

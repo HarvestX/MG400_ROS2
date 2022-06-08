@@ -12,22 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_control/mg400_joy/component.hpp"
+#pragma once
 
-
-int main(int argc, char * argv[])
+namespace mg400_common
 {
-  // Initialize client library
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-
-  // Generate node
-  rclcpp::init(argc, argv);
-  rclcpp::NodeOptions options;
-
-  auto node =
-    std::make_shared<mg400_joy::JoyComponent>(options);
-  rclcpp::spin(node);
-  rclcpp::shutdown();
-
-  return EXIT_SUCCESS;
-}
+const char J1_NEGATIVE[] = "j1-";
+const char J1_POSITIVE[] = "j1+";
+const char J2_NEGATIVE[] = "j2-";
+const char J2_POSITIVE[] = "j2+";
+const char J3_NEGATIVE[] = "j3-";
+const char J3_POSITIVE[] = "j3+";
+const char J4_NEGATIVE[] = "j4-";
+const char J4_POSITIVE[] = "j4+";
+} // mg400_common

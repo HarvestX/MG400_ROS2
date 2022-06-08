@@ -29,6 +29,10 @@ jobs:
           import-token: ${{ secrets.GITHUB_TOKEN }}
           package-name: |
             mg400_bringup
+            mg400_common
             mg400_control
             mg400_description
             mg400_msgs
+            mg400_joy
+          vcs-repo-file-url: mg400.repos
+

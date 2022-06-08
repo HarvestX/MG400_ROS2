@@ -1,4 +1,4 @@
-"""Run joy commander."""
+"""Launch joy."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,31 +14,47 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import Shutdown
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import (
+    LaunchConfiguration,
+    TextSubstitution,
+)
 
-from launch_ros.actions import Node
+from launch_ros.actions import ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    """Launch rviz display."""
-    namespace: str = 'mg400'
+    """Launch joy."""
+    launch_args = [
+        DeclareLaunchArgument(
+            'hw_type',
+            default_value=TextSubstitution(text='DualSense')
+        ),
+    ]
+    nodes = [
+        ComposableNodeContainer(
+            name='joy_container',
+            namespace='mg400_joy',
+            package='rclcpp_components',
+            executable='component_container',
+            composable_node_descriptions=[
+                ComposableNode(
+                    package='joy',
+                    plugin='joy::Joy',
+                    name='joy',
+                    namespace='mg400',
+                ),
+                ComposableNode(
+                    package='mg400_joy',
+                    plugin='mg400_joy::JoyInterfaceNode',
+                    name='joy_interface_node',
+                    namespace='mg400',
+                    parameters=[{
+                        'hw_type': LaunchConfiguration('hw_type'),
+                    }],
+                )
+            ]),
+    ]
 
-    joy_node = Node(
-        package='joy',
-        executable='joy_node',
-        on_exit=Shutdown(),
-    )
-
-    mg400_joy = Node(
-        package='mg400_control',
-        executable='mg400_joy',
-        namespace=namespace,
-        name='mg400_joy',
-        output='screen',
-        on_exit=Shutdown(),
-    )
-
-    return LaunchDescription([
-        joy_node,
-        mg400_joy,
-    ])
+    return LaunchDescription(launch_args + nodes)
