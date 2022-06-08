@@ -43,11 +43,13 @@ def generate_launch_description():
                     package='joy',
                     plugin='joy::Joy',
                     name='joy',
+                    namespace='mg400',
                 ),
                 ComposableNode(
                     package='mg400_joy',
                     plugin='mg400_joy::JoyInterfaceNode',
                     name='joy_interface_node',
+                    namespace='mg400',
                     parameters=[{
                         'hw_type': LaunchConfiguration('hw_type'),
                     }],

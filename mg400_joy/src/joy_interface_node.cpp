@@ -69,6 +69,11 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
 
   if (this->p9n_if_->pressedCircle()) {
     this->callClearError();
+    RCLCPP_INFO(
+    this->get_logger(),
+    "Circle button pressed");
+    using namespace std::chrono_literals;
+    rclcpp::sleep_for(500ms);
   }
 
   if (this->p9n_if_->pressedStart()) {
@@ -77,16 +82,27 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
     } else if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
       this->callEnableRobot();
     }
+    RCLCPP_INFO(
+    this->get_logger(),
+    "Start button pressed");
+    using namespace std::chrono_literals;
+    rclcpp::sleep_for(500ms);
   }
 
   if (this->isStickTilted()) {
     auto axis_id = this->tiltedStick2JogAxis();
     this->callMoveJog(axis_id);
     this->current_robot_state_ = ROBOT_STATE::MOVING;
+    RCLCPP_INFO(
+    this->get_logger(),
+    "Joy stick tilted");
   } else if (this->current_robot_state_ == ROBOT_STATE::MOVING) {
     // Stop action
     this->callMoveJog("");
     this->current_robot_state_ = ROBOT_STATE::ENABLED;
+    RCLCPP_INFO(
+    this->get_logger(),
+    "Joy stick released");
   }
 }
 
@@ -273,17 +289,17 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
       }
     case 2:
       {
-        ret_val = mg400_common::J3_NEGATIVE;
+        ret_val = mg400_common::J4_NEGATIVE;
         if (this->p9n_if_->tiltedStickRX() < 0.0) {
-          ret_val = mg400_common::J3_POSITIVE;
+          ret_val = mg400_common::J4_POSITIVE;
         }
         break;
       }
     case 3:
       {
-        ret_val = mg400_common::J4_NEGATIVE;
+        ret_val = mg400_common::J3_NEGATIVE;
         if (this->p9n_if_->tiltedStickRY() < 0.0) {
-          ret_val = mg400_common::J4_POSITIVE;
+          ret_val = mg400_common::J3_POSITIVE;
         }
         break;
       }
