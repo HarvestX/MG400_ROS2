@@ -38,7 +38,7 @@ ErrorMsgGenerator::ErrorMsgGenerator(
 
 std::string ErrorMsgGenerator::get(const int id)
 {
-  // TODO: Return string from map
+  return this->error_map_.at(id);
 }
 
 
@@ -66,8 +66,7 @@ bool ErrorMsgGenerator::loadJsonFile()
       data["id"].asInt(),
       data["en"]["description"].asString().c_str());
 
-    // TODO: Inset 'id' as key and 'description' as value to following map
-    this->error_map_.insert();
+    this->error_map_.emplace(data["id"].asInt(), data["en"]["description"].asString().c_str());
   }
 
   return true;
