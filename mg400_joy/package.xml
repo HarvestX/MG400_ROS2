@@ -13,7 +13,7 @@
   <depend>rclcpp_components</depend>
   <depend>p9n_interface</depend>
   <depend>mg400_msgs</depend>
-  <depend>mg400_common</depend>
+  <depend>mg400_interface</depend>
 
   <exec_depend>joy</exec_depend>
 

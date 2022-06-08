@@ -260,34 +260,34 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
   switch (max_idx) {
     case 0:
       {
-        ret_val = mg400_common::J1_NEGATIVE;
+        ret_val = mg400_interface::J1_NEGATIVE;
         if (this->p9n_if_->tiltedStickLX() < 0.0) {
-          ret_val = mg400_common::J1_POSITIVE;
+          ret_val = mg400_interface::J1_POSITIVE;
         }
         break;
 
       }
     case 1:
       {
-        ret_val = mg400_common::J2_NEGATIVE;
+        ret_val = mg400_interface::J2_NEGATIVE;
         if (this->p9n_if_->tiltedStickLY() < 0.0) {
-          ret_val = mg400_common::J2_POSITIVE;
+          ret_val = mg400_interface::J2_POSITIVE;
         }
         break;
       }
     case 2:
       {
-        ret_val = mg400_common::J4_NEGATIVE;
+        ret_val = mg400_interface::J4_NEGATIVE;
         if (this->p9n_if_->tiltedStickRX() < 0.0) {
-          ret_val = mg400_common::J4_POSITIVE;
+          ret_val = mg400_interface::J4_POSITIVE;
         }
         break;
       }
     case 3:
       {
-        ret_val = mg400_common::J3_NEGATIVE;
+        ret_val = mg400_interface::J3_NEGATIVE;
         if (this->p9n_if_->tiltedStickRY() < 0.0) {
-          ret_val = mg400_common::J3_POSITIVE;
+          ret_val = mg400_interface::J3_POSITIVE;
         }
         break;
       }

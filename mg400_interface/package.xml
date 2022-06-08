@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>mg400_common</name>
+  <name>mg400_interface</name>
   <version>0.0.0</version>
-  <description>MG400 Common Library Packege.</description>
+  <description>MG400 Interface Library Packege.</description>
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
   <license>Apache License 2.0</license>
 
