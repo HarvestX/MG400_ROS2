@@ -70,8 +70,8 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
   if (this->p9n_if_->pressedCircle()) {
     this->callClearError();
     RCLCPP_INFO(
-    this->get_logger(),
-    "Circle button pressed");
+      this->get_logger(),
+      "Circle button pressed");
     using namespace std::chrono_literals;
     rclcpp::sleep_for(500ms);
   }
@@ -83,8 +83,8 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
       this->callEnableRobot();
     }
     RCLCPP_INFO(
-    this->get_logger(),
-    "Start button pressed");
+      this->get_logger(),
+      "Start button pressed");
     using namespace std::chrono_literals;
     rclcpp::sleep_for(500ms);
   }
@@ -94,15 +94,15 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
     this->callMoveJog(axis_id);
     this->current_robot_state_ = ROBOT_STATE::MOVING;
     RCLCPP_INFO(
-    this->get_logger(),
-    "Joy stick tilted");
+      this->get_logger(),
+      "Joy stick tilted");
   } else if (this->current_robot_state_ == ROBOT_STATE::MOVING) {
     // Stop action
     this->callMoveJog("");
     this->current_robot_state_ = ROBOT_STATE::ENABLED;
     RCLCPP_INFO(
-    this->get_logger(),
-    "Joy stick released");
+      this->get_logger(),
+      "Joy stick released");
   }
 }
 
