@@ -9,7 +9,7 @@
         "/usr/include/**",
         "/opt/ros/galactic/include/**",
         "${workspaceFolder}/../../PlayStation-JoyInterface-ROS2/p9n_interface/include/**",
-        "${workspaceFolder}/../mg400_common/include/**",
+        "${workspaceFolder}/../mg400_interface/include/**",
         "${HOME}/ws_galactic/install/mg400_msgs/include/**",
         "${workspaceFolder}/include/**"
       ],

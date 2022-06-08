@@ -14,7 +14,7 @@
 
 #pragma once
 
-namespace mg400_common
+namespace mg400_interface
 {
 const char J1_NEGATIVE[] = "j1-";
 const char J1_POSITIVE[] = "j1+";
@@ -24,4 +24,4 @@ const char J3_NEGATIVE[] = "j3-";
 const char J3_POSITIVE[] = "j3+";
 const char J4_NEGATIVE[] = "j4-";
 const char J4_POSITIVE[] = "j4+";
-} // mg400_common
+} // mg400_interface
