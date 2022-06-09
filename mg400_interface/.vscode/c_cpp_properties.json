@@ -14,7 +14,7 @@
         "${workspaceFolder}/include/**"
       ],
       "name": "ROS",
-      "intelliSenseMode": "gcc-x64",
+      "intelliSenseMode": "clang-x64",
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "c99",
       "cppStandard": "c++17"

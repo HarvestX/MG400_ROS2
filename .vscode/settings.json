@@ -93,7 +93,9 @@
     "typeindex": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp",
-    "bit": "cpp"
+    "bit": "cpp",
+    "any": "cpp",
+    "regex": "cpp"
   },
   "ros.distro": "galactic"
 }

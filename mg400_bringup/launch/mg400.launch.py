@@ -39,7 +39,6 @@ def generate_launch_description():
     """Launch rviz display."""
     namespace: str = 'mg400'
     this_pkg = 'mg400_bringup'
-    joy = LaunchConfiguration('joy')
     launch_args = [
         DeclareLaunchArgument(
             'ip_address',
@@ -51,6 +50,7 @@ def generate_launch_description():
             description='Determines if joy.launch is called.')
     ]
     ip_address = LaunchConfiguration('ip_address')
+    joy = LaunchConfiguration('joy')
 
     nodes: List[Node] = [
         rsp.load_node(
