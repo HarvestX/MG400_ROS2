@@ -23,7 +23,8 @@ using namespace std::chrono_literals;
 Component::Component(
   const rclcpp::NodeOptions & options
 )
-: Node("mg400_control", options)
+: Node("mg400_control", options),
+  prefix_(this->declare_parameter("prefix", ""))
 {
   std::string ip;
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");
@@ -316,7 +317,8 @@ void Component::publishJointState()
   this->joint_state_pub_->publish(
     convert::toJointState(
       joint_state[0], joint_state[1],
-      joint_state[2], joint_state[3]));
+      joint_state[2], joint_state[3],
+      this->prefix_));
 }
 
 // dashboard

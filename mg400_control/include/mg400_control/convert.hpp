@@ -23,8 +23,7 @@ namespace convert
 std::unique_ptr<sensor_msgs::msg::JointState> toJointState(
   const double & j1, const double & j2,
   const double & j3, const double & j4,
-  const std::string & prefix = ""
-)
+  const std::string & prefix = "")
 {
   auto msg = std::make_unique<sensor_msgs::msg::JointState>();
   msg->header.stamp = rclcpp::Clock().now();

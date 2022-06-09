@@ -78,6 +78,8 @@ class Component : public rclcpp::Node
 {
 private:
   double goal_[6];
+  const std::string prefix_;
+
   std::unique_ptr<mg400_interface::Commander> commander_;
 
   rclcpp::TimerBase::SharedPtr js_timer_;
