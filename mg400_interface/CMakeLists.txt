@@ -9,23 +9,22 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 
-# ===================================================================
+# Error Message Generator ===========================================
 ament_auto_add_library(
-  ${PROJECT_NAME}
+  error_msg_generator
     STATIC
       ./src/error_msg_generator.cpp)
-target_link_libraries(${PROJECT_NAME} stdc++fs jsoncpp)
-set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-# ===================================================================
+target_link_libraries(error_msg_generator stdc++fs jsoncpp)
+set_property(TARGET error_msg_generator PROPERTY POSITION_INDEPENDENT_CODE ON)
+# End Error Message Generator =======================================
 
-# ===================================================================
-ament_auto_add_executable(
-  show_error
-    ./examples/show_error.cpp
-)
-target_link_libraries(show_error ${PROJECT_NAME})
-# ===================================================================
-
+# Joint Handler =====================================================
+ament_auto_add_library(
+  joint_handler
+    STATIC
+      ./src/joint_handler.cpp)
+set_property(TARGET joint_handler PROPERTY POSITION_INDEPENDENT_CODE ON)
+# End Joint Handler =================================================
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -35,9 +34,8 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_gtest REQUIRED)
 
-  set(TARGET test_error_msg_generator)
-  ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
+  ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
+  target_link_libraries(test_error_msg_generator error_msg_generator)
 endif()
 
 ament_auto_package(
