@@ -3,10 +3,7 @@ Panels:
     Help Height: 70
     Name: Displays
     Property Tree Widget:
-      Expanded:
-        - /Global Options1
-        - /Status1
-        - /RobotModel1
+      Expanded: ~
       Splitter Ratio: 0.5
     Tree Height: 801
   - Class: rviz_common/Selection
@@ -61,56 +58,69 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_link:
+        arm_frame_link_offset:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        mg400_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        end_effector_shaft:
+        mg400_end_effector_shaft:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link1:
+        mg400_link1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link2_1:
+        mg400_link2_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link2_2:
+        mg400_link2_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link3_1:
+        mg400_link3_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link3_2:
+        mg400_link3_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link4_1:
+        mg400_link4_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link4_2:
+        mg400_link4_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link5:
+        mg400_link4_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
+        mg400_link5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        mg400_origin_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
@@ -119,7 +129,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 220; 220; 220
-    Fixed Frame: base_link
+    Fixed Frame: arm_frame_link_offset
     Frame Rate: 30
   Name: root
   Tools:
@@ -216,5 +226,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1920
-  X: 0
-  Y: 0
+  X: 1793
+  Y: 342
