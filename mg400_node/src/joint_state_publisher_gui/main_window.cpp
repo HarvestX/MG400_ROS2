@@ -15,7 +15,6 @@
 #include <QApplication>
 #include "main_window.hpp"
 #include "ui_main_window.h"
-#include "mg400_control/convert.hpp"
 
 MainWindow::MainWindow(
   const rclcpp::NodeOptions & node_options,
@@ -45,10 +44,18 @@ MainWindow::MainWindow(
   this->j3_ = 0.000;
   this->j4_ = 0.000;
 
-  this->ui_->j1_slider->setValue(std::abs(J1_MIN) / (J1_MAX - J1_MIN) * 1000);
-  this->ui_->j2_slider->setValue(std::abs(J2_MIN) / (J2_MAX - J2_MIN) * 1000);
-  this->ui_->j3_slider->setValue(std::abs(J3_MIN) / (J3_MAX - J3_MIN) * 1000);
-  this->ui_->j4_slider->setValue(std::abs(J4_MIN) / (J4_MAX - J4_MIN) * 1000);
+  this->ui_->j1_slider->setValue(
+    std::abs(mg400_interface::J1_MIN) /
+    (mg400_interface::J1_MAX - mg400_interface::J1_MIN) * 1000);
+  this->ui_->j2_slider->setValue(
+    std::abs(mg400_interface::J2_MIN) /
+    (mg400_interface::J2_MAX - mg400_interface::J2_MIN) * 1000);
+  this->ui_->j3_slider->setValue(
+    std::abs(mg400_interface::J3_MIN) / (
+      mg400_interface::J3_MAX - mg400_interface::J3_MIN) * 1000);
+  this->ui_->j4_slider->setValue(
+    std::abs(mg400_interface::J4_MIN) /
+    (mg400_interface::J4_MAX - mg400_interface::J4_MIN) * 1000);
 
   this->connect(
     this->ui_->j1_slider,
@@ -104,10 +111,10 @@ void MainWindow::centerBtn()
       return std::abs(min) / (max - min) * 1000;
     };
 
-  int j1_center = get_center(J1_MIN, J1_MAX);
-  int j2_center = get_center(J2_MIN, J2_MAX);
-  int j3_center = get_center(J3_MIN, J3_MAX);
-  int j4_center = get_center(J4_MIN, J4_MAX);
+  int j1_center = get_center(mg400_interface::J1_MIN, mg400_interface::J1_MAX);
+  int j2_center = get_center(mg400_interface::J2_MIN, mg400_interface::J2_MAX);
+  int j3_center = get_center(mg400_interface::J3_MIN, mg400_interface::J3_MAX);
+  int j4_center = get_center(mg400_interface::J4_MIN, mg400_interface::J4_MAX);
 
   this->j1ValueChange(j1_center);
   this->j2ValueChange(j2_center);
@@ -123,7 +130,8 @@ void MainWindow::centerBtn()
 void MainWindow::j1ValueChange(int value)
 {
   char txt[50];
-  this->j1_ = J1_MIN + (J1_MAX - J1_MIN) * value * 1e-3;
+  this->j1_ = mg400_interface::J1_MIN +
+    (mg400_interface::J1_MAX - mg400_interface::J1_MIN) * value * 1e-3;
   snprintf(txt, sizeof(txt), "%0.3f", this->j1_);
   ui_->j1_txt->setText(txt);
 }
@@ -131,7 +139,8 @@ void MainWindow::j1ValueChange(int value)
 void MainWindow::j2ValueChange(int value)
 {
   char txt[50];
-  this->j2_ = J2_MIN + (J2_MAX - J2_MIN) * value * 1e-3;
+  this->j2_ = mg400_interface::J2_MIN +
+    (mg400_interface::J2_MAX - mg400_interface::J2_MIN) * value * 1e-3;
   snprintf(txt, sizeof(txt), "%0.3f", this->j2_);
   ui_->j2_txt->setText(txt);
 }
@@ -139,7 +148,8 @@ void MainWindow::j2ValueChange(int value)
 void MainWindow::j3ValueChange(int value)
 {
   char txt[50];
-  this->j3_ = J3_MIN + (J3_MAX - J3_MIN) * value * 1e-3;
+  this->j3_ = mg400_interface::J3_MIN +
+    (mg400_interface::J3_MAX - mg400_interface::J3_MIN) * value * 1e-3;
   snprintf(txt, sizeof(txt), "%0.3f", this->j3_);
   ui_->j3_txt->setText(txt);
 }
@@ -147,7 +157,8 @@ void MainWindow::j3ValueChange(int value)
 void MainWindow::j4ValueChange(int value)
 {
   char txt[50];
-  this->j4_ = J4_MIN + (J4_MAX - J4_MIN) * value * 1e-3;
+  this->j4_ = mg400_interface::J4_MIN +
+    (mg400_interface::J4_MAX - mg400_interface::J4_MIN) * value * 1e-3;
   snprintf(txt, sizeof(txt), "%0.3f", this->j4_);
   ui_->j4_txt->setText(txt);
 }
@@ -155,7 +166,7 @@ void MainWindow::j4ValueChange(int value)
 void MainWindow::publishJointStates()
 {
   this->joint_state_pub_->publish(
-    convert::toJointState(
+    mg400_interface::getJointState(
       this->j1_, this->j2_, this->j3_, this->j4_,
       this->prefix_));
 }

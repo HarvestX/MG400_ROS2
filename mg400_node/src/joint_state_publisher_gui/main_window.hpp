@@ -15,8 +15,12 @@
 #pragma once
 
 #include <QWidget>
+
+#include <string>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+
+#include <mg400_interface/joint_handler.hpp>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -29,16 +33,6 @@ QT_END_NAMESPACE
 class MainWindow : public QWidget, public rclcpp::Node
 {
   Q_OBJECT
-
-public:
-  static constexpr double J1_MIN = -2.82;
-  static constexpr double J1_MAX = 2.82;
-  static constexpr double J2_MIN = -0.52;
-  static constexpr double J2_MAX = 1.57;
-  static constexpr double J3_MIN = 0;
-  static constexpr double J3_MAX = 1.57;
-  static constexpr double J4_MIN = -3.14;
-  static constexpr double J4_MAX = 3.14;
 
 private:
   Ui::MainWindow * ui_;
