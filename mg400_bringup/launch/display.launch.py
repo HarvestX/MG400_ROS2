@@ -28,7 +28,7 @@ def generate_launch_description():
         filename='mg400.urdf.xacro',
     )
     joint_state_publisher_gui_node = Node(
-        package='mg400_control',
+        package='mg400_node',
         executable='joint_state_publisher_gui',
         name='joint_state_publisher_gui',
         on_exit=Shutdown(),

@@ -11,8 +11,8 @@
         "${HOME}/ws_galactic/build/mg400_control/joint_state_publisher_gui_autogen/include/**",
         "${HOME}/ws_galactic/install/p9n_interface/include/**",
         "/usr/include/**",
-        "${workspaceFolder}/mg400_control/include/**",
-        "${workspaceFolder}/mg400_interface/include/**"
+        "${workspaceFolder}/../mg400_interface/include/**",
+        "${workspaceFolder}/include/*"
       ],
       "name": "ROS",
       "intelliSenseMode": "clang-x64",
