@@ -69,6 +69,14 @@
           <mesh filename="package://${MESH_BASE_LINK}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_BASE_LINK}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_origin_link" />
     <link name="${prefix}mg400_link1">
@@ -93,6 +101,14 @@
           <mesh filename="package://${MESH_LINK_1}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_1}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link2_1">
       <inertial>
@@ -116,6 +132,14 @@
           <mesh filename="package://${MESH_LINK_2_1}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_2_1}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link2_2">
       <inertial>
@@ -139,6 +163,14 @@
           <mesh filename="package://${MESH_LINK_2_2}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_2_2}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link3_1">
       <inertial>
@@ -162,6 +194,14 @@
           <mesh filename="package://${MESH_LINK_3_1}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_3_1}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link3_2">
       <inertial>
@@ -185,6 +225,14 @@
           <mesh filename="package://${MESH_LINK_3_2}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_3_2}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link4_1">
       <inertial>
@@ -208,6 +256,14 @@
           <mesh filename="package://${MESH_LINK_4_1}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_4_1}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link4_2">
       <inertial>
@@ -231,8 +287,29 @@
           <mesh filename="package://${MESH_LINK_4_2}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_4_2}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link4_3">
+      <inertial>
+        <origin
+            xyz="${3.174 * const.SCALE_MM} 0.0 ${-28.198 * const.SCALE_MM}"
+            rpy="0 0 0" />
+        <mass value="0.01907" />
+        <inertia
+            ixx="3.28164E-05"
+            ixy="3.15E-10"
+            ixz="2.42378E-06"
+            iyy="3.17191E-05"
+            iyz="-1.27E-10"
+            izz="1.08143E-05" />
+      </inertial>
       <visual>
         <origin
             xyz="0 0 0"
@@ -241,6 +318,14 @@
           <mesh filename="package://${MESH_LINK_4_3}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_4_3}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_link5">
       <inertial>
@@ -264,6 +349,14 @@
           <mesh filename="package://${MESH_LINK_5}" />
         </geometry>
       </visual>
+      <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://${MESH_LINK_5}" />
+        </geometry>
+      </collision>
     </link>
     <link name="${prefix}mg400_end_effector_shaft">
       <visual>
@@ -277,11 +370,9 @@
       <collision>
         <origin
             xyz="0 0 0"
-            rpy="0 0 0" />
+            rpy="${180.0 * const.TO_RADIAN} 0 0" />
         <geometry>
-          <cylinder
-              radius="${4.0 * const.SCALE_MM}"
-              length="${15.0 * const.SCALE_MM}" />
+          <mesh filename="package://${MESH_SHAFT}" />
         </geometry>
       </collision>
     </link>
