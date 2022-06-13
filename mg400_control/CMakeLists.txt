@@ -14,12 +14,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(mg400_msgs REQUIRED)
 set(THIS_PACKAGE_INCLUDE_DEPENDS rclcpp sensor_msgs mg400_msgs)
 
-# Extra package
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
 # MG400 Interface ===================================================
 set(TARGET mg400_interface)
 
@@ -40,27 +34,6 @@ set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Append excutable to list
 set(THIS_CREATED_LIBRARY_LIST ${THIS_CREATED_LIBRARY_LIST} ${TARGET})
 # MG400 Interface ===================================================
-
-# Joint State Publsher GUI Node =====================================
-set(TARGET joint_state_publisher_gui)
-add_executable(${TARGET})
-target_sources(
-  ${TARGET} #
-  PRIVATE src/${TARGET}/main.cpp #
-  PRIVATE src/${TARGET}/main_window.cpp #
-)
-target_include_directories(
-  ${TARGET} PRIVATE include ${Qt5Widgets_INCLUDE_DIRS} #
-)
-target_link_libraries(${TARGET} Qt5::Widgets)
-ament_target_dependencies(
-  ${TARGET} #
-  ${THIS_PACKAGE_INCLUDE_DEPENDS}
-)
-
-# Append excutable to list
-set(THIS_CREATED_EXEC_LIST ${THIS_CREATED_EXEC_LIST} ${TARGET})
-# End Joint State Publisher GUI Node ================================
 
 # MG400 Control Node ================================================
 set(TARGET mg400_control)

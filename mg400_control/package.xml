@@ -13,9 +13,6 @@
   <depend>sensor_msgs</depend>
   <depend>mg400_msgs</depend>
 
-  <build_depend>qtbase5-dev</build_depend>
-  <build_depend>qt5-qmake</build_depend>
-
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
