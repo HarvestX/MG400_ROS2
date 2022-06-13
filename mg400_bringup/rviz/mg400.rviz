@@ -119,7 +119,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 220; 220; 220
-    Fixed Frame: base_link
+    Fixed Frame: arm_frame_link_offset
     Frame Rate: 30
   Name: root
   Tools:
