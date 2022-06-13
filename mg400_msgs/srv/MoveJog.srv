@@ -1,6 +1,6 @@
-string axisID
-int32 CoordType
-int32 User
-int32 Tool
+string axis_id
+int32 coord_type
+int32 user
+int32 tool
 ---
 int32 res

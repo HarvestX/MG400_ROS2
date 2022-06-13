@@ -1,2 +1,6 @@
+float64 load
+float64 center_x
+float64 cneter_y
+float64 center_z
 ---
 int32 res
