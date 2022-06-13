@@ -26,6 +26,16 @@ ament_auto_add_library(
 set_property(TARGET joint_handler PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Joint Handler =================================================
 
+# Tcp Socket Handler ================================================
+ament_auto_add_library(
+  ${PROJECT_NAME}
+    STATIC
+      ./src/realtime_commander.cpp
+      ./src/dashboard_commander.cpp
+      ./src/tcp_socket_handler.cpp)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+# End Tcp Socket Handler ============================================
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
