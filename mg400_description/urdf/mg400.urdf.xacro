@@ -17,7 +17,7 @@
 
   <xacro:mg400
       parent="$(arg prefix)arm_frame_link_offset"
-      prefix="">
+      prefix="$(arg prefix)">
     <origin
         xyz="0 0 0"
         rpy="0 0 0" />
