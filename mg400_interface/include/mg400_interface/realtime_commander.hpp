@@ -88,9 +88,11 @@ private:
 public:
   explicit RealtimeCommander(const std::string &);
   ~RealtimeCommander();
+  void init() noexcept;
 
   static rclcpp::Logger getLogger();
   void getCurrentJointStates(std::array<double, 6> &);
+  RealTimeData getRealtimeData();
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
@@ -98,10 +100,9 @@ public:
     const double, const double, const double);
 
   void moveJog(const std::string &);
-  // --------------------------------------------------------------------------
+  // End DOBOT MG400 Official Command -----------------------------------------
 
 private:
-  void init() noexcept;
   void recvData();
   void sendCommand(const std::string &);
 };

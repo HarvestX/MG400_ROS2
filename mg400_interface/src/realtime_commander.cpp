@@ -46,6 +46,7 @@ void RealtimeCommander::init() noexcept
 void RealtimeCommander::recvData()
 {
   int failed_cnt = 0;
+  std::cout << "HERE" << std::endl;
   while (failed_cnt < 3) {
     try {
       if (this->tcp_socket_->isConnected()) {
@@ -105,6 +106,12 @@ void RealtimeCommander::getCurrentJointStates(std::array<double, 6> & joints)
   this->mutex_.unlock();
 }
 
+RealTimeData RealtimeCommander::getRealtimeData()
+{
+  return this->rt_data_;
+}
+
+// DOBOT MG400 Official Command ---------------------------------------------
 void RealtimeCommander::movJ(
   const double x, const double y, const double z,
   const double rx, const double ry, const double rz)
@@ -125,4 +132,6 @@ void RealtimeCommander::moveJog(const std::string & axis_id)
   snprintf(buf.data(), buf.size(), "MoveJog(%s)", axis_id.c_str());
   this->sendCommand(buf);
 }
+// End DOBOT MG400 Official Command -----------------------------------------
+
 }  // namespace mg400_interface

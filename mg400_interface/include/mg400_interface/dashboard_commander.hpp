@@ -37,6 +37,7 @@ private:
 public:
   explicit DashboardCommander(const std::string &);
   ~DashboardCommander();
+  void init() noexcept;
 
   static rclcpp::Logger getLogger();
 
@@ -51,7 +52,6 @@ public:
   // --------------------------------------------------------------------------
 
 private:
-  void init() noexcept;
   void checkConnection();
   std::string sendCommand(const std::string &);
 };

@@ -36,6 +36,15 @@ ament_auto_add_library(
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Tcp Socket Handler ============================================
 
+# Example ===========================================================
+ament_auto_add_executable(
+  show_realtime_data
+    ./example/show_realtime_data.cpp)
+target_link_libraries(show_realtime_data ${PROJECT_NAME})
+# End Example =======================================================
+
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
