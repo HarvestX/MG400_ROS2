@@ -141,6 +141,8 @@ public:
 
   RealTimeData getRealTimeData();
 
+  void getid(char buf[], int id[]);
+
 private:
   static inline double rad2Deg(double rad)
   {

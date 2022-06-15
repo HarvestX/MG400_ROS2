@@ -400,7 +400,7 @@ void Component::getErrorID(
     RCLCPP_ERROR(
       this->get_logger(),
       e.what());
-    this->commander_->getErrorID();
+    this->commander_->clearError();
     response->res = -1;
   }
 }

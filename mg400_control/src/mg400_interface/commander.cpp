@@ -144,6 +144,15 @@ void Commander::getErrorID()
 {
   const char * cmd = "GetErrorID()";
   this->dash_board_tcp_->send(cmd, strlen(cmd));
+  char buf[100];
+  this->dash_board_tcp_->recv(buf, sizeof(buf), 5000);
+  int id[7];
+  this->getid(buf, id);
+  RCLCPP_INFO(
+    rclcpp::get_logger("hoge"),
+    "%d",
+    id[1]
+  );
 }
 
 void Commander::resetRobot()
@@ -438,4 +447,44 @@ RealTimeData Commander::getRealTimeData()
 {
   return this->real_time_data_;
 }
+
+void Commander::getid(char* buf, int id[]){
+  int i=0,j=0,k=0;
+  char tmp[100];
+  while(j<7){
+    if(j==0){
+      while(buf[i]!=','){
+        tmp[i]=buf[i];
+        i+=1;
+      }
+      tmp[i]='\0';
+      id[j]=std::atoi(tmp);
+      tmp[0]='\0';
+      j+=1;
+    }
+    else{
+      if(buf[i]=='['){
+        i+=1;
+        while(buf[i]!=']'){
+          if(buf[i]!='[' && buf[i]!=' '){
+            tmp[k]=buf[i];
+            k++;
+          }
+          i++;
+        }
+        if(k!=0){
+          id[j]=std::atoi(tmp);
+          tmp[k]='\0';
+          j++;
+        }else{
+          id[j]=0;
+          j++;
+        }
+      }
+      k=0;
+      i++;
+    }
+  }
+}
+
 }  // namespace mg400_interface
