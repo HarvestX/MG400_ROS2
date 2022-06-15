@@ -78,10 +78,12 @@ class RealtimeCommander
 {
 private:
   const uint16_t PORT_ = 30003;
+  const int CONNECTION_TRIAL_ = 3;
 
   std::mutex mutex_;
   std::array<double, 6> current_joints_;
   RealTimeData rt_data_;
+  std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 

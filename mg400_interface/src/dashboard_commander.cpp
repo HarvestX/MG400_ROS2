@@ -44,12 +44,14 @@ void DashboardCommander::init() noexcept
 void DashboardCommander::checkConnection()
 {
   int failed_cnt = 0;
-  while (failed_cnt < 3) {
+  while (failed_cnt < this->CONNECTION_TRIAL_) {
     try {
       if (this->tcp_socket_->isConnected()) {
         failed_cnt = 0;
+        using namespace std::chrono_literals;
+        rclcpp::sleep_for(1s);
+        continue;
       } else {
-        failed_cnt += 1;
         try {
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
@@ -57,7 +59,7 @@ void DashboardCommander::checkConnection()
             this->getLogger(),
             "Tcp recv error : %s", err.what());
           using namespace std::chrono_literals;
-          rclcpp::sleep_for(3s);
+          rclcpp::sleep_for(1s);
         }
       }
     } catch (const TcpSocketException & err) {
@@ -66,9 +68,14 @@ void DashboardCommander::checkConnection()
         this->getLogger(),
         "Tcp rec error : %s", err.what());
     }
+    failed_cnt++;
   }
 
-  throw std::runtime_error("Connection failed");
+  RCLCPP_ERROR(
+    this->getLogger(),
+    "Failed more than %d times... Close connection.",
+    this->CONNECTION_TRIAL_);
+  std::terminate();
 }
 
 std::string DashboardCommander::sendCommand(const std::string & cmd)

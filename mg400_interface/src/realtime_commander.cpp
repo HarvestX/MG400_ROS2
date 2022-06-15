@@ -18,13 +18,14 @@ namespace mg400_interface
 {
 
 RealtimeCommander::RealtimeCommander(const std::string & ip)
-: current_joints_{}, rt_data_{}
+: current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
 RealtimeCommander::~RealtimeCommander()
 {
+  this->is_running_ = false;
   this->thread_->join();
 }
 
@@ -36,6 +37,7 @@ rclcpp::Logger RealtimeCommander::getLogger()
 void RealtimeCommander::init() noexcept
 {
   try {
+    this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
       &RealtimeCommander::recvData, this);
   } catch (const TcpSocketException & err) {
@@ -46,8 +48,7 @@ void RealtimeCommander::init() noexcept
 void RealtimeCommander::recvData()
 {
   int failed_cnt = 0;
-  std::cout << "HERE" << std::endl;
-  while (failed_cnt < 3) {
+  while (failed_cnt < this->CONNECTION_TRIAL_) {
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(
@@ -64,32 +65,35 @@ void RealtimeCommander::recvData()
           }
           this->mutex_.unlock();
           failed_cnt = 0;
+          continue;
         } else {
           // timeout
-          failed_cnt += 1;
           RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
         }
       } else {
-        failed_cnt += 1;
         try {
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(
             this->getLogger(), "Tcp recv error : %s", err.what());
           using namespace std::chrono_literals;
-          rclcpp::sleep_for(3s);
+          rclcpp::sleep_for(1s);
         }
       }
     } catch (const TcpSocketException & err) {
-      failed_cnt += 1;
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(
         this->getLogger(),
         "Tcp recv error : %s", err.what());
     }
+    failed_cnt += 1;
   }
 
-  throw std::runtime_error("Connection failed");
+  RCLCPP_ERROR(
+    this->getLogger(),
+    "Failed more than %d times... Close connection.",
+    this->CONNECTION_TRIAL_);
+  std::terminate();
 }
 
 void RealtimeCommander::sendCommand(const std::string & cmd)

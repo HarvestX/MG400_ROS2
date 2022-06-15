@@ -29,6 +29,7 @@ class DashboardCommander
 {
 private:
   const uint16_t PORT_ = 29999;
+  const int CONNECTION_TRIAL_ = 3;
 
   std::mutex mutex_;
   std::unique_ptr<std::thread> thread_;

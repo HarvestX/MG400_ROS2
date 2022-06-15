@@ -18,7 +18,7 @@
 
 int main(void)
 {
-  const std::string ip = "192.168.1.6";
+  const std::string ip = "127.0.0.1";
   auto realtime_commander =
     std::make_unique<mg400_interface::RealtimeCommander>(ip);
   auto dashboard_commander =
@@ -28,10 +28,8 @@ int main(void)
   dashboard_commander->init();
 
   while (true) {
-
     auto data = std::make_unique<mg400_interface::RealTimeData>(
       realtime_commander->getRealtimeData());
-    continue;
     auto tmp = std::system("clear");
     (void)tmp;  // for compiler warning
 
@@ -212,6 +210,9 @@ int main(void)
       data->v_actual[0], data->v_actual[1],
       data->v_actual[2], data->v_actual[3],
       data->v_actual[4], data->v_actual[5]);
+
+    using namespace std::chrono_literals;
+    rclcpp::sleep_for(100ms);
   }
 
   return EXIT_SUCCESS;
