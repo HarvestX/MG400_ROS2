@@ -13,23 +13,29 @@
 // limitations under the License.
 
 #include <cinttypes>
-#include "mg400_interface/realtime_commander.hpp"
-#include "mg400_interface/dashboard_commander.hpp"
+#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
+#include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 int main(void)
 {
   const std::string ip = "127.0.0.1";
-  auto realtime_commander =
-    std::make_unique<mg400_interface::RealtimeCommander>(ip);
-  auto dashboard_commander =
-    std::make_unique<mg400_interface::DashboardCommander>(ip);
+  auto rt_tcp_if =
+    std::make_unique<mg400_interface::RealtimeTcpInterface>(ip);
+  auto db_tcp_if =
+    std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
 
-  realtime_commander->init();
-  dashboard_commander->init();
+  rt_tcp_if->init();
+  db_tcp_if->init();
+
+  while (!rt_tcp_if->isConnected() || !db_tcp_if->isConnected()) {
+    std::cout << "Waiting for the connection..." << std::endl;
+    using namespace std::chrono_literals;
+    rclcpp::sleep_for(1s);
+  }
 
   while (true) {
     auto data = std::make_unique<mg400_interface::RealTimeData>(
-      realtime_commander->getRealtimeData());
+      rt_tcp_if->getRealtimeData());
     auto tmp = std::system("clear");
     (void)tmp;  // for compiler warning
 

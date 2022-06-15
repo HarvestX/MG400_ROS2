@@ -12,36 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/dashboard_commander.hpp"
+#include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 namespace mg400_interface
 {
-DashboardCommander::DashboardCommander(const std::string & ip)
+DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
-DashboardCommander::~DashboardCommander()
+DashboardTcpInterface::~DashboardTcpInterface()
 {
   this->thread_->join();
 }
 
-rclcpp::Logger DashboardCommander::getLogger()
+rclcpp::Logger DashboardTcpInterface::getLogger()
 {
-  return rclcpp::get_logger("Dashboard Commander");
+  return rclcpp::get_logger("Dashboard Tcp Interface");
 }
 
-void DashboardCommander::init() noexcept
+void DashboardTcpInterface::init() noexcept
 {
   try {
     this->thread_ = std::make_unique<std::thread>(
-      &DashboardCommander::checkConnection, this);
+      &DashboardTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
 }
 
-void DashboardCommander::checkConnection()
+void DashboardTcpInterface::checkConnection()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
@@ -78,7 +78,12 @@ void DashboardCommander::checkConnection()
   std::terminate();
 }
 
-std::string DashboardCommander::sendCommand(const std::string & cmd)
+bool DashboardTcpInterface::isConnected()
+{
+  return this->tcp_socket_->isConnected();
+}
+
+std::string DashboardTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
 
@@ -89,12 +94,12 @@ std::string DashboardCommander::sendCommand(const std::string & cmd)
   return std::string(buf);
 }
 
-void DashboardCommander::enableRobot()
+void DashboardTcpInterface::enableRobot()
 {
   this->sendCommand("EnableRobot()");
 }
 
-void DashboardCommander::enableRobot(const double load)
+void DashboardTcpInterface::enableRobot(const double load)
 {
   if (load < 0.0 || load > 0.5) {
     RCLCPP_ERROR(
@@ -109,7 +114,7 @@ void DashboardCommander::enableRobot(const double load)
   this->sendCommand(buf);
 }
 
-void DashboardCommander::enableRobot(
+void DashboardTcpInterface::enableRobot(
   const double load, const double cx, const double cy, const double cz)
 {
   if (load < 0.0 || load > 0.5) {
@@ -135,17 +140,17 @@ void DashboardCommander::enableRobot(
   this->sendCommand(buf);
 }
 
-void DashboardCommander::disableRobot()
+void DashboardTcpInterface::disableRobot()
 {
   this->sendCommand("DisableRobot()");
 }
 
-void DashboardCommander::clearError()
+void DashboardTcpInterface::clearError()
 {
   this->sendCommand("ClearError()");
 }
 
-void DashboardCommander::getErrorId()
+void DashboardTcpInterface::getErrorId()
 {
   this->sendCommand("GetErrorID()");
 }

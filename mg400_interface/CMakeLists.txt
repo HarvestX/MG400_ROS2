@@ -30,9 +30,9 @@ set_property(TARGET joint_handler PROPERTY POSITION_INDEPENDENT_CODE ON)
 ament_auto_add_library(
   ${PROJECT_NAME}
     STATIC
-      ./src/realtime_commander.cpp
-      ./src/dashboard_commander.cpp
-      ./src/tcp_socket_handler.cpp)
+      ./src/tcp_interface/realtime_tcp_interface.cpp
+      ./src/tcp_interface/dashboard_tcp_interface.cpp
+      ./src/tcp_interface/tcp_socket_handler.cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Tcp Socket Handler ============================================
 

@@ -22,7 +22,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
-#include "mg400_interface/tcp_socket_handler.hpp"
+#include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 namespace mg400_interface
 {
@@ -74,7 +74,7 @@ struct RealTimeData
 #pragma pack(pop)
 
 
-class RealtimeCommander
+class RealtimeTcpInterface
 {
 private:
   const uint16_t PORT_ = 30003;
@@ -88,13 +88,14 @@ private:
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
 public:
-  explicit RealtimeCommander(const std::string &);
-  ~RealtimeCommander();
+  explicit RealtimeTcpInterface(const std::string &);
+  ~RealtimeTcpInterface();
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
   void getCurrentJointStates(std::array<double, 6> &);
   RealTimeData getRealtimeData();
+  bool isConnected();
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(

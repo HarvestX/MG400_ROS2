@@ -12,40 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/realtime_commander.hpp"
+#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
 
 namespace mg400_interface
 {
 
-RealtimeCommander::RealtimeCommander(const std::string & ip)
+RealtimeTcpInterface::RealtimeTcpInterface(const std::string & ip)
 : current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
-RealtimeCommander::~RealtimeCommander()
+RealtimeTcpInterface::~RealtimeTcpInterface()
 {
   this->is_running_ = false;
   this->thread_->join();
 }
 
-rclcpp::Logger RealtimeCommander::getLogger()
+rclcpp::Logger RealtimeTcpInterface::getLogger()
 {
-  return rclcpp::get_logger("Realtime Commander");
+  return rclcpp::get_logger("Realtime Tcp Interface");
 }
 
-void RealtimeCommander::init() noexcept
+void RealtimeTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
-      &RealtimeCommander::recvData, this);
+      &RealtimeTcpInterface::recvData, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
 }
 
-void RealtimeCommander::recvData()
+void RealtimeTcpInterface::recvData()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
@@ -75,7 +75,7 @@ void RealtimeCommander::recvData()
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(
-            this->getLogger(), "Tcp recv error : %s", err.what());
+            this->getLogger(), "Tcp recv error: %s", err.what());
           using namespace std::chrono_literals;
           rclcpp::sleep_for(1s);
         }
@@ -84,24 +84,29 @@ void RealtimeCommander::recvData()
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(
         this->getLogger(),
-        "Tcp recv error : %s", err.what());
+        "Tcp recv error: %s", err.what());
     }
     failed_cnt += 1;
   }
 
   RCLCPP_ERROR(
     this->getLogger(),
-    "Failed more than %d times... Close connection.",
+    "Failed more than %d times ... Close connection.",
     this->CONNECTION_TRIAL_);
   std::terminate();
 }
 
-void RealtimeCommander::sendCommand(const std::string & cmd)
+bool RealtimeTcpInterface::isConnected()
+{
+  return this->tcp_socket_->isConnected();
+}
+
+void RealtimeTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
 }
 
-void RealtimeCommander::getCurrentJointStates(std::array<double, 6> & joints)
+void RealtimeTcpInterface::getCurrentJointStates(std::array<double, 6> & joints)
 {
   this->mutex_.lock();
   memcpy(
@@ -110,13 +115,13 @@ void RealtimeCommander::getCurrentJointStates(std::array<double, 6> & joints)
   this->mutex_.unlock();
 }
 
-RealTimeData RealtimeCommander::getRealtimeData()
+RealTimeData RealtimeTcpInterface::getRealtimeData()
 {
   return this->rt_data_;
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
-void RealtimeCommander::movJ(
+void RealtimeTcpInterface::movJ(
   const double x, const double y, const double z,
   const double rx, const double ry, const double rz)
 {
@@ -124,12 +129,12 @@ void RealtimeCommander::movJ(
   buf.resize(100);
   snprintf(
     buf.data(), buf.size(),
-    "MovJ(%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf)",
+    "MovJ(% .3lf, % .3lf, % .3lf, % .3lf, % .3lf, %.3lf)",
     x, y, z, rx, ry, rz);
   this->sendCommand(buf);
 }
 
-void RealtimeCommander::moveJog(const std::string & axis_id)
+void RealtimeTcpInterface::moveJog(const std::string & axis_id)
 {
   std::string buf;
   buf.resize(100);

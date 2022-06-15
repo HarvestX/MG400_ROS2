@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/tcp_socket_handler.hpp"
+#include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 namespace mg400_interface
 {

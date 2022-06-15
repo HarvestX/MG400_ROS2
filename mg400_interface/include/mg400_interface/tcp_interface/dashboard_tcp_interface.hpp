@@ -21,11 +21,11 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "mg400_interface/tcp_socket_handler.hpp"
+#include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 namespace mg400_interface
 {
-class DashboardCommander
+class DashboardTcpInterface
 {
 private:
   const uint16_t PORT_ = 29999;
@@ -36,11 +36,13 @@ private:
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
 public:
-  explicit DashboardCommander(const std::string &);
-  ~DashboardCommander();
+  explicit DashboardTcpInterface(const std::string &);
+  ~DashboardTcpInterface();
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
+  std::string sendCommand(const std::string &);
+  bool isConnected();
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void enableRobot();
@@ -54,6 +56,5 @@ public:
 
 private:
   void checkConnection();
-  std::string sendCommand(const std::string &);
 };
 }  // namespace mg400_interface
