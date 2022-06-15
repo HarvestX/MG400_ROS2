@@ -14,8 +14,10 @@
 
 #pragma once
 
+#include <string>
 #include <memory>
 
+#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 namespace mg400_interface
@@ -24,9 +26,80 @@ namespace mg400_interface
 class DashboardCommander
 {
 private:
-  std::unique_ptr<DashboardTcpInterface> tcp_if_;
+  TcpInterfaceBase * tcp_if_;
 
 public:
-  DashboardCommander();
+  DashboardCommander() = delete;
+  explicit DashboardCommander(TcpInterfaceBase *);
+
+  // DOBOT MG400 Official Command ---------------------------------------------
+  void enableRobot() const;
+
+  void disableRobot() const;
+
+  void clearError() const;
+
+  void resetRobot() const;
+
+  void speedFactor(const int) const;
+
+  void user(const UserIndex &) const;
+
+  void tool(const ToolIndex &) const;
+
+  RobotMode robotMode() const;
+
+  void payload(const double, const double) const;
+
+  void DO(const DOIndex &, const DOStatus &);
+
+  void accJ(const int);
+
+  void accL(const int);
+
+  void speedJ(const int);
+
+  void speedL(const int);
+
+  void arch(const ArchIndex &);
+
+  void cp(const int);
+
+  void runScript(const std::string &);
+
+  // void stopScript();
+
+  // void pauseScript();
+
+  void continueScript();
+
+  void setCollisionLevel(const CollisionLevel &);
+
+  void getAngle();
+
+  void getPose();
+
+  void emergencyStop();
+
+  // void modbusCreate();
+
+  // void modbusClose();
+
+  // void getInBits();
+
+  // void getInRegs();
+
+  // void getCoils();
+
+  // void setCoils();
+
+  // void getHoldRegs();
+
+  // void setHoldRegs();
+
+  void getErrorId() const;
+
+  int DI(const int) const;
+  // --------------------------------------------------------------------------
 };
 }  // namespace mg400_interface

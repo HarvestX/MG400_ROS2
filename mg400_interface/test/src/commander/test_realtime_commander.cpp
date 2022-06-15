@@ -16,7 +16,6 @@
 #include <mg400_interface/commander/realtime_commander.hpp>
 
 using ::testing::_;
-using ::testing::AtLeast;
 using ::testing::StrEq;
 
 
@@ -30,7 +29,7 @@ public:
 };
 
 
-class RealtimeCommander : public ::testing::Test
+class TestRealtimeCommander : public ::testing::Test
 {
 protected:
   std::unique_ptr<mg400_interface::RealtimeCommander> commander;
@@ -44,20 +43,115 @@ protected:
   virtual void TearDown() {}
 };
 
-TEST_F(RealtimeCommander, MovJ) {
+TEST_F(TestRealtimeCommander, MovJ) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
-        "MovJ(1.000, 2.000, 3.000, 4.000, 5.000, 6.000)"))).Times(AtLeast(1));
-
-  commander->movJ(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        "MovJ(1.000,2.000,3.000,180.000,180.000,180.000)"))).Times(1);
+  commander->movJ(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
-TEST_F(RealtimeCommander, MovJog) {
+TEST_F(TestRealtimeCommander, MovL) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
-        "MoveJog(+j1)"))).Times(AtLeast(1));
+        "MovL(1.000,2.000,3.000,180.000,180.000,180.000)"))).Times(1);
+  commander->movL(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
+}
 
+TEST_F(TestRealtimeCommander, JointMovJ)
+{
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "JointMovJ(90.000,90.000,90.000,90.000,90.000,90.000)"))).Times(1);
+  commander->jointMovJ(M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2);
+}
+
+TEST_F(TestRealtimeCommander, MovLIO) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "MovLIO(-500.000,100.000,200.000,"
+        "90.000,0.000,90.000,{0,50,1,0})"))).Times(1);
+  commander->movLIO(
+    -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
+    mg400_interface::DistanceMode::PERCENTAGE, 50,
+    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+}
+
+TEST_F(TestRealtimeCommander, MovJIO) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "MovJIO(-500.000,100.000,200.000,"
+        "90.000,0.000,90.000,{0,50,1,0})"))).Times(1);
+  commander->movJIO(
+    -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
+    mg400_interface::DistanceMode::PERCENTAGE, 50,
+    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+}
+
+TEST_F(TestRealtimeCommander, Arc) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "Arc(-350.000,-200.000,200.000,"
+        "90.000,0.000,90.000,"
+        "-300.000,-250.000,200.000,"
+        "90.000,0.000,90.000)"))).Times(1);
+  commander->arc(
+    -350e-3, -200e-3, 200e-3,
+    M_PI_2, 0, M_PI_2,
+    -300e-3, -250e-3, 200e-3,
+    M_PI_2, 0, M_PI_2);
+}
+
+TEST_F(TestRealtimeCommander, MoveJog) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "MoveJog(j1+)"))).Times(1);
   commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
+}
+
+TEST_F(TestRealtimeCommander, Sync) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "Sync"))).Times(1);
+  commander->sync();
+}
+
+TEST_F(TestRealtimeCommander, RelMovJUser) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "RelMovJUser(10.000,10.000,10.000,"
+        "0.000,0.000,0.000,0)"))).Times(1);
+  commander->relMovJUser(
+    10e-3, 10e-3, 10e-3, 0, 0, 0,
+    mg400_interface::UserIndex::USER0);
+}
+
+TEST_F(TestRealtimeCommander, RelMovLUser) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "RelMovLUser(10.000,10.000,10.000,"
+        "0.000,0.000,0.000,0)"))).Times(1);
+  commander->relMovLUser(
+    10e-3, 10e-3, 10e-3, 0, 0, 0,
+    mg400_interface::UserIndex::USER0);
+}
+
+TEST_F(TestRealtimeCommander, RelJointMovJ) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "RelJointMovJ(90.000,90.000,90.000,"
+        "0.000,0.000,0.000)"))).Times(1);
+  commander->relJointMovJ(
+    M_PI_2, M_PI_2, M_PI_2,
+    0, 0, 0);
 }

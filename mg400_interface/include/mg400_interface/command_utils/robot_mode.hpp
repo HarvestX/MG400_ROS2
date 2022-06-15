@@ -14,19 +14,22 @@
 
 #pragma once
 
+#include <string>
+
 namespace mg400_interface
 {
-enum class UserIndex
+enum class RobotMode
 {
-  USER0,
-  USER1,
-  USER2,
-  USER3,
-  USER4,
-  USER5,
-  USER6,
-  USER7,
-  USER8,
-  USER9
+  INIT = 1,
+  BRAKE_OPEN,
+
+  DISABLED = 4,
+  ENABLE,
+  BACKDRIVE,
+  RUNNING,
+  RECORDING,
+  ERROR,
+  PAUSE,
+  JOG
 };
 }  // namespace mg400_interface

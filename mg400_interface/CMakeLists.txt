@@ -75,8 +75,11 @@ if(BUILD_TESTING)
   ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
   target_link_libraries(test_error_msg_generator error_msg_generator)
 
-  ament_add_gmock(test_realtime_commander test/src/commander/test_realtime_commander.cpp)
-  target_link_libraries(test_realtime_commander commander)
+  # ament_add_gmock(test_realtime_commander test/src/commander/test_realtime_commander.cpp)
+  # target_link_libraries(test_realtime_commander commander)
+
+  ament_add_gmock(test_dashboard_commander test/src/commander/test_dashboard_commander.cpp)
+  target_link_libraries(test_dashboard_commander commander)
 endif()
 
 ament_auto_package(

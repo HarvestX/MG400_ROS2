@@ -31,8 +31,6 @@ public:
   RealtimeCommander() = delete;
   explicit RealtimeCommander(TcpInterfaceBase *);
 
-  void test();
-
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
     const si_m, const si_m, const si_m,

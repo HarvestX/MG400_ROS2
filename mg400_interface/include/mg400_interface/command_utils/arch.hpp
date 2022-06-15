@@ -14,19 +14,20 @@
 
 #pragma once
 
+
 namespace mg400_interface
 {
-enum class UserIndex
+enum class ArchIndex
 {
-  USER0,
-  USER1,
-  USER2,
-  USER3,
-  USER4,
-  USER5,
-  USER6,
-  USER7,
-  USER8,
-  USER9
+  ARCH0,
+  ARCH1,
+  ARCH2,
+  ARCH3,
+  ARCH4,
+  ARCH5,
+  ARCH6,
+  ARCH7,
+  ARCH8,
+  ARCH9
 };
 }  // namespace mg400_interface

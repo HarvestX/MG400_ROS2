@@ -29,7 +29,7 @@ void RealtimeCommander::movJ(
   char buf[100];
   snprintf(
     buf, sizeof(buf),
-    "MovJ(%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf)",
+    "MovJ(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
     m2mm(x), m2mm(y), m2mm(z),
     rad2degree(rx), rad2degree(ry), rad2degree(rz));
   this->tcp_if_->sendCommand(buf);

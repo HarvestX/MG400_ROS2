@@ -16,17 +16,13 @@
 
 namespace mg400_interface
 {
-enum class UserIndex
+enum class CollisionLevel
 {
-  USER0,
-  USER1,
-  USER2,
-  USER3,
-  USER4,
-  USER5,
-  USER6,
-  USER7,
-  USER8,
-  USER9
+  OFF,
+  LEVEL1,
+  LEVEL2,
+  LEVEL3,
+  LEVEL4,
+  LEVEL5
 };
 }  // namespace mg400_interface

@@ -16,7 +16,63 @@
 
 namespace mg400_interface
 {
-DashboardCommander::DashboardCommander()
+DashboardCommander::DashboardCommander(TcpInterfaceBase * tcp_if)
+: tcp_if_(tcp_if)
 {
 }
+
+// DOBOT MG400 Official Command ---------------------------------------------
+void DashboardCommander::enableRobot() const
+{
+  this->tcp_if_->sendCommand("EnableRobot()");
+}
+
+void DashboardCommander::disableRobot()const
+{
+  this->tcp_if_->sendCommand("DisableRobot()");
+}
+
+void DashboardCommander::clearError() const
+{
+  this->tcp_if_->sendCommand("ClearError()");
+}
+
+void DashboardCommander::resetRobot() const
+{
+  this->tcp_if_->sendCommand("ResetRobot()");
+}
+
+void DashboardCommander::speedFactor(const int ratio) const
+{
+  char buf[100];
+  snprintf(buf, sizeof(buf), "SpeedFactor(%d)", ratio);
+  this->tcp_if_->sendCommand(buf);
+}
+
+void DashboardCommander::user(const UserIndex &) const
+{
+  // TODO(anyone): Implement it
+}
+
+void DashboardCommander::tool(const ToolIndex &) const
+{
+  // TODO(anyone): Implement it
+}
+
+RobotMode DashboardCommander::robotMode() const
+{
+  // TODO(anyone): Implement it
+}
+
+void DashboardCommander::payload(const double, const double) const
+{
+  // TODO(anyone): Implement it
+}
+
+void DashboardCommander::getErrorId() const
+{
+  this->tcp_if_->sendCommand("GetErrorID()");
+}
+// End DOBOT MG400 Official Command -----------------------------------------
+
 }  // namespace mg400_interface
