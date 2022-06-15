@@ -28,19 +28,28 @@ set_property(TARGET joint_handler PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Tcp Socket Handler ================================================
 ament_auto_add_library(
-  ${PROJECT_NAME}
+  tcp_interface
     STATIC
       ./src/tcp_interface/realtime_tcp_interface.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
       ./src/tcp_interface/tcp_socket_handler.cpp)
-set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET tcp_interface PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Tcp Socket Handler ============================================
+
+# ===================================================================
+ament_auto_add_library(
+  commander
+    STATIC
+      ./src/commander/realtime_commander.cpp
+      ./src/commander/dashboard_commander.cpp)
+set_property(TARGET commander PROPERTY POSITION_INDEPENDENT_CODE ON)
+# ===================================================================
 
 # Example ===========================================================
 ament_auto_add_executable(
   show_realtime_data
     ./example/show_realtime_data.cpp)
-target_link_libraries(show_realtime_data ${PROJECT_NAME})
+target_link_libraries(show_realtime_data tcp_interface)
 # End Example =======================================================
 
 
