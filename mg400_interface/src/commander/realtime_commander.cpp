@@ -21,11 +21,6 @@ RealtimeCommander::RealtimeCommander(TcpInterfaceBase * tcp_if)
 {
 }
 
-void RealtimeCommander::test()
-{
-  this->tcp_if_->sendCommand("Hello");
-}
-
 // DOBOT MG400 Official Command ---------------------------------------------
 void RealtimeCommander::movJ(
   const si_m x, const si_m y, const si_m z,
