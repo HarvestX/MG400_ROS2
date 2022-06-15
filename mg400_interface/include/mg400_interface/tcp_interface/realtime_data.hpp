@@ -68,7 +68,7 @@ struct RealTimeData
   double load;                          // 1168 ~ 1175 //
   double center_x;                      // 1176 ~ 1183 //
   double center_y;                      // 1184 ~ 1191 //
-  double centor_z;                      // 1192 ~ 1199 //
+  double center_z;                      // 1192 ~ 1199 //
   double notused15[6];                  // 1200 ~ 1247 //
   double notused16[6];                  // 1248 ~ 1295 //
   double notused17;                     // 1296 ~ 1303 //

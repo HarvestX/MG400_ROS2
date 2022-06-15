@@ -170,7 +170,7 @@ int main(int argc, char ** argv)
       data->center_y);
     printf(
       "center_z:\t\t\t%.3lf\n",
-      data->centor_z);
+      data->center_z);
     using namespace std::chrono_literals;
     rclcpp::sleep_for(100ms);
   }
