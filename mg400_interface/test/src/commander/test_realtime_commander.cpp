@@ -59,5 +59,5 @@ TEST_F(RealtimeCommander, MovJog) {
       StrEq(
         "MoveJog(+j1)"))).Times(AtLeast(1));
 
-  commander->moveJog("+j1");
+  commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
 }

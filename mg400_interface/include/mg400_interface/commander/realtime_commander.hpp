@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 
+#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/tcp_interface_base.hpp"
 
 namespace mg400_interface
@@ -34,10 +35,52 @@ public:
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
-    const double, const double, const double,
-    const double, const double, const double);
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad);
 
-  void moveJog(const std::string &);
+  void movL(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad);
+
+  void jointMovJ(
+    const si_rad, const si_rad, const si_rad,
+    const si_rad, const si_rad, const si_rad);
+
+  void movLIO(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const DistanceMode &, const int, const DOIndex &, const DOStatus &);
+
+  void movJIO(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const DistanceMode &, const int, const DOIndex &, const DOStatus &);
+
+
+  void arc(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad);
+
+  void moveJog(const JogMode &);
+
+  void sync();
+
+  void relMovJUser(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const UserIndex &);
+
+  void relMovLUser(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const UserIndex &);
+
+  void relJointMovJ(
+    const si_rad, const si_rad, const si_rad,
+    const si_rad, const si_rad, const si_rad);
+
   // End DOBOT MG400 Official Command -----------------------------------------
 };
 }  // namespace mg400_interface

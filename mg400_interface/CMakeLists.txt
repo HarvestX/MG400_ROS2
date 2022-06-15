@@ -38,11 +38,20 @@ set_property(TARGET tcp_interface PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # ===================================================================
 ament_auto_add_library(
+  command_utils
+    STATIC
+      ./src/command_utils/move_jog.cpp)
+set_property(TARGET command_utils PROPERTY POSITION_INDEPENDENT_CODE ON)
+# ===================================================================
+
+# ===================================================================
+ament_auto_add_library(
   commander
     STATIC
       ./src/commander/realtime_commander.cpp
       ./src/commander/dashboard_commander.cpp)
 set_property(TARGET commander PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(commander command_utils)
 # ===================================================================
 
 # Example ===========================================================
