@@ -16,9 +16,15 @@
 #include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
-int main(void)
+int main(int argc, char ** argv)
 {
-  const std::string ip = "127.0.0.1";
+  std::string ip = "127.0.0.1";
+  if (argc == 2) {
+    ip = argv[1];
+  }
+
+  std::cout << "Connecting to: " << ip << std::endl;
+
   auto rt_tcp_if =
     std::make_unique<mg400_interface::RealtimeTcpInterface>(ip);
   auto db_tcp_if =
