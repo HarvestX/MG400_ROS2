@@ -14,9 +14,30 @@
 
 #pragma once
 
-#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
+#include <memory>
+#include <string>
+
+#include "mg400_interface/tcp_interface/tcp_interface_base.hpp"
 
 namespace mg400_interface
 {
+class RealtimeCommander
+{
+private:
+  TcpInterfaceBase * tcp_if_;
 
+public:
+  RealtimeCommander() = delete;
+  explicit RealtimeCommander(TcpInterfaceBase *);
+
+  void test();
+
+  // DOBOT MG400 Official Command ---------------------------------------------
+  void movJ(
+    const double, const double, const double,
+    const double, const double, const double);
+
+  void moveJog(const std::string &);
+  // End DOBOT MG400 Official Command -----------------------------------------
+};
 }  // namespace mg400_interface

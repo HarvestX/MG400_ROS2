@@ -14,9 +14,19 @@
 
 #pragma once
 
+#include <memory>
+
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 namespace mg400_interface
 {
 
+class DashboardCommander
+{
+private:
+  std::unique_ptr<DashboardTcpInterface> tcp_if_;
+
+public:
+  DashboardCommander();
+};
 }  // namespace mg400_interface

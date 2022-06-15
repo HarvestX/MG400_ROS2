@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/commander/dashboard_commander.hpp"
+#pragma once
+
+#include <memory>
+#include <string>
 
 namespace mg400_interface
 {
-DashboardCommander::DashboardCommander()
+class TcpInterfaceBase
 {
-}
+public:
+  TcpInterfaceBase() {}
+
+  virtual void sendCommand(const std::string &) = 0;
+};
 }  // namespace mg400_interface

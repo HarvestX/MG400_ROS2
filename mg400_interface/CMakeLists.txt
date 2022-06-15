@@ -61,9 +61,13 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_gmock REQUIRED)
 
   ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
   target_link_libraries(test_error_msg_generator error_msg_generator)
+
+  ament_add_gmock(test_realtime_commander test/src/commander/test_realtime_commander.cpp)
+  target_link_libraries(test_realtime_commander commander)
 endif()
 
 ament_auto_package(

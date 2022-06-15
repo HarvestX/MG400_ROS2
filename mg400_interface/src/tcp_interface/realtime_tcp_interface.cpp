@@ -119,28 +119,4 @@ RealTimeData RealtimeTcpInterface::getRealtimeData()
 {
   return this->rt_data_;
 }
-
-// DOBOT MG400 Official Command ---------------------------------------------
-void RealtimeTcpInterface::movJ(
-  const double x, const double y, const double z,
-  const double rx, const double ry, const double rz)
-{
-  std::string buf;
-  buf.resize(100);
-  snprintf(
-    buf.data(), buf.size(),
-    "MovJ(% .3lf, % .3lf, % .3lf, % .3lf, % .3lf, %.3lf)",
-    x, y, z, rx, ry, rz);
-  this->sendCommand(buf);
-}
-
-void RealtimeTcpInterface::moveJog(const std::string & axis_id)
-{
-  std::string buf;
-  buf.resize(100);
-  snprintf(buf.data(), buf.size(), "MoveJog(%s)", axis_id.c_str());
-  this->sendCommand(buf);
-}
-// End DOBOT MG400 Official Command -----------------------------------------
-
 }  // namespace mg400_interface

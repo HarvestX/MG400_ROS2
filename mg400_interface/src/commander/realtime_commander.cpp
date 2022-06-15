@@ -16,5 +16,35 @@
 
 namespace mg400_interface
 {
+RealtimeCommander::RealtimeCommander(TcpInterfaceBase * tcp_if)
+: tcp_if_(tcp_if)
+{
+}
+
+void RealtimeCommander::test()
+{
+  this->tcp_if_->sendCommand("Hello");
+}
+
+// DOBOT MG400 Official Command ---------------------------------------------
+void RealtimeCommander::movJ(
+  const double x, const double y, const double z,
+  const double rx, const double ry, const double rz)
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "MovJ(%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf)",
+    x, y, z, rx, ry, rz);
+  this->tcp_if_->sendCommand(buf);
+}
+
+void RealtimeCommander::moveJog(const std::string & axis_id)
+{
+  char buf[100];
+  snprintf(buf, sizeof(buf), "MoveJog(%s)", axis_id.c_str());
+  this->tcp_if_->sendCommand(buf);
+}
+// End DOBOT MG400 Official Command -----------------------------------------
 
 }  // namespace mg400_interface

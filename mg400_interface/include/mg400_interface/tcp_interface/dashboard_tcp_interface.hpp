@@ -36,6 +36,7 @@ private:
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
 public:
+  DashboardTcpInterface() = delete;
   explicit DashboardTcpInterface(const std::string &);
   ~DashboardTcpInterface();
   void init() noexcept;
