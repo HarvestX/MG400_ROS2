@@ -58,53 +58,11 @@ int main(int argc, char ** argv)
       "robot mode:\t\t\t%" PRIu64 "\n",
       data->robot_mode);
     printf(
-      "controller timer:\t\t%" PRIu64 "\n",
-      data->controller_timer);
-    printf(
-      "run time:\t\t\t%" PRIu64 "\n",
-      data->run_time);
-    printf(
       "test value:\t\t\t%" PRIu64 "\n",
       data->test_value);
     printf(
-      "safety mode:\t\t\t%.3lf\n",
-      data->safety_mode);
-    printf(
       "speed_scaling:\t\t\t%.3lf\n",
       data->speed_scaling);
-    printf(
-      "linear_momentum_norm:\t\t%.3lf\n",
-      data->linear_momentum_norm);
-    printf(
-      "v_main:\t\t\t\t%.3lf\n",
-      data->v_main);
-    printf(
-      "v_robot:\t\t\t%.3lf\n",
-      data->v_robot);
-    printf(
-      "i_robot:\t\t\t%.3lf\n",
-      data->i_robot);
-    printf(
-      "program_state:\t\t\t%.3lf\n",
-      data->program_state);
-    printf(
-      "safety_status:\t\t\t%.3lf\n",
-      data->safety_status);
-    printf(
-      "tool_accelerometer_values:\t[%.3lf, %.3lf, %.3lf]\n",
-      data->tool_accelerometer_values[0],
-      data->tool_accelerometer_values[1],
-      data->tool_accelerometer_values[2]);
-    printf(
-      "elbow_position:\t\t\t[%.3lf, %.3lf, %.3lf]\n",
-      data->elbow_position[0],
-      data->elbow_position[1],
-      data->elbow_position[2]);
-    printf(
-      "elbow_velocity:\t\t\t[%.3lf, %.3lf, %.3lf]\n",
-      data->elbow_velocity[0],
-      data->elbow_velocity[1],
-      data->elbow_velocity[2]);
     printf(
       "q_target:\t\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
@@ -154,11 +112,11 @@ int main(int argc, char ** argv)
       data->i_actual[2], data->i_actual[3],
       data->i_actual[4], data->i_actual[5]);
     printf(
-      "i_control:\t\t\t"
+      "actual_i_TCP_force:\t\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data->i_control[0], data->i_control[1],
-      data->i_control[2], data->i_control[3],
-      data->i_control[4], data->i_control[5]);
+      data->actual_i_TCP_force[0], data->actual_i_TCP_force[1],
+      data->actual_i_TCP_force[2], data->actual_i_TCP_force[3],
+      data->actual_i_TCP_force[4], data->actual_i_TCP_force[5]);
     printf(
       "tool_vector_actual:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
@@ -202,27 +160,17 @@ int main(int argc, char ** argv)
       data->TCP_speed_target[4],
       data->TCP_speed_target[5]);
     printf(
-      "motor_temperatures:\t\t"
-      "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data->motor_temperatures[0],
-      data->motor_temperatures[1],
-      data->motor_temperatures[2],
-      data->motor_temperatures[3],
-      data->motor_temperatures[4],
-      data->motor_temperatures[5]);
+      "load:\t\t\t%.3lf\n",
+      data->load);
     printf(
-      "joint_modes:\t\t\t"
-      "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data->joint_modes[0], data->joint_modes[1],
-      data->joint_modes[2], data->joint_modes[3],
-      data->joint_modes[4], data->joint_modes[5]);
+      "center_x:\t\t\t%.3lf\n",
+      data->center_x);
     printf(
-      "v_actual:\t\t\t"
-      "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data->v_actual[0], data->v_actual[1],
-      data->v_actual[2], data->v_actual[3],
-      data->v_actual[4], data->v_actual[5]);
-
+      "center_y:\t\t\t%.3lf\n",
+      data->center_y);
+    printf(
+      "center_z:\t\t\t%.3lf\n",
+      data->centor_z);
     using namespace std::chrono_literals;
     rclcpp::sleep_for(100ms);
   }
