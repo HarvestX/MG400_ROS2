@@ -49,8 +49,8 @@ int main(int argc, char ** argv)
       "len:\t\t\t\t%" PRIu16 "\n",
       data->len);
     printf(
-      "digital input bits:\t\t%" PRIu64 "\n",
-      data->digital_input_bits);
+      "digital inputs:\t\t%" PRIu64 "\n",
+      data->digital_inputs);
     printf(
       "digital outputs:\t\t%" PRIu64 "\n",
       data->digital_outputs);
