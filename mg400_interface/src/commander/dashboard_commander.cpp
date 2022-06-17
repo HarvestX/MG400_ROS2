@@ -16,6 +16,8 @@
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals;
+
 DashboardCommander::DashboardCommander(DashboardTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
@@ -26,40 +28,29 @@ bool DashboardCommander::enableRobot() const
 {
   this->tcp_if_->sendCommand("EnableRobot()");
 
-  this->tcp_if_->waitForResponse();
-
-  const std::string response = this->tcp_if_->recvResponse();
-  return response.find("EnableRobot()") != std::string::npos;
+  return this->tcp_if_->waitForResponseReceive("EnableRobot()");
 }
 
 bool DashboardCommander::disableRobot() const
 {
   this->tcp_if_->sendCommand("DisableRobot()");
 
-  this->tcp_if_->waitForResponse();
-
-  const std::string response = this->tcp_if_->recvResponse();
-  return response.find("DisableRobot()") != std::string::npos;
+  return this->tcp_if_->waitForResponseReceive("DisableRobot()");
 }
 
 bool DashboardCommander::clearError() const
 {
   this->tcp_if_->sendCommand("ClearError()");
 
-  this->tcp_if_->waitForResponse();
+  return this->tcp_if_->waitForResponseReceive("ClearError()");
 
-  const std::string response = this->tcp_if_->recvResponse();
-  return response.find("ClearError()") != std::string::npos;
 }
 
 bool DashboardCommander::resetRobot() const
 {
   this->tcp_if_->sendCommand("ResetRobot()");
 
-  this->tcp_if_->waitForResponse();
-
-  const std::string response = this->tcp_if_->recvResponse();
-  return response.find("ResetRobot()") != std::string::npos;
+  return this->tcp_if_->waitForResponseReceive("ResetRobot()");
 }
 
 bool DashboardCommander::speedFactor(const int ratio) const
@@ -68,17 +59,15 @@ bool DashboardCommander::speedFactor(const int ratio) const
   snprintf(buf, sizeof(buf), "SpeedFactor(%d)", ratio);
   this->tcp_if_->sendCommand(buf);
 
-  this->tcp_if_->waitForResponse();
-
-  const std::string response = this->tcp_if_->recvResponse();
-  return response.find(std::string(buf)) != std::string::npos;
+  return this->tcp_if_->waitForResponseReceive(std::string(buf));
 }
 
 void DashboardCommander::getErrorId() const
 {
+  // TODO(anyone): Implement it
   this->tcp_if_->sendCommand("GetErrorID()");
 
-  this->tcp_if_->waitForResponse();
+  rclcpp::sleep_for(500ms);
 
   const std::string response = this->tcp_if_->recvResponse();
 }

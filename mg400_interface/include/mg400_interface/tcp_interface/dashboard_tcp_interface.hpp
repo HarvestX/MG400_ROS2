@@ -25,13 +25,15 @@
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals;
 class DashboardTcpInterfaceBase
 {
 public:
   DashboardTcpInterfaceBase() {}
   virtual void sendCommand(const std::string &) = 0;
   virtual std::string recvResponse() = 0;
-  virtual void waitForResponse() = 0;
+  virtual bool waitForResponseReceive(
+    const std::string &, const std::chrono::duration<int64_t> = 5s) = 0;
 };
 
 class DashboardTcpInterface : public DashboardTcpInterfaceBase
@@ -45,6 +47,8 @@ private:
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
+  rclcpp::Clock::SharedPtr clock_;
+
 public:
   DashboardTcpInterface() = delete;
   explicit DashboardTcpInterface(const std::string &);
@@ -55,7 +59,10 @@ public:
   bool isConnected();
   void sendCommand(const std::string &) override;
   std::string recvResponse(void) override;
-  void waitForResponse(void) override;
+
+  bool waitForResponseReceive(
+    const std::string &,
+    const std::chrono::duration<int64_t> = 5s) override;
 
 private:
   void checkConnection();

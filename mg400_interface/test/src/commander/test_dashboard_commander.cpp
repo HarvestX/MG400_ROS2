@@ -27,7 +27,9 @@ public:
 
   MOCK_METHOD(void, sendCommand, (const std::string &), (override));
   MOCK_METHOD(std::string, recvResponse, (), (override));
-  MOCK_METHOD(void, waitForResponse, (), (override));
+  MOCK_METHOD(
+    bool, waitForResponseReceive, (const std::string &,
+    const std::chrono::duration<int64_t>), (override));
 };
 
 class TestDashboardCommander : public ::testing::Test
