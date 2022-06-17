@@ -43,6 +43,8 @@ public:
 
   void speedFactor(const int) const;
 
+  // TODO(anyone): uncomment following function and implement it
+  /**
   void user(const UserIndex &) const;
 
   void tool(const ToolIndex &) const;
@@ -96,10 +98,14 @@ public:
   // void getHoldRegs();
 
   // void setHoldRegs();
+  **/
 
   void getErrorId() const;
 
+  /**
   int DI(const int) const;
+  **/
+
   // --------------------------------------------------------------------------
 };
 }  // namespace mg400_interface

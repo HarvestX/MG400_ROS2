@@ -49,26 +49,6 @@ void DashboardCommander::speedFactor(const int ratio) const
   this->tcp_if_->sendCommand(buf);
 }
 
-void DashboardCommander::user(const UserIndex &) const
-{
-  // TODO(anyone): Implement it
-}
-
-void DashboardCommander::tool(const ToolIndex &) const
-{
-  // TODO(anyone): Implement it
-}
-
-RobotMode DashboardCommander::robotMode() const
-{
-  // TODO(anyone): Implement it
-}
-
-void DashboardCommander::payload(const double, const double) const
-{
-  // TODO(anyone): Implement it
-}
-
 void DashboardCommander::getErrorId() const
 {
   this->tcp_if_->sendCommand("GetErrorID()");

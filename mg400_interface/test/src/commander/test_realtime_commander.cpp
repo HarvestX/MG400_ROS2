@@ -51,6 +51,7 @@ TEST_F(TestRealtimeCommander, MovJ) {
   commander->movJ(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
+/**
 TEST_F(TestRealtimeCommander, MovL) {
   EXPECT_CALL(
     mock, sendCommand(
@@ -106,6 +107,7 @@ TEST_F(TestRealtimeCommander, Arc) {
     -300e-3, -250e-3, 200e-3,
     M_PI_2, 0, M_PI_2);
 }
+**/
 
 TEST_F(TestRealtimeCommander, MoveJog) {
   EXPECT_CALL(
@@ -115,6 +117,7 @@ TEST_F(TestRealtimeCommander, MoveJog) {
   commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
 }
 
+/**
 TEST_F(TestRealtimeCommander, Sync) {
   EXPECT_CALL(
     mock, sendCommand(
@@ -155,3 +158,4 @@ TEST_F(TestRealtimeCommander, RelJointMovJ) {
     M_PI_2, M_PI_2, M_PI_2,
     0, 0, 0);
 }
+**/

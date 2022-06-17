@@ -35,6 +35,7 @@ void RealtimeCommander::movJ(
   this->tcp_if_->sendCommand(buf);
 }
 
+/**
 void RealtimeCommander::movL(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz
@@ -78,6 +79,7 @@ void RealtimeCommander::arc(
 
   // TODO(anyone): Implement it
 }
+**/
 
 void RealtimeCommander::moveJog(const JogMode & axis_id)
 {
@@ -86,6 +88,7 @@ void RealtimeCommander::moveJog(const JogMode & axis_id)
   this->tcp_if_->sendCommand(buf);
 }
 
+/**
 void RealtimeCommander::sync()
 {
   // TODO(anyone): Implement it
@@ -113,6 +116,7 @@ void RealtimeCommander::relJointMovJ(
 {
   // TODO(anyone): Implement it
 }
+**/
 // End DOBOT MG400 Official Command -----------------------------------------
 
 }  // namespace mg400_interface
