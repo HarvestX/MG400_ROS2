@@ -26,12 +26,13 @@
 
 namespace mg400_interface
 {
-class DashboardTcpInterface : TcpInterfaceBase
+class DashboardTcpInterface : public TcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 29999;
   const int CONNECTION_TRIAL_ = 3;
 
+  std::atomic<bool> is_running_;
   std::mutex mutex_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;

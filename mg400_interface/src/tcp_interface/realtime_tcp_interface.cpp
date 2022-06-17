@@ -49,6 +49,9 @@ void RealtimeTcpInterface::recvData()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
+    if (!this->is_running_) {
+      return;
+    }
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(

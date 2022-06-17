@@ -61,7 +61,12 @@ ament_auto_add_executable(
 target_link_libraries(show_realtime_data tcp_interface)
 # End Example =======================================================
 
-
+# Example ===========================================================
+ament_auto_add_executable(
+  commander_check
+    ./example/commander_check.cpp)
+target_link_libraries(commander_check tcp_interface commander)
+# End Example =======================================================
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

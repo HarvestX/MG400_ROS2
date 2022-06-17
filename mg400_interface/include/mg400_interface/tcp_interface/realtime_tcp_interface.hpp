@@ -29,7 +29,7 @@
 
 namespace mg400_interface
 {
-class RealtimeTcpInterface : TcpInterfaceBase
+class RealtimeTcpInterface : public TcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 30003;

@@ -17,12 +17,14 @@
 namespace mg400_interface
 {
 DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
+: is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
 DashboardTcpInterface::~DashboardTcpInterface()
 {
+  this->is_running_ = false;
   this->thread_->join();
 }
 
@@ -34,6 +36,7 @@ rclcpp::Logger DashboardTcpInterface::getLogger()
 void DashboardTcpInterface::init() noexcept
 {
   try {
+    this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
       &DashboardTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
@@ -45,6 +48,9 @@ void DashboardTcpInterface::checkConnection()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
+    if (!this->is_running_) {
+      return;
+    }
     try {
       if (this->tcp_socket_->isConnected()) {
         failed_cnt = 0;
