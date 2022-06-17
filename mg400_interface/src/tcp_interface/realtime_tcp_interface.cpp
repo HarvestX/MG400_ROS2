@@ -49,6 +49,9 @@ void RealtimeTcpInterface::recvData()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
+    if (!this->is_running_) {
+      return;
+    }
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(
@@ -120,27 +123,8 @@ RealTimeData RealtimeTcpInterface::getRealtimeData()
   return this->rt_data_;
 }
 
-// DOBOT MG400 Official Command ---------------------------------------------
-void RealtimeTcpInterface::movJ(
-  const double x, const double y, const double z,
-  const double rx, const double ry, const double rz)
+RobotMode RealtimeTcpInterface::getRobotMode()
 {
-  std::string buf;
-  buf.resize(100);
-  snprintf(
-    buf.data(), buf.size(),
-    "MovJ(% .3lf, % .3lf, % .3lf, % .3lf, % .3lf, %.3lf)",
-    x, y, z, rx, ry, rz);
-  this->sendCommand(buf);
+  return static_cast<RobotMode>(this->rt_data_.robot_mode);
 }
-
-void RealtimeTcpInterface::moveJog(const std::string & axis_id)
-{
-  std::string buf;
-  buf.resize(100);
-  snprintf(buf.data(), buf.size(), "MoveJog(%s)", axis_id.c_str());
-  this->sendCommand(buf);
-}
-// End DOBOT MG400 Official Command -----------------------------------------
-
 }  // namespace mg400_interface

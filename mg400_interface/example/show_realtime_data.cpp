@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
       "len:\t\t\t\t%" PRIu16 "\n",
       data->len);
     printf(
-      "digital inputs:\t\t%" PRIu64 "\n",
+      "digital inputs:\t\t\t%" PRIu64 "\n",
       data->digital_inputs);
     printf(
       "digital outputs:\t\t%" PRIu64 "\n",
@@ -112,7 +112,7 @@ int main(int argc, char ** argv)
       data->i_actual[2], data->i_actual[3],
       data->i_actual[4], data->i_actual[5]);
     printf(
-      "actual_i_TCP_force:\t\t\t"
+      "actual_i_TCP_force:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
       data->actual_i_TCP_force[0], data->actual_i_TCP_force[1],
       data->actual_i_TCP_force[2], data->actual_i_TCP_force[3],
@@ -160,7 +160,7 @@ int main(int argc, char ** argv)
       data->TCP_speed_target[4],
       data->TCP_speed_target[5]);
     printf(
-      "load:\t\t\t%.3lf\n",
+      "load:\t\t\t\t%.3lf\n",
       data->load);
     printf(
       "center_x:\t\t\t%.3lf\n",

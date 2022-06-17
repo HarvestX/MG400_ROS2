@@ -25,34 +25,37 @@
 
 namespace mg400_interface
 {
-class DashboardTcpInterface
+class DashboardTcpInterfaceBase
+{
+public:
+  DashboardTcpInterfaceBase() {}
+  virtual void sendCommand(const std::string &) = 0;
+  virtual std::string recvResponse() = 0;
+  virtual void waitForResponse() = 0;
+};
+
+class DashboardTcpInterface : public DashboardTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 29999;
   const int CONNECTION_TRIAL_ = 3;
 
+  std::atomic<bool> is_running_;
   std::mutex mutex_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
 public:
+  DashboardTcpInterface() = delete;
   explicit DashboardTcpInterface(const std::string &);
   ~DashboardTcpInterface();
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
-  std::string sendCommand(const std::string &);
   bool isConnected();
-
-  // DOBOT MG400 Official Command ---------------------------------------------
-  void enableRobot();
-  void enableRobot(const double);
-  void enableRobot(const double, const double, const double, const double);
-
-  void disableRobot();
-  void clearError();
-  void getErrorId();
-  // --------------------------------------------------------------------------
+  void sendCommand(const std::string &) override;
+  std::string recvResponse(void) override;
+  void waitForResponse(void) override;
 
 private:
   void checkConnection();

@@ -17,12 +17,15 @@
 namespace mg400_interface
 {
 DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
+: is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
+
 }
 
 DashboardTcpInterface::~DashboardTcpInterface()
 {
+  this->is_running_ = false;
   this->thread_->join();
 }
 
@@ -34,6 +37,7 @@ rclcpp::Logger DashboardTcpInterface::getLogger()
 void DashboardTcpInterface::init() noexcept
 {
   try {
+    this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
       &DashboardTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
@@ -45,6 +49,9 @@ void DashboardTcpInterface::checkConnection()
 {
   int failed_cnt = 0;
   while (failed_cnt < this->CONNECTION_TRIAL_) {
+    if (!this->is_running_) {
+      return;
+    }
     try {
       if (this->tcp_socket_->isConnected()) {
         failed_cnt = 0;
@@ -83,76 +90,24 @@ bool DashboardTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
-std::string DashboardTcpInterface::sendCommand(const std::string & cmd)
+void DashboardTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
+}
 
+std::string DashboardTcpInterface::recvResponse()
+{
   char buf[100];
   this->tcp_socket_->recv(buf, sizeof(buf), 1000);
-
-  RCLCPP_INFO(this->getLogger(), "recv: %s", buf);
+  RCLCPP_INFO(
+    this->getLogger(),
+    "recv: %s", std::string(buf).c_str());
   return std::string(buf);
 }
 
-void DashboardTcpInterface::enableRobot()
+void DashboardTcpInterface::waitForResponse()
 {
-  this->sendCommand("EnableRobot()");
+  using namespace std::chrono_literals;
+  rclcpp::sleep_for(500ms);
 }
-
-void DashboardTcpInterface::enableRobot(const double load)
-{
-  if (load < 0.0 || load > 0.5) {
-    RCLCPP_ERROR(
-      this->getLogger(), "Given load %.3lf is out of range (0~0.5 kg)",
-      load);
-    return;
-  }
-
-  std::string buf;
-  buf.resize(100);
-  snprintf(buf.data(), buf.size(), "EnableRobot(%.3lf)", load);
-  this->sendCommand(buf);
-}
-
-void DashboardTcpInterface::enableRobot(
-  const double load, const double cx, const double cy, const double cz)
-{
-  if (load < 0.0 || load > 0.5) {
-    RCLCPP_ERROR(
-      this->getLogger(), "Given load %.3lf is out of range (0~0.5 kg)",
-      load);
-    return;
-  }
-
-  if (std::abs(cx) > 500.0 || std::abs(cy) > 500.0 || std::abs(cz) > 500.0) {
-    RCLCPP_ERROR(
-      this->getLogger(),
-      "Given center (%.3lf, %.3lf, %.3lf) is out of range ( < 500.0 mm)",
-      cx, cy, cz);
-    return;
-  }
-
-  std::string buf;
-  buf.resize(100);
-  snprintf(
-    buf.data(), buf.size(),
-    "EnableRobot(%.3lf, %.3lf. %.3lf, %.3lf)", load, cx, cy, cz);
-  this->sendCommand(buf);
-}
-
-void DashboardTcpInterface::disableRobot()
-{
-  this->sendCommand("DisableRobot()");
-}
-
-void DashboardTcpInterface::clearError()
-{
-  this->sendCommand("ClearError()");
-}
-
-void DashboardTcpInterface::getErrorId()
-{
-  this->sendCommand("GetErrorID()");
-}
-
 }  // namespace mg400_interface

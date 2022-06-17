@@ -19,6 +19,8 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "mg400_interface/command_utils.hpp"
+
 namespace mg400_interface
 {
 const char BASE_LINK_NAME[] = "mg400_base_link";
@@ -30,8 +32,6 @@ const char J3_2_NAME[] = "mg400_j3_2";
 const char J4_1_NAME[] = "mg400_j4_1";
 const char J4_2_NAME[] = "mg400_j4_2";
 const char J5_NAME[] = "mg400_j5";
-
-constexpr const double TO_RADIAN = M_PI / 180.0;
 
 constexpr double J1_MIN = -160.0 * TO_RADIAN;
 constexpr double J1_MAX = 160.0 * TO_RADIAN;

@@ -14,14 +14,22 @@
 
 #pragma once
 
+#include <string>
+
 namespace mg400_interface
 {
-const char J1_NEGATIVE[] = "j1-";
-const char J1_POSITIVE[] = "j1+";
-const char J2_NEGATIVE[] = "j2-";
-const char J2_POSITIVE[] = "j2+";
-const char J3_NEGATIVE[] = "j3-";
-const char J3_POSITIVE[] = "j3+";
-const char J4_NEGATIVE[] = "j4-";
-const char J4_POSITIVE[] = "j4+";
-} // mg400_interface
+enum class RobotMode
+{
+  INIT = 1,
+  BRAKE_OPEN,
+
+  DISABLED = 4,
+  ENABLE,
+  BACKDRIVE,
+  RUNNING,
+  RECORDING,
+  ERROR,
+  PAUSE,
+  JOG
+};
+}  // namespace mg400_interface
