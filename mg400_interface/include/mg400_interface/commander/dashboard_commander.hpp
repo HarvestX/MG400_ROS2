@@ -38,11 +38,11 @@ public:
 
   bool disableRobot() const;
 
-  void clearError() const;
+  bool clearError() const;
 
-  void resetRobot() const;
+  bool resetRobot() const;
 
-  void speedFactor(const int) const;
+  bool speedFactor(const int) const;
 
   // TODO(anyone): uncomment following function and implement it
   /**

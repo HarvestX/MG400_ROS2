@@ -42,26 +42,45 @@ bool DashboardCommander::disableRobot() const
   return response.find("DisableRobot()") != std::string::npos;
 }
 
-void DashboardCommander::clearError() const
+bool DashboardCommander::clearError() const
 {
   this->tcp_if_->sendCommand("ClearError()");
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
+  return response.find("ClearError()") != std::string::npos;
 }
 
-void DashboardCommander::resetRobot() const
+bool DashboardCommander::resetRobot() const
 {
   this->tcp_if_->sendCommand("ResetRobot()");
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
+  return response.find("ResetRobot()") != std::string::npos;
 }
 
-void DashboardCommander::speedFactor(const int ratio) const
+bool DashboardCommander::speedFactor(const int ratio) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SpeedFactor(%d)", ratio);
   this->tcp_if_->sendCommand(buf);
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
+  return response.find(std::string(buf)) != std::string::npos;
 }
 
 void DashboardCommander::getErrorId() const
 {
   this->tcp_if_->sendCommand("GetErrorID()");
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 

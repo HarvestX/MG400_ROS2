@@ -29,6 +29,8 @@ void show_result(const bool res, const std::string & command)
 
 int main(int argc, char ** argv)
 {
+  using namespace std::chrono_literals;
+
   std::string ip = "127.0.0.1";
   if (argc == 2) {
     ip = argv[1];
@@ -44,7 +46,6 @@ int main(int argc, char ** argv)
 
   while (!db_tcp_if->isConnected()) {
     std::cout << "Waiting for the connection..." << std::endl;
-    using namespace std::chrono_literals;
     rclcpp::sleep_for(1s);
   }
 
@@ -55,13 +56,27 @@ int main(int argc, char ** argv)
   const bool enable_res = db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
 
-  {
-    using namespace std::chrono_literals;
-    rclcpp::sleep_for(2s);
-  }
+  rclcpp::sleep_for(2s);
+
+  const bool clearerr_res = db_commander->clearError();
+  show_result(clearerr_res, "ClearError");
+
+  rclcpp::sleep_for(2s);
+
+  const bool resetrobo_res = db_commander->resetRobot();
+  show_result(resetrobo_res, "ResetRobot");
+
+  rclcpp::sleep_for(2s);
+
+  const bool speedfactor_res = db_commander->speedFactor(10);
+  show_result(speedfactor_res, "SpeedFactor");
+
+  rclcpp::sleep_for(2s);
 
   const bool disable_res = db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
+
+  rclcpp::sleep_for(1s);
 
   return EXIT_SUCCESS;
 }
