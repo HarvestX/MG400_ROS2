@@ -1,6 +1,3 @@
 string axis_id
-int32 coord_type
-int32 user
-int32 tool
 ---
-int32 res
+bool res

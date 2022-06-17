@@ -4,9 +4,5 @@ float64 z
 float64 rx
 float64 ry
 float64 rz
-int32 user
-int32 tool
-int32 speed_j
-int32 acc_j
 ---
-int32 res
+bool res

@@ -1,3 +1,3 @@
 ---
-int32 res
+bool res
 int32[] servos
