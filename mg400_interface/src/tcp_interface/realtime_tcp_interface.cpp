@@ -122,4 +122,9 @@ RealTimeData RealtimeTcpInterface::getRealtimeData()
 {
   return this->rt_data_;
 }
+
+RobotMode RealtimeTcpInterface::getRobotMode()
+{
+  return static_cast<RobotMode>(this->rt_data_.robot_mode);
+}
 }  // namespace mg400_interface

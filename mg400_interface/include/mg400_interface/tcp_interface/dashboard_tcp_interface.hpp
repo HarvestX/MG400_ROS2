@@ -21,12 +21,20 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "mg400_interface/tcp_interface/tcp_interface_base.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 namespace mg400_interface
 {
-class DashboardTcpInterface : public TcpInterfaceBase
+class DashboardTcpInterfaceBase
+{
+public:
+  DashboardTcpInterfaceBase() {}
+  virtual void sendCommand(const std::string &) = 0;
+  virtual std::string recvResponse() = 0;
+  virtual void waitForResponse() = 0;
+};
+
+class DashboardTcpInterface : public DashboardTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 29999;
@@ -46,7 +54,8 @@ public:
   static rclcpp::Logger getLogger();
   bool isConnected();
   void sendCommand(const std::string &) override;
-  std::string recvResponse();
+  std::string recvResponse(void) override;
+  void waitForResponse(void) override;
 
 private:
   void checkConnection();

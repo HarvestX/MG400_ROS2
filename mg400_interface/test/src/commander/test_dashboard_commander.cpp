@@ -19,13 +19,15 @@ using ::testing::_;
 using ::testing::StrEq;
 
 
-class MockTcpInterface : public mg400_interface::TcpInterfaceBase
+class MockTcpInterface : public mg400_interface::DashboardTcpInterfaceBase
 {
 public:
   MockTcpInterface()
-  : mg400_interface::TcpInterfaceBase() {}
+  : mg400_interface::DashboardTcpInterfaceBase() {}
 
   MOCK_METHOD(void, sendCommand, (const std::string &), (override));
+  MOCK_METHOD(std::string, recvResponse, (), (override));
+  MOCK_METHOD(void, waitForResponse, (), (override));
 };
 
 class TestDashboardCommander : public ::testing::Test

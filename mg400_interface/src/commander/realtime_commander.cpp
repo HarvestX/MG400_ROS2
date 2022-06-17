@@ -16,7 +16,7 @@
 
 namespace mg400_interface
 {
-RealtimeCommander::RealtimeCommander(TcpInterfaceBase * tcp_if)
+RealtimeCommander::RealtimeCommander(RealtimeTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
 }

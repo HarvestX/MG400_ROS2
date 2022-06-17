@@ -16,6 +16,7 @@
 
 #include <string>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
@@ -26,16 +27,16 @@ namespace mg400_interface
 class DashboardCommander
 {
 private:
-  TcpInterfaceBase * tcp_if_;
+  DashboardTcpInterfaceBase * tcp_if_;
 
 public:
   DashboardCommander() = delete;
-  explicit DashboardCommander(TcpInterfaceBase *);
+  explicit DashboardCommander(DashboardTcpInterfaceBase *);
 
   // DOBOT MG400 Official Command ---------------------------------------------
-  void enableRobot() const;
+  bool enableRobot() const;
 
-  void disableRobot() const;
+  bool disableRobot() const;
 
   void clearError() const;
 
@@ -107,5 +108,8 @@ public:
   **/
 
   // --------------------------------------------------------------------------
+
+private:
+  static const rclcpp::Logger getLogger();
 };
 }  // namespace mg400_interface

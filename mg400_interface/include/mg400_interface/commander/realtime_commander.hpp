@@ -18,18 +18,18 @@
 #include <string>
 
 #include "mg400_interface/command_utils.hpp"
-#include "mg400_interface/tcp_interface/tcp_interface_base.hpp"
+#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
 
 namespace mg400_interface
 {
 class RealtimeCommander
 {
 private:
-  TcpInterfaceBase * tcp_if_;
+  RealtimeTcpInterfaceBase * tcp_if_;
 
 public:
   RealtimeCommander() = delete;
-  explicit RealtimeCommander(TcpInterfaceBase *);
+  explicit RealtimeCommander(RealtimeTcpInterfaceBase *);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(

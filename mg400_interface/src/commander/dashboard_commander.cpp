@@ -16,20 +16,30 @@
 
 namespace mg400_interface
 {
-DashboardCommander::DashboardCommander(TcpInterfaceBase * tcp_if)
+DashboardCommander::DashboardCommander(DashboardTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
-void DashboardCommander::enableRobot() const
+bool DashboardCommander::enableRobot() const
 {
   this->tcp_if_->sendCommand("EnableRobot()");
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
+  return response.find("EnableRobot()") != std::string::npos;
 }
 
-void DashboardCommander::disableRobot()const
+bool DashboardCommander::disableRobot() const
 {
   this->tcp_if_->sendCommand("DisableRobot()");
+
+  this->tcp_if_->waitForResponse();
+
+  const std::string response = this->tcp_if_->recvResponse();
+  return response.find("DisableRobot()") != std::string::npos;
 }
 
 void DashboardCommander::clearError() const
@@ -55,4 +65,8 @@ void DashboardCommander::getErrorId() const
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 
+const rclcpp::Logger DashboardCommander::getLogger()
+{
+  return rclcpp::get_logger("DashboardCommander");
+}
 }  // namespace mg400_interface

@@ -23,13 +23,19 @@
 
 #include "mg400_interface/joint_handler.hpp"
 
-#include "mg400_interface/tcp_interface/tcp_interface_base.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 namespace mg400_interface
 {
-class RealtimeTcpInterface : public TcpInterfaceBase
+class RealtimeTcpInterfaceBase
+{
+public:
+  RealtimeTcpInterfaceBase() {}
+  virtual void sendCommand(const std::string &) = 0;
+};
+
+class RealtimeTcpInterface : public RealtimeTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 30003;
@@ -51,6 +57,7 @@ public:
   static rclcpp::Logger getLogger();
   void getCurrentJointStates(std::array<double, 6> &);
   RealTimeData getRealtimeData();
+  RobotMode getRobotMode();
   bool isConnected();
   void sendCommand(const std::string &) override;
 

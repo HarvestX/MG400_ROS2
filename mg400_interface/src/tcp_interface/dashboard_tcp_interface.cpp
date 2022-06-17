@@ -20,6 +20,7 @@ DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
 : is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
+
 }
 
 DashboardTcpInterface::~DashboardTcpInterface()
@@ -98,7 +99,15 @@ std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
   this->tcp_socket_->recv(buf, sizeof(buf), 1000);
-  RCLCPP_INFO(this->getLogger(), "recv: %s", buf);
+  RCLCPP_INFO(
+    this->getLogger(),
+    "recv: %s", std::string(buf).c_str());
   return std::string(buf);
+}
+
+void DashboardTcpInterface::waitForResponse()
+{
+  using namespace std::chrono_literals;
+  rclcpp::sleep_for(500ms);
 }
 }  // namespace mg400_interface

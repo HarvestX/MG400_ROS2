@@ -12,9 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
+#include <string>
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 #include "mg400_interface/commander/dashboard_commander.hpp"
+
+
+void show_result(const bool res, const std::string & command)
+{
+  if (res) {
+    std::cout << command << " successfully called!" << std::endl;
+  } else {
+    std::cerr << command << " failed" << std::endl;
+  }
+}
 
 
 int main(int argc, char ** argv)
@@ -42,14 +52,16 @@ int main(int argc, char ** argv)
     std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if.get());
 
 
-  db_commander->enableRobot();
+  const bool enable_res = db_commander->enableRobot();
+  show_result(enable_res, "EnableRobot");
 
   {
     using namespace std::chrono_literals;
-    rclcpp::sleep_for(1s);
+    rclcpp::sleep_for(2s);
   }
 
-  db_commander->disableRobot();
+  const bool disable_res = db_commander->disableRobot();
+  show_result(disable_res, "DisableRobot");
 
   return EXIT_SUCCESS;
 }
