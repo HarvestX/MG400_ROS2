@@ -27,26 +27,28 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 
   this->db_tcp_if_ =
     std::make_unique<mg400_interface::DashboardTcpInterface>(ip_address);
+  this->mt_tcp_if_ =
+    std::make_unique<mg400_interface::MotionTcpInterface>(ip_address);
   this->rt_tcp_if_ =
-    std::make_unique<mg400_interface::RealtimeTcpInterface>(ip_address);
+    std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip_address);
 
   this->initTcpIf();
 
   this->db_commander_ =
     std::make_unique<mg400_interface::DashboardCommander>(
     this->db_tcp_if_.get());
-  this->rt_commander_ =
-    std::make_unique<mg400_interface::RealtimeCommander>(
-    this->rt_tcp_if_.get());
+  this->mt_commander_ =
+    std::make_unique<mg400_interface::MotionCommander>(
+    this->mt_tcp_if_.get());
 
   // ROS Interfaces
   this->joint_state_pub_ =
     this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states",
-    rclcpp::SensorDataQoS());
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
-    200ms, std::bind(&ServiceNode::onJsTimer, this));
+    10ms, std::bind(&ServiceNode::onJsTimer, this));
 
   // Service Initialization
   this->clear_error_srv_ =
@@ -107,9 +109,13 @@ void ServiceNode::initTcpIf()
   using namespace std::chrono_literals;
   this->db_tcp_if_->init();
   this->rt_tcp_if_->init();
+  this->mt_tcp_if_->init();
 
   const auto start = this->get_clock()->now();
-  while (!this->db_tcp_if_->isConnected() || !this->rt_tcp_if_->isConnected()) {
+  while (!this->db_tcp_if_->isConnected() ||
+    !this->rt_tcp_if_->isConnected() ||
+    !this->mt_tcp_if_->isConnected())
+  {
     if (this->get_clock()->now() - start > rclcpp::Duration(3s)) {
       RCLCPP_ERROR(
         this->get_logger(),
@@ -127,12 +133,12 @@ void ServiceNode::initTcpIf()
 
 void ServiceNode::onJsTimer()
 {
-  std::array<double, 6> joint_state;
-  this->rt_tcp_if_->getCurrentJointStates(joint_state);
+  std::array<double, 6> joint_states;
+  this->rt_tcp_if_->getCurrentJointStates(joint_states);
 
   this->joint_state_pub_->publish(
     mg400_interface::getJointState(
-      joint_state[0], joint_state[1], joint_state[2], joint_state[3],
+      joint_states[0], joint_states[1], joint_states[2], joint_states[3],
       this->prefix_));
 }
 
@@ -164,7 +170,7 @@ void ServiceNode::moveJog(
   const mg400_msgs::srv::MoveJog::Request::SharedPtr request,
   mg400_msgs::srv::MoveJog::Response::SharedPtr)
 {
-  this->rt_commander_->moveJog(request->axis_id);
+  this->mt_commander_->moveJog(request->axis_id);
 }
 
 void ServiceNode::movJ(
@@ -172,7 +178,7 @@ void ServiceNode::movJ(
   mg400_msgs::srv::MovJ::Response::SharedPtr
 )
 {
-  this->rt_commander_->movJ(
+  this->mt_commander_->movJ(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
 }

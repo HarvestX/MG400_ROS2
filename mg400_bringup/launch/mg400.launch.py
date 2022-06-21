@@ -53,14 +53,6 @@ def generate_launch_description():
 
     nodes: List[Node] = [
         Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            output='log',
-            parameters=[
-                cl.load_robot_description('mg400.urdf.xacro'),
-            ]
-        ),
-        Node(
             package='rviz2',
             executable='rviz2',
             name='rviz2',
@@ -75,10 +67,8 @@ def generate_launch_description():
             on_exit=Shutdown(),
             parameters=[{
                 'ip_address': ip_address, }]),
-    ]
-    timer_action = [
         TimerAction(
-            period=1.0,
+            period=1.5,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
@@ -90,8 +80,16 @@ def generate_launch_description():
                     ),
                     condition=IfCondition(joy)
                 ),
-            ]
-        )
+                Node(
+                    package='robot_state_publisher',
+                    executable='robot_state_publisher',
+                    namespace=namespace,
+                    output='log',
+                    parameters=[
+                        cl.load_robot_description('mg400.urdf.xacro'),
+                    ]
+                ),
+            ])
     ]
 
-    return LaunchDescription(launch_args + nodes + timer_action)
+    return LaunchDescription(launch_args + nodes)

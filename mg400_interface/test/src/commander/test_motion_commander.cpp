@@ -13,37 +13,37 @@
 // limitations under the License.
 
 #include <gmock/gmock.h>
-#include <mg400_interface/commander/realtime_commander.hpp>
+#include <mg400_interface/commander/motion_commander.hpp>
 
 using ::testing::_;
 using ::testing::StrEq;
 
 
-class MockTcpInterface : public mg400_interface::TcpInterfaceBase
+class MockTcpInterface : public mg400_interface::MotionTcpInterfaceBase
 {
 public:
   MockTcpInterface()
-  : mg400_interface::TcpInterfaceBase() {}
+  : mg400_interface::MotionTcpInterfaceBase() {}
 
   MOCK_METHOD(void, sendCommand, (const std::string &), (override));
 };
 
 
-class TestRealtimeCommander : public ::testing::Test
+class TestMotionCommander : public ::testing::Test
 {
 protected:
-  std::unique_ptr<mg400_interface::RealtimeCommander> commander;
+  std::unique_ptr<mg400_interface::MotionCommander> commander;
   MockTcpInterface mock;
   virtual void SetUp()
   {
     this->commander =
-      std::make_unique<mg400_interface::RealtimeCommander>(&this->mock);
+      std::make_unique<mg400_interface::MotionCommander>(&this->mock);
   }
 
   virtual void TearDown() {}
 };
 
-TEST_F(TestRealtimeCommander, MovJ) {
+TEST_F(TestMotionCommander, MovJ) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -52,7 +52,7 @@ TEST_F(TestRealtimeCommander, MovJ) {
 }
 
 /**
-TEST_F(TestRealtimeCommander, MovL) {
+TEST_F(TestMotionCommander, MovL) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -60,7 +60,7 @@ TEST_F(TestRealtimeCommander, MovL) {
   commander->movL(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
-TEST_F(TestRealtimeCommander, JointMovJ)
+TEST_F(TestMotionCommander, JointMovJ)
 {
   EXPECT_CALL(
     mock, sendCommand(
@@ -69,7 +69,7 @@ TEST_F(TestRealtimeCommander, JointMovJ)
   commander->jointMovJ(M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2);
 }
 
-TEST_F(TestRealtimeCommander, MovLIO) {
+TEST_F(TestMotionCommander, MovLIO) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -81,7 +81,7 @@ TEST_F(TestRealtimeCommander, MovLIO) {
     mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
 }
 
-TEST_F(TestRealtimeCommander, MovJIO) {
+TEST_F(TestMotionCommander, MovJIO) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -93,7 +93,7 @@ TEST_F(TestRealtimeCommander, MovJIO) {
     mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
 }
 
-TEST_F(TestRealtimeCommander, Arc) {
+TEST_F(TestMotionCommander, Arc) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -109,7 +109,7 @@ TEST_F(TestRealtimeCommander, Arc) {
 }
 **/
 
-TEST_F(TestRealtimeCommander, MoveJog) {
+TEST_F(TestMotionCommander, MoveJog) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -118,7 +118,7 @@ TEST_F(TestRealtimeCommander, MoveJog) {
 }
 
 /**
-TEST_F(TestRealtimeCommander, Sync) {
+TEST_F(TestMotionCommander, Sync) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -126,7 +126,7 @@ TEST_F(TestRealtimeCommander, Sync) {
   commander->sync();
 }
 
-TEST_F(TestRealtimeCommander, RelMovJUser) {
+TEST_F(TestMotionCommander, RelMovJUser) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -137,7 +137,7 @@ TEST_F(TestRealtimeCommander, RelMovJUser) {
     mg400_interface::UserIndex::USER0);
 }
 
-TEST_F(TestRealtimeCommander, RelMovLUser) {
+TEST_F(TestMotionCommander, RelMovLUser) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
@@ -148,7 +148,7 @@ TEST_F(TestRealtimeCommander, RelMovLUser) {
     mg400_interface::UserIndex::USER0);
 }
 
-TEST_F(TestRealtimeCommander, RelJointMovJ) {
+TEST_F(TestMotionCommander, RelJointMovJ) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(

@@ -12,40 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
+#include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 
 namespace mg400_interface
 {
-DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
-: is_running_(false),
-  clock_(std::make_shared<rclcpp::Clock>(RCL_STEADY_TIME))
+
+MotionTcpInterface::MotionTcpInterface(const std::string & ip)
+: is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
-DashboardTcpInterface::~DashboardTcpInterface()
+MotionTcpInterface::~MotionTcpInterface()
 {
   this->is_running_ = false;
   this->thread_->join();
 }
 
-rclcpp::Logger DashboardTcpInterface::getLogger()
+rclcpp::Logger MotionTcpInterface::getLogger()
 {
-  return rclcpp::get_logger("Dashboard Tcp Interface");
+  return rclcpp::get_logger("Motion Tcp Interface");
 }
 
-void DashboardTcpInterface::init() noexcept
+void MotionTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
-      &DashboardTcpInterface::checkConnection, this);
+      &MotionTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
 }
 
-void DashboardTcpInterface::checkConnection()
+void MotionTcpInterface::checkConnection()
 {
   using namespace std::chrono_literals;
   int failed_cnt = 0;
@@ -84,37 +84,14 @@ void DashboardTcpInterface::checkConnection()
   this->is_running_ = false;
 }
 
-bool DashboardTcpInterface::isConnected()
+bool MotionTcpInterface::isConnected()
 {
   return this->tcp_socket_->isConnected();
 }
 
-void DashboardTcpInterface::sendCommand(const std::string & cmd)
+void MotionTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
 }
 
-std::string DashboardTcpInterface::recvResponse()
-{
-  char buf[100];
-  this->tcp_socket_->recv(buf, sizeof(buf), 500);
-  RCLCPP_INFO(
-    this->getLogger(),
-    "recv: %s", std::string(buf).c_str());
-  return std::string(buf);
-}
-
-bool DashboardTcpInterface::waitForResponseReceive(
-  const std::string & expect, const std::chrono::duration<int64_t> timeout)
-{
-  using namespace std::chrono_literals;
-  const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(timeout)) {
-    const std::string res = this->recvResponse();
-    if (res.find(expect) != std::string::npos) {
-      return true;
-    }
-  }
-  return false;
-}
 }  // namespace mg400_interface
