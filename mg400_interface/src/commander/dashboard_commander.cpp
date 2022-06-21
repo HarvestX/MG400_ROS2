@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 
 DashboardCommander::DashboardCommander(
   DashboardTcpInterfaceBase * tcp_if,
-  const std::chrono::duration<int64_t> timeout)
+  const std::chrono::nanoseconds timeout)
 : tcp_if_(tcp_if),
   clock_(std::make_shared<rclcpp::Clock>(RCL_STEADY_TIME)),
   TIMEOUT(timeout)
