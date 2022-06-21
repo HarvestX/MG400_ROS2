@@ -1,4 +1,4 @@
-"""Load config. """
+"""Load config."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ def load_robot_description(filename: str) -> Dict:
                 robot_description_content = file
         except EnvironmentError:
             exit(1)
-    return {"robot_description": robot_description_content}
+    return {'robot_description': robot_description_content}
 
 
 def load_rviz2(filename: str) -> str:
