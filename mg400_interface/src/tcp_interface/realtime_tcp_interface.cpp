@@ -47,11 +47,7 @@ void RealtimeTcpInterface::init() noexcept
 
 void RealtimeTcpInterface::recvData()
 {
-  int failed_cnt = 0;
-  while (failed_cnt < this->CONNECTION_TRIAL_) {
-    if (!this->is_running_) {
-      return;
-    }
+  while (this->is_running_) {
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(
@@ -67,7 +63,6 @@ void RealtimeTcpInterface::recvData()
               this->rt_data_.q_actual[i] * TO_RADIAN;
           }
           this->mutex_.unlock();
-          failed_cnt = 0;
           continue;
         } else {
           // timeout
@@ -79,8 +74,6 @@ void RealtimeTcpInterface::recvData()
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(
             this->getLogger(), "Tcp recv error: %s", err.what());
-          using namespace std::chrono_literals;
-          rclcpp::sleep_for(1s);
         }
       }
     } catch (const TcpSocketException & err) {
@@ -89,14 +82,7 @@ void RealtimeTcpInterface::recvData()
         this->getLogger(),
         "Tcp recv error: %s", err.what());
     }
-    failed_cnt += 1;
   }
-
-  RCLCPP_ERROR(
-    this->getLogger(),
-    "Failed more than %d times ... Close connection.",
-    this->CONNECTION_TRIAL_);
-  std::terminate();
 }
 
 bool RealtimeTcpInterface::isConnected()

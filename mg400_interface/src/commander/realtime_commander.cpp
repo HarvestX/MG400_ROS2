@@ -83,10 +83,16 @@ void RealtimeCommander::arc(
 
 void RealtimeCommander::moveJog(const JogMode & axis_id)
 {
+  this->moveJog(getAxisIdStr(axis_id));
+}
+
+void RealtimeCommander::moveJog(const std::string & axis_id)
+{
   char buf[100];
-  snprintf(buf, sizeof(buf), "MoveJog(%s)", getAxisIdStr(axis_id).c_str());
+  snprintf(buf, sizeof(buf), "MoveJog(%s)", axis_id.c_str());
   this->tcp_if_->sendCommand(buf);
 }
+
 
 /**
 void RealtimeCommander::sync()

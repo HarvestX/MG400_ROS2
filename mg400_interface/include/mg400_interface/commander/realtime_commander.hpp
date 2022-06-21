@@ -63,6 +63,7 @@ public:
   **/
 
   void moveJog(const JogMode &);
+  void moveJog(const std::string &);
 
   /**
   void sync();

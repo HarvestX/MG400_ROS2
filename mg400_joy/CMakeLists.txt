@@ -9,12 +9,11 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Joy Interface Node ================================================
-set(TARGET joy_interface_node)
-ament_auto_add_library(${TARGET} SHARED src/${TARGET}.cpp)
+ament_auto_add_library(joy_interface_node SHARED src/joy_interface_node.cpp)
 rclcpp_components_register_node(
-  ${TARGET}
+  joy_interface_node
     PLUGIN "mg400_joy::JoyInterfaceNode"
-    EXECUTABLE ${TARGET}_exec)
+    EXECUTABLE joy_interface_node_exec)
 # End Joy Interface Node ============================================
 
 if(BUILD_TESTING)
