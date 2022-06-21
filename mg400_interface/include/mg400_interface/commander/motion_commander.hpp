@@ -18,18 +18,18 @@
 #include <string>
 
 #include "mg400_interface/command_utils.hpp"
-#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
+#include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 
 namespace mg400_interface
 {
-class RealtimeCommander
+class MotionCommander
 {
 private:
-  RealtimeTcpInterfaceBase * tcp_if_;
+  MotionTcpInterfaceBase * tcp_if_;
 
 public:
-  RealtimeCommander() = delete;
-  explicit RealtimeCommander(RealtimeTcpInterfaceBase *);
+  MotionCommander() = delete;
+  explicit MotionCommander(MotionTcpInterfaceBase *);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
@@ -63,6 +63,7 @@ public:
   **/
 
   void moveJog(const JogMode &);
+  void moveJog(const std::string &);
 
   /**
   void sync();

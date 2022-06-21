@@ -28,40 +28,35 @@
 
 namespace mg400_interface
 {
-class RealtimeTcpInterfaceBase
+class MotionTcpInterfaceBase
 {
 public:
-  RealtimeTcpInterfaceBase() {}
+  MotionTcpInterfaceBase() {}
   virtual void sendCommand(const std::string &) = 0;
 };
 
-class RealtimeTcpInterface : public RealtimeTcpInterfaceBase
+class MotionTcpInterface : public MotionTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 30003;
   const int CONNECTION_TRIAL_ = 3;
 
   std::mutex mutex_;
-  std::array<double, 6> current_joints_;
-  RealTimeData rt_data_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
 
 public:
-  RealtimeTcpInterface() = delete;
-  explicit RealtimeTcpInterface(const std::string &);
-  ~RealtimeTcpInterface();
+  MotionTcpInterface() = delete;
+  explicit MotionTcpInterface(const std::string &);
+  ~MotionTcpInterface();
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
-  void getCurrentJointStates(std::array<double, 6> &);
-  RealTimeData getRealtimeData();
-  RobotMode getRobotMode();
   bool isConnected();
   void sendCommand(const std::string &) override;
 
 private:
-  void recvData();
+  void checkConnection();
 };
 }  // namespace mg400_interface

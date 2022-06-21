@@ -142,8 +142,8 @@ void JoyInterfaceNode::callEnableRobot()
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedFuture;
   auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res == 0) {
+      auto response = future.get();
+      if (response->result) {
         this->current_robot_state_ = ROBOT_STATE::ENABLED;
       }
       this->current_service_state_ = SERVICE_STATE::DONE;
@@ -177,8 +177,8 @@ void JoyInterfaceNode::callDisableRobot()
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedFuture;
   auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res == 0) {
+      auto response = future.get();
+      if (response->result) {
         this->current_robot_state_ = ROBOT_STATE::DISABLED;
       }
       this->current_service_state_ = SERVICE_STATE::DONE;
@@ -212,13 +212,7 @@ void JoyInterfaceNode::callMoveJog(const std::string & axis_id)
 
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res != 0) {
-        RCLCPP_ERROR(
-          this->get_logger(),
-          "MoveJog client received invalid response.");
-      }
+  auto req_callback = [this](ServiceResponseFuture) {
       this->current_service_state_ = SERVICE_STATE::DONE;
     };
   auto future_result =

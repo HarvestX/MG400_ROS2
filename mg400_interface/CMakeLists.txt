@@ -30,8 +30,9 @@ set_property(TARGET joint_handler PROPERTY POSITION_INDEPENDENT_CODE ON)
 ament_auto_add_library(
   tcp_interface
     STATIC
-      ./src/tcp_interface/realtime_tcp_interface.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
+      ./src/tcp_interface/motion_tcp_interface.cpp
+      ./src/tcp_interface/realtime_feedback_tcp_interface.cpp
       ./src/tcp_interface/tcp_socket_handler.cpp)
 set_property(TARGET tcp_interface PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Tcp Socket Handler ============================================
@@ -48,8 +49,8 @@ set_property(TARGET command_utils PROPERTY POSITION_INDEPENDENT_CODE ON)
 ament_auto_add_library(
   commander
     STATIC
-      ./src/commander/realtime_commander.cpp
-      ./src/commander/dashboard_commander.cpp)
+      ./src/commander/dashboard_commander.cpp
+      ./src/commander/motion_commander.cpp)
 set_property(TARGET commander PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(commander command_utils)
 # ===================================================================
@@ -80,8 +81,8 @@ if(BUILD_TESTING)
   ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
   target_link_libraries(test_error_msg_generator error_msg_generator)
 
-  # ament_add_gmock(test_realtime_commander test/src/commander/test_realtime_commander.cpp)
-  # target_link_libraries(test_realtime_commander commander)
+  ament_add_gmock(test_motion_commander test/src/commander/test_motion_commander.cpp)
+  target_link_libraries(test_motion_commander commander)
 
   ament_add_gmock(test_dashboard_commander test/src/commander/test_dashboard_commander.cpp)
   target_link_libraries(test_dashboard_commander commander)

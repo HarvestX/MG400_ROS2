@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <cinttypes>
-#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
+#include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 int main(int argc, char ** argv)
@@ -26,7 +26,7 @@ int main(int argc, char ** argv)
   std::cout << "Connecting to: " << ip << std::endl;
 
   auto rt_tcp_if =
-    std::make_unique<mg400_interface::RealtimeTcpInterface>(ip);
+    std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip);
   auto db_tcp_if =
     std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
 

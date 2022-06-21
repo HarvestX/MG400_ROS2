@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/commander/realtime_commander.hpp"
+#include "mg400_interface/commander/motion_commander.hpp"
 
 namespace mg400_interface
 {
-RealtimeCommander::RealtimeCommander(RealtimeTcpInterfaceBase * tcp_if)
+MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
-void RealtimeCommander::movJ(
+void MotionCommander::movJ(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz)
 {
@@ -36,7 +36,7 @@ void RealtimeCommander::movJ(
 }
 
 /**
-void RealtimeCommander::movL(
+void MotionCommander::movL(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz
 )
@@ -44,14 +44,14 @@ void RealtimeCommander::movL(
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::jointMovJ(
+void MotionCommander::jointMovJ(
   const si_rad j1, const si_rad j2, const si_rad j3,
   const si_rad j4, const si_rad j5, const si_rad j6)
 {
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::movLIO(
+void MotionCommander::movLIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
   const DistanceMode & mode, const int distance,
@@ -60,7 +60,7 @@ void RealtimeCommander::movLIO(
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::movJIO(
+void MotionCommander::movJIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
   const DistanceMode & mode, const int distance,
@@ -70,7 +70,7 @@ void RealtimeCommander::movJIO(
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::arc(
+void MotionCommander::arc(
   const si_m x1, const si_m y1, const si_m z1,
   const si_rad rx1, const si_rad ry1, const si_rad rz1,
   const si_m x2, const si_m y2, const si_m z2,
@@ -81,20 +81,26 @@ void RealtimeCommander::arc(
 }
 **/
 
-void RealtimeCommander::moveJog(const JogMode & axis_id)
+void MotionCommander::moveJog(const JogMode & axis_id)
+{
+  this->moveJog(getAxisIdStr(axis_id));
+}
+
+void MotionCommander::moveJog(const std::string & axis_id)
 {
   char buf[100];
-  snprintf(buf, sizeof(buf), "MoveJog(%s)", getAxisIdStr(axis_id).c_str());
+  snprintf(buf, sizeof(buf), "MoveJog(%s)", axis_id.c_str());
   this->tcp_if_->sendCommand(buf);
 }
 
+
 /**
-void RealtimeCommander::sync()
+void MotionCommander::sync()
 {
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::relMovJUser(
+void MotionCommander::relMovJUser(
   const si_m, const si_m, const si_m,
   const si_rad, const si_rad, const si_rad,
   const UserIndex &)
@@ -102,7 +108,7 @@ void RealtimeCommander::relMovJUser(
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::relMovLUser(
+void MotionCommander::relMovLUser(
   const si_m, const si_m, const si_m,
   const si_rad, const si_rad, const si_rad,
   const UserIndex &)
@@ -110,7 +116,7 @@ void RealtimeCommander::relMovLUser(
   // TODO(anyone): Implement it
 }
 
-void RealtimeCommander::relJointMovJ(
+void MotionCommander::relJointMovJ(
   const si_rad, const si_rad, const si_rad,
   const si_rad, const si_rad, const si_rad)
 {

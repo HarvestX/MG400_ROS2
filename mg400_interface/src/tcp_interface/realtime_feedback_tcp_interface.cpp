@@ -12,46 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/tcp_interface/realtime_tcp_interface.hpp"
+
+#include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
 
 namespace mg400_interface
 {
-
-RealtimeTcpInterface::RealtimeTcpInterface(const std::string & ip)
+RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(const std::string & ip)
 : current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
-RealtimeTcpInterface::~RealtimeTcpInterface()
+RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
 {
   this->is_running_ = false;
   this->thread_->join();
 }
 
-rclcpp::Logger RealtimeTcpInterface::getLogger()
-{
-  return rclcpp::get_logger("Realtime Tcp Interface");
-}
-
-void RealtimeTcpInterface::init() noexcept
+void RealtimeFeedbackTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(
-      &RealtimeTcpInterface::recvData, this);
+      &RealtimeFeedbackTcpInterface::recvData, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
 }
 
-void RealtimeTcpInterface::recvData()
+rclcpp::Logger RealtimeFeedbackTcpInterface::getLogger()
 {
-  int failed_cnt = 0;
-  while (failed_cnt < this->CONNECTION_TRIAL_) {
-    if (!this->is_running_) {
-      return;
-    }
+  return rclcpp::get_logger("Realtime Feedback Tcp Interface");
+}
+
+bool RealtimeFeedbackTcpInterface::isConnected()
+{
+  return this->tcp_socket_->isConnected();
+}
+
+void RealtimeFeedbackTcpInterface::getCurrentJointStates(
+  std::array<double, 6> & joints)
+{
+  this->mutex_.lock();
+  joints = this->current_joints_;
+  this->mutex_.unlock();
+}
+
+RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
+{
+  return this->rt_data_;
+}
+
+RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
+{
+  return static_cast<RobotMode>(this->rt_data_.robot_mode);
+}
+
+void RealtimeFeedbackTcpInterface::recvData()
+{
+  while (this->is_running_) {
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(
@@ -62,12 +81,11 @@ void RealtimeTcpInterface::recvData()
           }
 
           this->mutex_.lock();
-          for (uint64_t i = 0; i < 6; ++i) {
+          for (uint64_t i = 0; i < 4; ++i) {
             this->current_joints_[i] =
               this->rt_data_.q_actual[i] * TO_RADIAN;
           }
           this->mutex_.unlock();
-          failed_cnt = 0;
           continue;
         } else {
           // timeout
@@ -79,8 +97,6 @@ void RealtimeTcpInterface::recvData()
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(
             this->getLogger(), "Tcp recv error: %s", err.what());
-          using namespace std::chrono_literals;
-          rclcpp::sleep_for(1s);
         }
       }
     } catch (const TcpSocketException & err) {
@@ -89,42 +105,7 @@ void RealtimeTcpInterface::recvData()
         this->getLogger(),
         "Tcp recv error: %s", err.what());
     }
-    failed_cnt += 1;
   }
-
-  RCLCPP_ERROR(
-    this->getLogger(),
-    "Failed more than %d times ... Close connection.",
-    this->CONNECTION_TRIAL_);
-  std::terminate();
 }
 
-bool RealtimeTcpInterface::isConnected()
-{
-  return this->tcp_socket_->isConnected();
-}
-
-void RealtimeTcpInterface::sendCommand(const std::string & cmd)
-{
-  this->tcp_socket_->send(cmd.data(), cmd.size());
-}
-
-void RealtimeTcpInterface::getCurrentJointStates(std::array<double, 6> & joints)
-{
-  this->mutex_.lock();
-  memcpy(
-    joints.data(), this->current_joints_.data(),
-    this->current_joints_.size());
-  this->mutex_.unlock();
-}
-
-RealTimeData RealtimeTcpInterface::getRealtimeData()
-{
-  return this->rt_data_;
-}
-
-RobotMode RealtimeTcpInterface::getRobotMode()
-{
-  return static_cast<RobotMode>(this->rt_data_.robot_mode);
-}
 }  // namespace mg400_interface
