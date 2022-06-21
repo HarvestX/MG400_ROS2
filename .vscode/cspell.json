@@ -11,6 +11,8 @@
     "bringup",
     "geochelone",
     "colcon",
-    "dpad"
+    "dpad",
+    "modbus",
+    "backdrive"
   ]
 }

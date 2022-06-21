@@ -25,7 +25,7 @@
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 
-#include <mg400_interface/move_jog.hpp>
+#include <mg400_interface/commander/motion_commander.hpp>
 
 #include <p9n_interface/p9n_interface.hpp>
 

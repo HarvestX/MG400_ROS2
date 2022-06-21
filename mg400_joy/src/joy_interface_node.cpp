@@ -142,8 +142,8 @@ void JoyInterfaceNode::callEnableRobot()
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedFuture;
   auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res == 0) {
+      auto response = future.get();
+      if (response->result) {
         this->current_robot_state_ = ROBOT_STATE::ENABLED;
       }
       this->current_service_state_ = SERVICE_STATE::DONE;
@@ -177,8 +177,8 @@ void JoyInterfaceNode::callDisableRobot()
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedFuture;
   auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res == 0) {
+      auto response = future.get();
+      if (response->result) {
         this->current_robot_state_ = ROBOT_STATE::DISABLED;
       }
       this->current_service_state_ = SERVICE_STATE::DONE;
@@ -212,13 +212,7 @@ void JoyInterfaceNode::callMoveJog(const std::string & axis_id)
 
   using ServiceResponseFuture =
     rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      if (result->res != 0) {
-        RCLCPP_ERROR(
-          this->get_logger(),
-          "MoveJog client received invalid response.");
-      }
+  auto req_callback = [this](ServiceResponseFuture) {
       this->current_service_state_ = SERVICE_STATE::DONE;
     };
   auto future_result =
@@ -256,44 +250,44 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
     tilted_values.begin(),
     std::max_element(tilted_values.begin(), tilted_values.end()));
 
-  std::string ret_val = "";
+  mg400_interface::JogMode mode = mg400_interface::JogMode::STOP;
   switch (max_idx) {
     case 0:
       {
-        ret_val = mg400_interface::J1_NEGATIVE;
+        mode = mg400_interface::JogMode::J1_NEGATIVE;
         if (this->p9n_if_->tiltedStickLX() < 0.0) {
-          ret_val = mg400_interface::J1_POSITIVE;
+          mode = mg400_interface::JogMode::J1_POSITIVE;
         }
         break;
 
       }
     case 1:
       {
-        ret_val = mg400_interface::J2_NEGATIVE;
+        mode = mg400_interface::JogMode::J2_NEGATIVE;
         if (this->p9n_if_->tiltedStickLY() < 0.0) {
-          ret_val = mg400_interface::J2_POSITIVE;
+          mode = mg400_interface::JogMode::J2_POSITIVE;
         }
         break;
       }
     case 2:
       {
-        ret_val = mg400_interface::J4_NEGATIVE;
+        mode = mg400_interface::JogMode::J4_NEGATIVE;
         if (this->p9n_if_->tiltedStickRX() < 0.0) {
-          ret_val = mg400_interface::J4_POSITIVE;
+          mode = mg400_interface::JogMode::J4_POSITIVE;
         }
         break;
       }
     case 3:
       {
-        ret_val = mg400_interface::J3_NEGATIVE;
+        mode = mg400_interface::JogMode::J3_NEGATIVE;
         if (this->p9n_if_->tiltedStickRY() < 0.0) {
-          ret_val = mg400_interface::J3_POSITIVE;
+          mode = mg400_interface::JogMode::J3_POSITIVE;
         }
         break;
       }
     default:
       break;
   }
-  return ret_val;
+  return mg400_interface::getAxisIdStr(mode);
 }
 }  // namespace mg400_joy

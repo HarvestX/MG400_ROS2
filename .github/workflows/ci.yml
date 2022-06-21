@@ -30,7 +30,6 @@ jobs:
           package-name: |
             mg400_bringup
             mg400_interface
-            mg400_control
             mg400_description
             mg400_msgs
             mg400_joy

@@ -59,14 +59,15 @@ bool ErrorMsgGenerator::loadJsonFile()
   json_file.close();
 
 
-  for (auto data: json_data) {
+  for (auto data : json_data) {
     RCLCPP_INFO(
       this->logger_,
       "ID %d, Message: %s",
       data["id"].asInt(),
       data["en"]["description"].asString().c_str());
 
-    this->error_map_.emplace(data["id"].asInt(), data["en"]["description"].asString().c_str());
+    this->error_map_.emplace(
+      data["id"].asInt(), data["en"]["description"].asString().c_str());
   }
 
   return true;

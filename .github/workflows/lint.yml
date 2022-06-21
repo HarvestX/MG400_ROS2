@@ -31,7 +31,6 @@ jobs:
           linter: ${{ matrix.linter }}
           package-name: |
             mg400_bringup
-            mg400_control
             mg400_interface
             mg400_joy
             mg400_description
@@ -61,7 +60,6 @@ jobs:
           linter: ${{ matrix.linter }}
           package-name: |
             mg400_bringup
-            mg400_control
             mg400_interface
             mg400_joy
             mg400_description
@@ -76,7 +74,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
         ros_distribution: [galactic]
-        linter: [mypy, pep257, flake8]
+        linter: [mypy, flake8]
     steps:
       - name: Work around permission issue
         run: git config --global --add safe.directory /__w/MG400_ROS2/MG400_ROS2
@@ -91,7 +89,6 @@ jobs:
           linter: ${{ matrix.linter }}
           package-name: |
             mg400_bringup
-            mg400_control
             mg400_interface
             mg400_joy
             mg400_description

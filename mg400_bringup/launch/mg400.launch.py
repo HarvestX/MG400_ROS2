@@ -31,8 +31,7 @@ from launch.substitutions import TextSubstitution
 
 from launch_ros.actions import Node
 
-from mg400_bringup.node_generator import robot_state_publisher as rsp
-from mg400_bringup.node_generator import rviz2
+from mg400_bringup.config_loader import loader as cl
 
 
 def generate_launch_description():
@@ -53,22 +52,23 @@ def generate_launch_description():
     joy = LaunchConfiguration('joy')
 
     nodes: List[Node] = [
-        rsp.load_node(
-            filename='mg400.urdf.xacro',
-            namespace=namespace),
-        rviz2.load_node('mg400.rviz'),
         Node(
-            package='mg400_control',
-            executable='mg400_control',
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='log',
+            arguments=['-d', cl.load_rviz2('mg400.rviz')]
+        ),
+        Node(
+            package='mg400_node',
+            executable='service_node_exec',
             namespace=namespace,
-            name='mg400_control',
+            name='mg400_service_node',
             on_exit=Shutdown(),
             parameters=[{
                 'ip_address': ip_address, }]),
-    ]
-    timer_action = [
         TimerAction(
-            period=1.0,
+            period=1.5,
             actions=[
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
@@ -80,8 +80,16 @@ def generate_launch_description():
                     ),
                     condition=IfCondition(joy)
                 ),
-            ]
-        )
+                Node(
+                    package='robot_state_publisher',
+                    executable='robot_state_publisher',
+                    namespace=namespace,
+                    output='log',
+                    parameters=[
+                        cl.load_robot_description('mg400.urdf.xacro'),
+                    ]
+                ),
+            ])
     ]
 
-    return LaunchDescription(launch_args + nodes + timer_action)
+    return LaunchDescription(launch_args + nodes)

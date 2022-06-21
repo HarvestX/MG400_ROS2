@@ -13,6 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# Joint State Publisher GUI =========================================
 ament_auto_add_executable(
   joint_state_publisher_gui
     ./src/joint_state_publisher_gui/main.cpp
@@ -20,6 +21,15 @@ ament_auto_add_executable(
 target_include_directories(
   joint_state_publisher_gui PRIVATE include ${Qt5Widgets_INCLUDE_DIRS})
 target_link_libraries(joint_state_publisher_gui Qt5::Widgets)
+# End Joint State Publisher GUI =====================================
+
+# ===================================================================
+ament_auto_add_library(service_node SHARED src/service_node.cpp)
+rclcpp_components_register_node(
+  service_node
+    PLUGIN "mg400_node::ServiceNode"
+    EXECUTABLE service_node_exec)
+# ===================================================================
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
