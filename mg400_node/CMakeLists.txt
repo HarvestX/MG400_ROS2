@@ -9,9 +9,6 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 # Joint State Publisher GUI =========================================
 ament_auto_add_executable(
@@ -21,6 +18,9 @@ ament_auto_add_executable(
 target_include_directories(
   joint_state_publisher_gui PRIVATE include ${Qt5Widgets_INCLUDE_DIRS})
 target_link_libraries(joint_state_publisher_gui Qt5::Widgets)
+set_property(TARGET joint_state_publisher_gui PROPERTY AUTOMOC ON)
+set_property(TARGET joint_state_publisher_gui PROPERTY AUTOUIC ON)
+set_property(TARGET joint_state_publisher_gui PROPERTY AUTORCC ON)
 # End Joint State Publisher GUI =====================================
 
 # ===================================================================
