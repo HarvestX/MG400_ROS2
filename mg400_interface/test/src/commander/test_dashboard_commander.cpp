@@ -27,9 +27,6 @@ public:
 
   MOCK_METHOD(void, sendCommand, (const std::string &), (override));
   MOCK_METHOD(std::string, recvResponse, (), (override));
-  MOCK_METHOD(
-    bool, waitForResponseReceive, (const std::string &,
-    const std::chrono::duration<int64_t>), (override));
 };
 
 class TestDashboardCommander : public ::testing::Test
@@ -39,8 +36,9 @@ protected:
   MockTcpInterface mock;
   virtual void SetUp()
   {
+    using namespace std::chrono_literals;
     this->commander =
-      std::make_unique<mg400_interface::DashboardCommander>(&this->mock);
+      std::make_unique<mg400_interface::DashboardCommander>(&this->mock, 0s);
   }
 
   virtual void TearDown() {}

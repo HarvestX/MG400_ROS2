@@ -18,48 +18,41 @@ namespace mg400_interface
 {
 using namespace std::chrono_literals;
 
-DashboardCommander::DashboardCommander(DashboardTcpInterfaceBase * tcp_if)
-: tcp_if_(tcp_if)
+DashboardCommander::DashboardCommander(
+  DashboardTcpInterfaceBase * tcp_if,
+  const std::chrono::duration<int64_t> timeout)
+: tcp_if_(tcp_if),
+  clock_(std::make_shared<rclcpp::Clock>(RCL_STEADY_TIME)),
+  TIMEOUT(timeout)
 {
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
 bool DashboardCommander::enableRobot() const
 {
-  this->tcp_if_->sendCommand("EnableRobot()");
-
-  return this->tcp_if_->waitForResponseReceive("EnableRobot()");
+  return this->sendCommand("EnableRobot()");
 }
 
 bool DashboardCommander::disableRobot() const
 {
-  this->tcp_if_->sendCommand("DisableRobot()");
-
-  return this->tcp_if_->waitForResponseReceive("DisableRobot()");
+  return this->sendCommand("DisableRobot()");
 }
 
 bool DashboardCommander::clearError() const
 {
-  this->tcp_if_->sendCommand("ClearError()");
-
-  return this->tcp_if_->waitForResponseReceive("ClearError()");
-
+  return this->sendCommand("ClearError()");
 }
 
 bool DashboardCommander::resetRobot() const
 {
-  this->tcp_if_->sendCommand("ResetRobot()");
-
-  return this->tcp_if_->waitForResponseReceive("ResetRobot()");
+  return this->sendCommand("ResetRobot()");
 }
 
 bool DashboardCommander::speedFactor(const int ratio) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SpeedFactor(%d)", ratio);
-  this->tcp_if_->sendCommand(buf);
-
-  return this->tcp_if_->waitForResponseReceive(std::string(buf));
+  return this->sendCommand(buf);
 }
 
 void DashboardCommander::getErrorId() const
@@ -76,5 +69,19 @@ void DashboardCommander::getErrorId() const
 const rclcpp::Logger DashboardCommander::getLogger()
 {
   return rclcpp::get_logger("DashboardCommander");
+}
+
+bool DashboardCommander::sendCommand(const std::string & command) const
+{
+  this->tcp_if_->sendCommand(command);
+
+  const auto start = this->clock_->now();
+  while (this->clock_->now() - start < rclcpp::Duration(TIMEOUT)) {
+    const std::string res = this->tcp_if_->recvResponse();
+    if (res.find(command) != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
 }
 }  // namespace mg400_interface

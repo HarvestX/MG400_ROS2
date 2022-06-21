@@ -17,8 +17,7 @@
 namespace mg400_interface
 {
 DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
-: is_running_(false),
-  clock_(std::make_shared<rclcpp::Clock>(RCL_STEADY_TIME))
+: is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
@@ -102,19 +101,5 @@ std::string DashboardTcpInterface::recvResponse()
     this->getLogger(),
     "recv: %s", std::string(buf).c_str());
   return std::string(buf);
-}
-
-bool DashboardTcpInterface::waitForResponseReceive(
-  const std::string & expect, const std::chrono::duration<int64_t> timeout)
-{
-  using namespace std::chrono_literals;
-  const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(timeout)) {
-    const std::string res = this->recvResponse();
-    if (res.find(expect) != std::string::npos) {
-      return true;
-    }
-  }
-  return false;
 }
 }  // namespace mg400_interface

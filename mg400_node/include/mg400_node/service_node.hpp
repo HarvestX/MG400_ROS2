@@ -20,7 +20,6 @@
 #include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
-#include <mg400_msgs/srv/get_error_id.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/mov_j.hpp>
 #include <mg400_msgs/srv/mov_l.hpp>
@@ -58,7 +57,6 @@ private:
   rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr clear_error_srv_;
   rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
-  // rclcpp::Service<mg400_msgs::srv::GetErrorID>::SharedPtr get_error_id_srv_;
 
   rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
   rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
@@ -82,12 +80,6 @@ private:
   void enableRobot(
     const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
     mg400_msgs::srv::EnableRobot::Response::SharedPtr);
-  /**
-  void getErrorId(
-    const std::shared_ptr<rmw_request_id_t>,
-    const mg400_msgs::srv::GetErrorID::Request::SharedPtr,
-    mg400_msgs::srv::GetErrorID::Response::SharedPtr);
-  **/
 
   void moveJog(
     const mg400_msgs::srv::MoveJog::Request::SharedPtr,

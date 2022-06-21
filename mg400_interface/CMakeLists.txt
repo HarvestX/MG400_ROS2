@@ -18,6 +18,14 @@ target_link_libraries(error_msg_generator stdc++fs jsoncpp)
 set_property(TARGET error_msg_generator PROPERTY POSITION_INDEPENDENT_CODE ON)
 # End Error Message Generator =======================================
 
+# Response Parser ===================================================
+ament_auto_add_library(
+  response_parser
+    STATIC
+      ./src/response_parser.cpp)
+set_property(TARGET response_parser PROPERTY POSITION_INDEPENDENT_CODE ON)
+# End Response Parser ===============================================
+
 # Joint Handler =====================================================
 ament_auto_add_library(
   joint_handler
@@ -80,6 +88,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
   target_link_libraries(test_error_msg_generator error_msg_generator)
+
+  ament_add_gtest(test_response_parser test/src/test_response_parser.cpp)
+  target_link_libraries(test_response_parser response_parser)
 
   ament_add_gmock(test_motion_commander test/src/commander/test_motion_commander.cpp)
   target_link_libraries(test_motion_commander commander)

@@ -72,15 +72,6 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
       &ServiceNode::enableRobot, this,
       std::placeholders::_1, std::placeholders::_2));
 
-  /**
-  this->get_error_id_srv_ =
-    this->create_service<mg400_msgs::srv::GetErrorID>(
-    "get_error_id",
-    std::bind(
-      &ServiceNode::getErrorId, this,
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-  **/
-
   this->move_jog_srv_ =
     this->create_service<mg400_msgs::srv::MoveJog>(
     "move_jog",
