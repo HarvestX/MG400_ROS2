@@ -23,6 +23,7 @@
 #include <mg400_msgs/srv/get_error_id.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/mov_j.hpp>
+#include <mg400_msgs/srv/mov_l.hpp>
 
 #include <mg400_interface/tcp_interface/dashboard_tcp_interface.hpp>
 #include <mg400_interface/tcp_interface/motion_tcp_interface.hpp>
@@ -61,6 +62,7 @@ private:
 
   rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
   rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::MovL>::SharedPtr mov_l_srv_;
 
 public:
   explicit ServiceNode(const rclcpp::NodeOptions &);
@@ -93,6 +95,9 @@ private:
   void movJ(
     const mg400_msgs::srv::MovJ::Request::SharedPtr,
     mg400_msgs::srv::MovJ::Response::SharedPtr);
+  void movL(
+    const mg400_msgs::srv::MovL::Request::SharedPtr,
+    mg400_msgs::srv::MovL::Response::SharedPtr);
 };
 }  // namespace mg400_node
 

@@ -20,6 +20,7 @@ set(srv_files
     "srv/GetErrorID.srv"
     "srv/MoveJog.srv"
     "srv/MovJ.srv"
+    "srv/MovL.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME} ${srv_files})
