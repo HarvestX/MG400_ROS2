@@ -51,7 +51,6 @@ TEST_F(TestMotionCommander, MovJ) {
   commander->movJ(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
-/**
 TEST_F(TestMotionCommander, MovL) {
   EXPECT_CALL(
     mock, sendCommand(
@@ -60,6 +59,7 @@ TEST_F(TestMotionCommander, MovL) {
   commander->movL(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
+/**
 TEST_F(TestMotionCommander, JointMovJ)
 {
   EXPECT_CALL(

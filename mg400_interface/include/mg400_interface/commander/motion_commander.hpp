@@ -36,11 +36,11 @@ public:
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
 
-  /**
   void movL(
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
 
+  /**
   void jointMovJ(
     const si_rad, const si_rad, const si_rad,
     const si_rad, const si_rad, const si_rad);

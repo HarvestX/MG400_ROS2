@@ -94,6 +94,13 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     std::bind(
       &ServiceNode::movJ, this,
       std::placeholders::_1, std::placeholders::_2));
+
+  this->mov_l_srv_ =
+    this->create_service<mg400_msgs::srv::MovL>(
+    "mov_l",
+    std::bind(
+      &ServiceNode::movL, this,
+      std::placeholders::_1, std::placeholders::_2));
   // END Ros Interfaces
 
 
@@ -179,6 +186,15 @@ void ServiceNode::movJ(
 )
 {
   this->mt_commander_->movJ(
+    request->x, request->y, request->z,
+    request->rx, request->ry, request->rz);
+}
+
+void ServiceNode::movL(
+  const mg400_msgs::srv::MovL::Request::SharedPtr request,
+  mg400_msgs::srv::MovL::Response::SharedPtr)
+{
+  this->mt_commander_->movL(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
 }

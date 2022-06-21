@@ -35,15 +35,20 @@ void MotionCommander::movJ(
   this->tcp_if_->sendCommand(buf);
 }
 
-/**
 void MotionCommander::movL(
   const si_m x, const si_m y, const si_m z,
-  const si_rad rx, const si_rad ry, const si_rad rz
-)
+  const si_rad rx, const si_rad ry, const si_rad rz)
 {
-  // TODO(anyone): Implement it
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "MovL(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
+    m2mm(x), m2mm(y), m2mm(z),
+    rad2degree(rx), rad2degree(ry), rad2degree(rz));
+  this->tcp_if_->sendCommand(buf);
 }
 
+/**
 void MotionCommander::jointMovJ(
   const si_rad j1, const si_rad j2, const si_rad j3,
   const si_rad j4, const si_rad j5, const si_rad j6)
