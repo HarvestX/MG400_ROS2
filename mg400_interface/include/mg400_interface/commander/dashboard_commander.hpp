@@ -24,14 +24,20 @@
 namespace mg400_interface
 {
 
+using namespace std::chrono_literals;
+
 class DashboardCommander
 {
 private:
   DashboardTcpInterfaceBase * tcp_if_;
+  rclcpp::Clock::SharedPtr clock_;
+  const std::chrono::duration<int64_t> TIMEOUT;
 
 public:
   DashboardCommander() = delete;
-  explicit DashboardCommander(DashboardTcpInterfaceBase *);
+  explicit DashboardCommander(
+    DashboardTcpInterfaceBase *,
+    const std::chrono::duration<int64_t> = 5s);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   bool enableRobot() const;
@@ -111,5 +117,6 @@ public:
 
 private:
   static const rclcpp::Logger getLogger();
+  bool sendCommand(const std::string &) const;
 };
 }  // namespace mg400_interface

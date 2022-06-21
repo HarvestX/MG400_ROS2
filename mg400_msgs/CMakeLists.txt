@@ -17,7 +17,6 @@ set(srv_files
     "srv/ClearError.srv"
     "srv/DisableRobot.srv"
     "srv/EnableRobot.srv"
-    "srv/GetErrorID.srv"
     "srv/MoveJog.srv"
     "srv/MovJ.srv"
     "srv/MovL.srv"
