@@ -18,6 +18,7 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <regex>
 
 namespace mg400_interface
 {

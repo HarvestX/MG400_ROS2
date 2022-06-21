@@ -38,7 +38,7 @@ protected:
   {
     using namespace std::chrono_literals;
     this->commander =
-      std::make_unique<mg400_interface::DashboardCommander>(&this->mock, 0s);
+      std::make_unique<mg400_interface::DashboardCommander>(&this->mock, 1ms);
   }
 
   virtual void TearDown() {}

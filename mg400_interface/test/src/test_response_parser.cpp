@@ -16,12 +16,13 @@
 #include <mg400_interface/response_parser.hpp>
 
 TEST(MessageHandler, ParseErrorMessage) {
-  const char * response = R"(0,{[
+  const std::string response =
+    R"(0,{[
 	[
 		69,
 		72
 	],
-	[],
+	[1],
 	[],
 	[],
 	[],
@@ -30,5 +31,15 @@ TEST(MessageHandler, ParseErrorMessage) {
 },GetErrorID();)";
 
   std::cout << response << std::endl;
-  ASSERT_FALSE(true);
+  auto res =
+    mg400_interface::ResponseParser::parseErrorMessage(response);
+
+  ASSERT_EQ(res.at(0).at(0), 69);
+  ASSERT_EQ(res.at(0).at(1), 72);
+  ASSERT_EQ(res.at(1).at(0), 1);
+
+  ASSERT_TRUE(res.at(2).empty());
+  ASSERT_TRUE(res.at(3).empty());
+  ASSERT_TRUE(res.at(4).empty());
+  ASSERT_TRUE(res.at(5).empty());
 }
