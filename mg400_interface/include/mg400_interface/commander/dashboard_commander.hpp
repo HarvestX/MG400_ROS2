@@ -31,13 +31,13 @@ class DashboardCommander
 private:
   DashboardTcpInterfaceBase * tcp_if_;
   rclcpp::Clock::SharedPtr clock_;
-  const std::chrono::duration<int64_t> TIMEOUT;
+  const std::chrono::nanoseconds TIMEOUT;
 
 public:
   DashboardCommander() = delete;
   explicit DashboardCommander(
     DashboardTcpInterfaceBase *,
-    const std::chrono::duration<int64_t> = 5s);
+    const std::chrono::nanoseconds = 5s);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   bool enableRobot() const;
