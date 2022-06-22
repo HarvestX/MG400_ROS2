@@ -13,6 +13,7 @@
     "colcon",
     "dpad",
     "modbus",
-    "backdrive"
+    "backdrive",
+    "nlohmann"
   ]
 }

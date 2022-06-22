@@ -14,10 +14,13 @@
 
 #pragma once
 
+#include <array>
+#include <vector>
 #include <string>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
+#include "mg400_interface/commander/response_parser.hpp"
 #include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
@@ -107,7 +110,7 @@ public:
   // void setHoldRegs();
   **/
 
-  void getErrorId() const;
+  std::array<std::vector<int>, 6> getErrorId() const;
 
   /**
   int DI(const int) const;

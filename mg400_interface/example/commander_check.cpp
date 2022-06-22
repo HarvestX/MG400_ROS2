@@ -52,6 +52,14 @@ int main(int argc, char ** argv)
   auto db_commander =
     std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if.get());
 
+  auto res = db_commander->getErrorId();
+  for (auto eids : res) {
+    for (auto eid : eids) {
+      std::cout << eid << ", ";
+    }
+    std::cout << std::endl;
+  }
+
   const bool enable_res = db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
 

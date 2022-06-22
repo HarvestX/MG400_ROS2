@@ -12,34 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gtest/gtest.h>
-#include <mg400_interface/response_parser.hpp>
+#pragma once
 
-TEST(MessageHandler, ParseErrorMessage) {
-  const std::string response =
-    R"(0,{[
-	[
-		69,
-		72
-	],
-	[1],
-	[],
-	[],
-	[],
-	[]
-]
-},GetErrorID();)";
 
-  std::cout << response << std::endl;
-  auto res =
-    mg400_interface::ResponseParser::parseErrorMessage(response);
+#include <array>
+#include <vector>
+#include <string>
+#include <regex>
 
-  ASSERT_EQ(res.at(0).at(0), 69);
-  ASSERT_EQ(res.at(0).at(1), 72);
-  ASSERT_EQ(res.at(1).at(0), 1);
-
-  ASSERT_TRUE(res.at(2).empty());
-  ASSERT_TRUE(res.at(3).empty());
-  ASSERT_TRUE(res.at(4).empty());
-  ASSERT_TRUE(res.at(5).empty());
-}
+namespace mg400_interface
+{
+class ResponseParser
+{
+public:
+  static std::array<std::vector<int>, 6> parseErrorMessage(const std::string &);
+};
+}  // namespace mg400_interface

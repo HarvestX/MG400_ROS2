@@ -32,6 +32,7 @@
 #include <mg400_interface/commander/motion_commander.hpp>
 
 #include <mg400_interface/joint_handler.hpp>
+#include <mg400_interface/error_msg_generator.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -43,6 +44,8 @@ class ServiceNode : public rclcpp::Node
 private:
   const std::string prefix_;
 
+  std::unique_ptr<mg400_interface::ErrorMsgGenerator> error_msg_generator_;
+
   std::unique_ptr<mg400_interface::DashboardTcpInterface> db_tcp_if_;
   std::unique_ptr<mg400_interface::MotionTcpInterface> mt_tcp_if_;
   std::unique_ptr<mg400_interface::RealtimeFeedbackTcpInterface> rt_tcp_if_;
@@ -51,6 +54,7 @@ private:
   std::unique_ptr<mg400_interface::MotionCommander> mt_commander_;
 
   rclcpp::TimerBase::SharedPtr js_timer_;
+  rclcpp::TimerBase::SharedPtr error_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
@@ -70,6 +74,8 @@ private:
   void initTcpIf();
 
   void onJsTimer();
+
+  void onErrorTimer();
 
   void clearError(
     const mg400_msgs::srv::ClearError::Request::SharedPtr,
