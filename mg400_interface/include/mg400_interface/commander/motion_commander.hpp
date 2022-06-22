@@ -40,7 +40,7 @@ public:
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
 
-  /**
+  
   void jointMovJ(
     const si_rad, const si_rad, const si_rad,
     const si_rad, const si_rad, const si_rad);
@@ -60,12 +60,12 @@ public:
     const si_rad, const si_rad, const si_rad,
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
-  **/
+  
 
   void moveJog(const JogMode &);
   void moveJog(const std::string &);
 
-  /**
+  
   void sync();
 
   void relMovJUser(
@@ -81,7 +81,7 @@ public:
   void relJointMovJ(
     const si_rad, const si_rad, const si_rad,
     const si_rad, const si_rad, const si_rad);
-  **/
+  
 
   // End DOBOT MG400 Official Command -----------------------------------------
 };
