@@ -2,7 +2,7 @@
 MG400 interface library package.
 This package provide interface library to connect with Dobot MG400 via TCP communication protocols.
 
-![Image](../media/MG400Interface.png)
+![Image](../media/MG400Interface.svg)
 
 ## Command Support Status
 ### Dashboard Command
