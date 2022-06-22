@@ -51,23 +51,27 @@ No need to fill in the "Gateway" and "DNS".
 
 Check the circle light on the base of MG400 blink blue.
 
-## Launch Ros2 System
+## Launch ROS2 Packages
 Before launch MG400 scripts, open new terminal and type followings.
 ```bash
 source ~/ws_galactic/install/setup.bash
 ```
 
 ### Launch display (It works without hardware.)
+This command display the robot state with Rviz2.
+MG400 has parallel links, so the custom joint state publisher is used.
 ```bash
 ros2 launch mg400_bringup display.launch
 ```
 
 ### Launch main system (MG400 should be connected via LAN cable.)
+This command will start service server to operate MG400 via ROS2 service.
 ```bash
 ros2 launch mg400_bringup mg400.launch
 ```
+Avaliable services are listed [here](./mg400_node/README.md).
 
-### Test the sample program
+#### Test the sample program
 Launch main system with other terminal.
 Allow enough space around the robot as it moves.
 ```bash
@@ -77,7 +81,7 @@ Allow enough space around the robot as it moves.
 ## Running Utilities
 ### TCP Packet Checker
 ```bash
-ros2 run mg400_control realtime_packet_checker
+ros2 run mg400_interface show_realtime_data
 ```
 
 ## References
