@@ -54,27 +54,22 @@ int main(int argc, char ** argv)
 
   const bool enable_res = db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
-
   rclcpp::sleep_for(2s);
 
   const bool clearerr_res = db_commander->clearError();
   show_result(clearerr_res, "ClearError");
-
   rclcpp::sleep_for(2s);
 
   const bool resetrobo_res = db_commander->resetRobot();
   show_result(resetrobo_res, "ResetRobot");
-
   rclcpp::sleep_for(2s);
 
   const bool speedfactor_res = db_commander->speedFactor(10);
   show_result(speedfactor_res, "SpeedFactor");
-
   rclcpp::sleep_for(2s);
 
   const bool disable_res = db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
-
   rclcpp::sleep_for(1s);
 
   return EXIT_SUCCESS;
