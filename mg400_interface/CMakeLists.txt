@@ -81,7 +81,7 @@ if(BUILD_TESTING)
   ament_add_gtest(test_error_msg_generator test/src/test_error_msg_generator.cpp)
   target_link_libraries(test_error_msg_generator error_msg_generator)
 
-  ament_add_gtest(test_response_parser test/src/test_response_parser.cpp)
+  ament_add_gtest(test_response_parser test/src/commander/test_response_parser.cpp)
   target_link_libraries(test_response_parser commander)
 
   ament_add_gmock(test_motion_commander test/src/commander/test_motion_commander.cpp)
