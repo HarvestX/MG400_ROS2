@@ -25,7 +25,6 @@ namespace mg400_interface
 class ResponseParser
 {
 public:
-  static std::array<std::vector<int>, 6>
-  parseErrorMessage(const std::string &);
+  static std::array<std::vector<int>, 6> parseErrorMessage(const std::string &);
 };
 }  // namespace mg400_interface

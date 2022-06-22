@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
-#include <mg400_interface/response_parser.hpp>
+#include <mg400_interface/commander/response_parser.hpp>
 
 TEST(MessageHandler, ParseErrorMessage) {
   const std::string response =
