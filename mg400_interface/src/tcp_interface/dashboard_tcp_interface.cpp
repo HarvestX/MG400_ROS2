@@ -97,7 +97,7 @@ std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
   this->tcp_socket_->recv(buf, sizeof(buf), 500);
-  RCLCPP_INFO(
+  RCLCPP_DEBUG(
     this->getLogger(),
     "recv: %s", std::string(buf).c_str());
   return std::string(buf);

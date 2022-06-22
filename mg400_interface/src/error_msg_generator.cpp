@@ -44,30 +44,20 @@ std::string ErrorMsgGenerator::get(const int id)
 
 bool ErrorMsgGenerator::loadJsonFile()
 {
-  std::fstream json_file;
-
-  json_file.open(this->filename_, std::ios::in);
-
-  Json::Reader reader;
-  Json::Value json_data;
-  if (!reader.parse(json_file, json_data, true)) {
-    RCLCPP_ERROR(
-      this->logger_, "Could not parse json file.");
-    json_file.close();
-    return false;
-  }
-  json_file.close();
-
+  std::ifstream json_file(this->filename_);
+  nlohmann::json json_data;
+  json_file >> json_data;
 
   for (auto data : json_data) {
-    RCLCPP_INFO(
+    RCLCPP_DEBUG(
       this->logger_,
       "ID %d, Message: %s",
-      data["id"].asInt(),
-      data["en"]["description"].asString().c_str());
+      data["id"].get<int>(),
+      data["en"]["description"].get<std::string>().c_str());
 
     this->error_map_.emplace(
-      data["id"].asInt(), data["en"]["description"].asString().c_str());
+      data["id"].get<int>(),
+      data["en"]["description"].get<std::string>());
   }
 
   return true;

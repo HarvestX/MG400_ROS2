@@ -20,7 +20,10 @@ namespace mg400_node
 {
 ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 : Node("service_node", options),
-  prefix_(this->declare_parameter("prefix", ""))
+  prefix_(this->declare_parameter("prefix", "")),
+  error_msg_generator_(
+    std::make_unique<mg400_interface::ErrorMsgGenerator>(
+      "alarm_controller.json"))
 {
   const std::string ip_address =
     this->declare_parameter<std::string>("ip_address", "192.168.1.6");
@@ -49,6 +52,8 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
     10ms, std::bind(&ServiceNode::onJsTimer, this));
+  this->error_timer_ = this->create_wall_timer(
+    500ms, std::bind(&ServiceNode::onErrorTimer, this));
 
   // Service Initialization
   this->clear_error_srv_ =
@@ -138,6 +143,30 @@ void ServiceNode::onJsTimer()
     mg400_interface::getJointState(
       joint_states[0], joint_states[1], joint_states[2], joint_states[3],
       this->prefix_));
+}
+
+void ServiceNode::onErrorTimer()
+{
+  if (this->rt_tcp_if_->getRobotMode() != mg400_interface::RobotMode::ERROR) {
+    return;
+  }
+
+  std::stringstream ss;
+  const auto joints_error_ids = this->db_commander_->getErrorId();
+  for (size_t i = 0; i < joints_error_ids.size(); ++i) {
+    if (joints_error_ids.at(i).empty()) {
+      continue;
+    }
+    ss << "Joint" << (i + 1) << ":" << std::endl;
+    for (auto error_id : joints_error_ids.at(i)) {
+      const auto message = this->error_msg_generator_->get(error_id);
+      ss << "\t" << message << std::endl;
+    }
+  }
+  RCLCPP_ERROR(
+    this->get_logger(),
+    ss.str().c_str());
+  this->db_commander_->clearError();
 }
 
 void ServiceNode::clearError(

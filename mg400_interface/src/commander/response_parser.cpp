@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/response_parser.hpp"
+#include "mg400_interface/commander/response_parser.hpp"
 
 namespace mg400_interface
 {
-
-std::array<std::vector<int>, 6>
-ResponseParser::parseErrorMessage(const std::string & response)
+std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
+  const std::string & response)
 {
   std::array<std::vector<int>, 6> ret = {};
   // copy to mutable variable

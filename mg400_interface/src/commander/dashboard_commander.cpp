@@ -55,14 +55,19 @@ bool DashboardCommander::speedFactor(const int ratio) const
   return this->sendCommand(buf);
 }
 
-void DashboardCommander::getErrorId() const
+std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
 {
-  // TODO(anyone): Implement it
   this->tcp_if_->sendCommand("GetErrorID()");
 
-  rclcpp::sleep_for(500ms);
-
-  const std::string response = this->tcp_if_->recvResponse();
+  const auto start = this->clock_->now();
+  while (this->clock_->now() - start < rclcpp::Duration(this->TIMEOUT)) {
+    const std::string res = this->tcp_if_->recvResponse();
+    if (res.find("GetErrorID()") != std::string::npos) {
+      return ResponseParser::parseErrorMessage(res);
+    }
+  }
+  std::array<std::vector<int>, 6> ret;
+  return ret;
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 
@@ -76,7 +81,7 @@ bool DashboardCommander::sendCommand(const std::string & command) const
   this->tcp_if_->sendCommand(command);
 
   const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(TIMEOUT)) {
+  while (this->clock_->now() - start < rclcpp::Duration(this->TIMEOUT)) {
     const std::string res = this->tcp_if_->recvResponse();
     if (res.find(command) != std::string::npos) {
       return true;
