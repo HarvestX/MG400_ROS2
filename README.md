@@ -12,7 +12,8 @@ Dobot MG400 ROS2 Repository.
   - [Ubuntu 20.04](https://releases.ubuntu.com/20.04/)
 - ROS 2
   - [Galactic Geochelone](https://index.ros.org/doc/ros2/Installation/Galactic/)
-
+- MG400
+  - [Firmware version 1.5.6.0](https://forum.dobot.cc/t/the-mg400-and-m1-pro-1-5-6-0-controller-versions-are-released/5923/2)
 
 ## Install
 ### Locate package in workspace
