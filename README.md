@@ -35,7 +35,7 @@ exec -l $SHELL
 Open new terminal and type followings.
 ```bash
 source /opt/ros/galactic/setup.bash
-cd ~/ros2_ws
+cd ~/galactic_ws
 colcon build
 ```
 
