@@ -63,6 +63,13 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
       &ServiceNode::clearError, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  this->reset_robot_srv_ =
+    this->create_service<mg400_msgs::srv::ResetRobot>(
+    "reset_robot",
+    std::bind(
+      &ServiceNode::resetRobot, this,
+      std::placeholders::_1, std::placeholders::_2));
+
   this->disable_robot_srv_ =
     this->create_service<mg400_msgs::srv::DisableRobot>(
     "disable_robot",
@@ -175,6 +182,14 @@ void ServiceNode::clearError(
 )
 {
   response->result = this->db_commander_->clearError();
+}
+
+void ServiceNode::resetRobot(
+  const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
+  mg400_msgs::srv::ResetRobot::Response::SharedPtr response
+)
+{
+  response->result = this->db_commander_->resetRobot();
 }
 
 void ServiceNode::disableRobot(

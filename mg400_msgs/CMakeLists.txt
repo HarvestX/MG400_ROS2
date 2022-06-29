@@ -15,6 +15,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 set(srv_files
     "srv/ClearError.srv"
+    "srv/ResetRobot.srv"
     "srv/DisableRobot.srv"
     "srv/EnableRobot.srv"
     "srv/MoveJog.srv"
