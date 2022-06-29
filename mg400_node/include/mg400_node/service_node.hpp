@@ -18,6 +18,7 @@
 #include <string>
 
 #include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/srv/reset_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
@@ -59,6 +60,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
   rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr clear_error_srv_;
+  rclcpp::Service<mg400_msgs::srv::ResetRobot>::SharedPtr reset_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
 
@@ -80,6 +82,9 @@ private:
   void clearError(
     const mg400_msgs::srv::ClearError::Request::SharedPtr,
     mg400_msgs::srv::ClearError::Response::SharedPtr);
+  void resetRobot(
+    const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
+    mg400_msgs::srv::ResetRobot::Response::SharedPtr);
   void disableRobot(
     const mg400_msgs::srv::DisableRobot::Request::SharedPtr,
     mg400_msgs::srv::DisableRobot::Response::SharedPtr);
