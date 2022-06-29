@@ -21,6 +21,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/srv/reset_robot.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
@@ -47,6 +48,8 @@ private:
 
   rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr
     mg400_clear_error_clnt_;
+  rclcpp::Client<mg400_msgs::srv::ResetRobot>::SharedPtr
+    mg400_reset_robot_clnt_;
   rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr
     mg400_enable_robot_clnt_;
   rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedPtr
@@ -79,6 +82,7 @@ public:
 
 private:
   void callClearError();
+  void callResetRobot();
   void callEnableRobot();
   void callDisableRobot();
   void callMoveJog(const std::string &);
