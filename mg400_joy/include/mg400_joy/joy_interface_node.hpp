@@ -57,8 +57,10 @@ private:
   enum class ROBOT_STATE
   {
     DISABLED,
-    ENABLED,
-    MOVING
+    ENABLED_JOINT,
+    MOVING_JOINT,
+    ENABLED_LINEAR,
+    MOVING_LINEAR
   };
 
   ROBOT_STATE current_robot_state_;

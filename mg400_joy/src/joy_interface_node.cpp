@@ -74,7 +74,7 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
   }
 
   if (this->p9n_if_->pressedStart()) {
-    if (this->current_robot_state_ == ROBOT_STATE::ENABLED) {
+    if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT) {
       this->callDisableRobot();
     } else if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
       this->callEnableRobot();
@@ -83,14 +83,32 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
     rclcpp::sleep_for(500ms);
   }
 
+  if (this->p9n_if_->pressedR1()) {
+    if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT) {
+      this->current_robot_state_ = ROBOT_STATE::ENABLED_LINEAR;
+    } else if (this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR) {
+      this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
+    }
+    using namespace std::chrono_literals;
+    rclcpp::sleep_for(500ms);
+  }
+
   if (this->isStickTilted()) {
     auto axis_id = this->tiltedStick2JogAxis();
     this->callMoveJog(axis_id);
-    this->current_robot_state_ = ROBOT_STATE::MOVING;
-  } else if (this->current_robot_state_ == ROBOT_STATE::MOVING) {
+    if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT) {
+      this->current_robot_state_ = ROBOT_STATE::MOVING_JOINT;
+    } else if (this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR){
+      this->current_robot_state_ = ROBOT_STATE::MOVING_LINEAR;
+    }
+  } else if (this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT) {
     // Stop action
     this->callMoveJog("");
-    this->current_robot_state_ = ROBOT_STATE::ENABLED;
+    this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
+  } else if (this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR) {
+    // Stop action
+    this->callMoveJog("");
+    this->current_robot_state_ = ROBOT_STATE::ENABLED_LINEAR;
   }
 }
 
@@ -123,7 +141,7 @@ void JoyInterfaceNode::callClearError()
 
 void JoyInterfaceNode::callEnableRobot()
 {
-  if (this->current_robot_state_ == ROBOT_STATE::ENABLED) {
+  if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT || this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR) {
     RCLCPP_INFO(this->get_logger(), "Robot already enabled");
     return;
   }
@@ -144,7 +162,7 @@ void JoyInterfaceNode::callEnableRobot()
   auto req_callback = [this](ServiceResponseFuture future) {
       auto response = future.get();
       if (response->result) {
-        this->current_robot_state_ = ROBOT_STATE::ENABLED;
+        this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
       }
       this->current_service_state_ = SERVICE_STATE::DONE;
     };
@@ -254,19 +272,45 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
   switch (max_idx) {
     case 0:
       {
-        mode = mg400_interface::JogMode::J1_NEGATIVE;
-        if (this->p9n_if_->tiltedStickLX() < 0.0) {
-          mode = mg400_interface::JogMode::J1_POSITIVE;
-        }
+        if (
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
+       {
+          mode = mg400_interface::JogMode::J1_NEGATIVE;
+          if (this->p9n_if_->tiltedStickLX() < 0.0) {
+            mode = mg400_interface::JogMode::J1_POSITIVE;
+          }
+       }else if(
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
+       {
+          mode = mg400_interface::JogMode::X_NEGATIVE;
+          if (this->p9n_if_->tiltedStickLX() < 0.0) {
+            mode = mg400_interface::JogMode::X_POSITIVE;
+          }
+       }
         break;
 
       }
     case 1:
       {
-        mode = mg400_interface::JogMode::J2_NEGATIVE;
-        if (this->p9n_if_->tiltedStickLY() < 0.0) {
-          mode = mg400_interface::JogMode::J2_POSITIVE;
-        }
+        if (
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
+       {
+          mode = mg400_interface::JogMode::J2_NEGATIVE;
+          if (this->p9n_if_->tiltedStickLY() < 0.0) {
+            mode = mg400_interface::JogMode::J2_POSITIVE;
+          }
+       }else if(
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
+       {
+          mode = mg400_interface::JogMode::Y_POSITIVE;
+          if (this->p9n_if_->tiltedStickLY() < 0.0) {
+            mode = mg400_interface::JogMode::Y_NEGATIVE;
+          }
+       }
         break;
       }
     case 2:
@@ -279,10 +323,23 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
       }
     case 3:
       {
-        mode = mg400_interface::JogMode::J3_NEGATIVE;
-        if (this->p9n_if_->tiltedStickRY() < 0.0) {
-          mode = mg400_interface::JogMode::J3_POSITIVE;
-        }
+        if (
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
+       {
+          mode = mg400_interface::JogMode::J3_NEGATIVE;
+          if (this->p9n_if_->tiltedStickRY() < 0.0) {
+            mode = mg400_interface::JogMode::J3_POSITIVE;
+          }
+       }else if(
+          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
+          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
+       {
+          mode = mg400_interface::JogMode::Z_POSITIVE;
+          if (this->p9n_if_->tiltedStickRY() < 0.0) {
+            mode = mg400_interface::JogMode::Z_NEGATIVE;
+          }
+       }
         break;
       }
     default:
