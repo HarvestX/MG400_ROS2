@@ -69,7 +69,7 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
 
   this->p9n_if_->setJoyMsg(joy_msg);
 
-  if (this->p9n_if_->pressedCircle()) {
+  if (this->p9n_if_->pressedPS()) {
     this->callResetRobot();
     using namespace std::chrono_literals;
     rclcpp::sleep_for(500ms);
@@ -78,7 +78,7 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
   if (this->p9n_if_->pressedStart()) {
     if (
       this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-      this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT)
+      this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR)
     {
       this->callDisableRobot();
     } else if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
