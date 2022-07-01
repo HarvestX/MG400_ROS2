@@ -38,8 +38,6 @@ JoyInterfaceNode::JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
   this->p9n_if_ =
     std::make_unique<p9n_interface::PlayStationInterface>(this->hw_type_);
 
-  this->mg400_clear_error_clnt_ =
-    this->create_client<mg400_msgs::srv::ClearError>("clear_error");
   this->mg400_reset_robot_clnt_ =
     this->create_client<mg400_msgs::srv::ResetRobot>("reset_robot");
   this->mg400_move_jog_clnt_ =
@@ -55,10 +53,6 @@ JoyInterfaceNode::JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
 
   this->current_robot_state_ = ROBOT_STATE::DISABLED;
   this->current_service_state_ = SERVICE_STATE::DONE;
-
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Ready.");
 }
 
 void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
@@ -115,33 +109,6 @@ void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
     this->callMoveJog("");
     this->current_robot_state_ = ROBOT_STATE::ENABLED_LINEAR;
   }
-}
-
-void JoyInterfaceNode::callClearError()
-{
-  auto req = std::make_shared<mg400_msgs::srv::ClearError::Request>();
-  using namespace std::literals::chrono_literals;
-  while (!this->mg400_clear_error_clnt_->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Interrupted while waiting for the service. Exiting.");
-      return;
-    }
-  }
-  using ServiceResponseFuture =
-    rclcpp::Client<mg400_msgs::srv::ClearError>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future)
-    {
-      auto result = future.get();
-      this->current_service_state_ = SERVICE_STATE::DONE;
-    };
-  auto future_result =
-    this->mg400_clear_error_clnt_->async_send_request(req, req_callback);
-  this->current_service_state_ = SERVICE_STATE::IN_PROGRESS;
-
-  // For compiler warning
-  (void) future_result;
 }
 
 void JoyInterfaceNode::callResetRobot()

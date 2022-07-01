@@ -20,7 +20,6 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/reset_robot.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
@@ -33,8 +32,6 @@
 
 namespace mg400_joy
 {
-
-
 class JoyInterfaceNode : public rclcpp::Node
 {
 private:
@@ -46,8 +43,6 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
 
-  rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr
-    mg400_clear_error_clnt_;
   rclcpp::Client<mg400_msgs::srv::ResetRobot>::SharedPtr
     mg400_reset_robot_clnt_;
   rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr
@@ -81,7 +76,6 @@ public:
   void onJoy(sensor_msgs::msg::Joy::ConstSharedPtr);
 
 private:
-  void callClearError();
   void callResetRobot();
   void callEnableRobot();
   void callDisableRobot();
