@@ -55,6 +55,24 @@ bool DashboardCommander::speedFactor(const int ratio) const
   return this->sendCommand(buf);
 }
 
+bool DashboardCommander::DO(
+  const DOIndex && do_index,
+  const DOStatus && do_status) const
+{
+  return this->DO(
+    static_cast<int>(do_index),
+    static_cast<int>(do_status));
+}
+
+bool DashboardCommander::DO(
+  const int do_index,
+  const int do_status) const
+{
+  char buf[100];
+  snprintf(buf, sizeof(buf), "DO(%d,%d)", do_index, do_status);
+  return this->sendCommand(buf);
+}
+
 std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
 {
   this->tcp_if_->sendCommand("GetErrorID()");

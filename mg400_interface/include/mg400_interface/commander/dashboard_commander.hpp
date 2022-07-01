@@ -62,9 +62,13 @@ public:
   RobotMode robotMode() const;
 
   void payload(const double, const double) const;
+  **/
 
-  void DO(const DOIndex &, const DOStatus &);
+  bool DO(const DOIndex &&, const DOStatus &&) const;
+  bool DO(const int, const int) const;
 
+  // TODO(anyone): uncomment following function and implement it
+  /**
   void accJ(const int);
 
   void accL(const int);

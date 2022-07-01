@@ -79,6 +79,14 @@ TEST_F(TestDashboardCommander, SpeedFactor) {
   commander->speedFactor(78);
 }
 
+TEST_F(TestDashboardCommander, DO) {
+  EXPECT_CALL(
+    mock, sendCommand(StrEq("DO(12,1)"))).Times(1);
+  commander->DO(
+    mg400_interface::DOIndex::D12,
+    mg400_interface::DOStatus::HIGH);
+}
+
 TEST_F(TestDashboardCommander, GetErrorID) {
   EXPECT_CALL(
     mock, sendCommand(
