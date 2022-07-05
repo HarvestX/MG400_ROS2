@@ -21,6 +21,8 @@
 #include <mg400_msgs/srv/reset_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/tool_do_execute.hpp>
+
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/mov_j.hpp>
 #include <mg400_msgs/srv/mov_l.hpp>
@@ -63,6 +65,8 @@ private:
   rclcpp::Service<mg400_msgs::srv::ResetRobot>::SharedPtr reset_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
+  rclcpp::Service<mg400_msgs::srv::ToolDOExecute>::SharedPtr
+    tool_do_execute_srv_;
 
   rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
   rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
@@ -91,6 +95,9 @@ private:
   void enableRobot(
     const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
     mg400_msgs::srv::EnableRobot::Response::SharedPtr);
+  void toolDOExecute(
+    const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr,
+    mg400_msgs::srv::ToolDOExecute::Response::SharedPtr);
 
   void moveJog(
     const mg400_msgs::srv::MoveJog::Request::SharedPtr,
