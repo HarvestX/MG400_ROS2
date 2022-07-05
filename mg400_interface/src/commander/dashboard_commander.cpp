@@ -73,16 +73,16 @@ bool DashboardCommander::DO(
   return this->sendCommand(buf);
 }
 
-bool DashboardCommander::ToolDOExecute(
+bool DashboardCommander::toolDOExecute(
   const ToolDOIndex && tool_do_index,
   const DOStatus && do_status) const
 {
-  return this->ToolDOExecute(
+  return this->toolDOExecute(
     static_cast<int>(tool_do_index),
     static_cast<int>(do_status));
 }
 
-bool DashboardCommander::ToolDOExecute(
+bool DashboardCommander::toolDOExecute(
   const int tool_do_index,
   const int do_status) const
 {
