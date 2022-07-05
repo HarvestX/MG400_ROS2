@@ -90,7 +90,7 @@ TEST_F(TestDashboardCommander, DO) {
 TEST_F(TestDashboardCommander, ToolDOExecute) {
   EXPECT_CALL(
     mock, sendCommand(StrEq("ToolDOExecute(2,1)"))).Times(1);
-  commander->ToolDOExecute(
+  commander->toolDOExecute(
     mg400_interface::ToolDOIndex::D2,
     mg400_interface::DOStatus::HIGH);
 }
