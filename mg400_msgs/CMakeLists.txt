@@ -14,10 +14,11 @@ find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(srv_files
-    "srv/ClearError.srv"
     "srv/ResetRobot.srv"
+    "srv/ClearError.srv"
     "srv/DisableRobot.srv"
     "srv/EnableRobot.srv"
+    "srv/ToolDOExecute.srv"
     "srv/MoveJog.srv"
     "srv/MovJ.srv"
     "srv/MovL.srv"
