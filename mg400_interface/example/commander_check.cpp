@@ -52,37 +52,24 @@ int main(int argc, char ** argv)
   auto db_commander =
     std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if.get());
 
-  auto res = db_commander->getErrorId();
-  for (auto eids : res) {
-    for (auto eid : eids) {
-      std::cout << eid << ", ";
-    }
-    std::cout << std::endl;
-  }
-
   const bool enable_res = db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
-
   rclcpp::sleep_for(2s);
 
   const bool clearerr_res = db_commander->clearError();
   show_result(clearerr_res, "ClearError");
-
   rclcpp::sleep_for(2s);
 
-  const bool resetrobo_res = db_commander->resetRobot();
-  show_result(resetrobo_res, "ResetRobot");
-
+  const bool reset_robot_res = db_commander->resetRobot();
+  show_result(reset_robot_res, "ResetRobot");
   rclcpp::sleep_for(2s);
 
-  const bool speedfactor_res = db_commander->speedFactor(10);
-  show_result(speedfactor_res, "SpeedFactor");
-
+  const bool speed_factor_res = db_commander->speedFactor(10);
+  show_result(speed_factor_res, "SpeedFactor");
   rclcpp::sleep_for(2s);
 
   const bool disable_res = db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
-
   rclcpp::sleep_for(1s);
 
   return EXIT_SUCCESS;

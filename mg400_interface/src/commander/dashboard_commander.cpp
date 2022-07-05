@@ -73,6 +73,26 @@ bool DashboardCommander::DO(
   return this->sendCommand(buf);
 }
 
+bool DashboardCommander::ToolDOExecute(
+  const ToolDOIndex && tool_do_index,
+  const DOStatus && do_status) const
+{
+  return this->ToolDOExecute(
+    static_cast<int>(tool_do_index),
+    static_cast<int>(do_status));
+}
+
+bool DashboardCommander::ToolDOExecute(
+  const int tool_do_index,
+  const int do_status) const
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf), "ToolDOExecute(%d,%d)",
+    tool_do_index, do_status);
+  return this->sendCommand(buf);
+}
+
 std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
 {
   this->tcp_if_->sendCommand("GetErrorID()");
