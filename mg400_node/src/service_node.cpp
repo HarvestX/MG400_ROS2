@@ -84,6 +84,13 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
       &ServiceNode::enableRobot, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  this->tool_do_execute_srv_ =
+    this->create_service<mg400_msgs::srv::ToolDOExecute>(
+    "tool_do_execute",
+    std::bind(
+      &ServiceNode::toolDOExecute, this,
+      std::placeholders::_1, std::placeholders::_2));
+
   this->move_jog_srv_ =
     this->create_service<mg400_msgs::srv::MoveJog>(
     "move_jog",
@@ -206,6 +213,16 @@ void ServiceNode::enableRobot(
 )
 {
   response->result = this->db_commander_->enableRobot();
+}
+
+void ServiceNode::toolDOExecute(
+  const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr request,
+  mg400_msgs::srv::ToolDOExecute::Response::SharedPtr response
+)
+{
+  response->result = this->db_commander_->toolDOExecute(
+    request->index,
+    request->status);
 }
 
 void ServiceNode::moveJog(
