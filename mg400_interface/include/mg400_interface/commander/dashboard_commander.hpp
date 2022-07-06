@@ -67,6 +67,9 @@ public:
   bool DO(const DOIndex &&, const DOStatus &&) const;
   bool DO(const int, const int) const;
 
+  bool toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
+  bool toolDOExecute(const int, const int) const;
+
   // TODO(anyone): uncomment following function and implement it
   /**
   void accJ(const int);

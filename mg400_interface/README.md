@@ -17,7 +17,8 @@ This package provide interface library to connect with Dobot MG400 via TCP commu
 | :white_large_square: | Tool              |
 | :white_large_square: | RobotMode         |
 | :white_large_square: | PayLoad           |
-| :white_large_square: | DO                |
+| :heavy_check_mark:   | DO                |
+| :heavy_check_mark:   | ToolDOExecute     |
 | :white_large_square: | AccJ              |
 | :white_large_square: | AccL              |
 | :white_large_square: | SpeedJ            |
