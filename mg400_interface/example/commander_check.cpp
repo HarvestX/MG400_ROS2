@@ -15,6 +15,8 @@
 #include <string>
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 #include "mg400_interface/commander/dashboard_commander.hpp"
+#include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
+#include "mg400_interface/commander/motion_commander.hpp"
 
 
 void show_result(const bool res, const std::string & command)
@@ -44,13 +46,26 @@ int main(int argc, char ** argv)
 
   db_tcp_if->init();
 
+  auto mt_tcp_if =
+    std::make_unique<mg400_interface::MotionTcpInterface>(ip);
+
+  mt_tcp_if->init();
+
   while (!db_tcp_if->isConnected()) {
+    std::cout << "Waiting for the connection..." << std::endl;
+    rclcpp::sleep_for(1s);
+  }
+
+  while (!mt_tcp_if->isConnected()) {
     std::cout << "Waiting for the connection..." << std::endl;
     rclcpp::sleep_for(1s);
   }
 
   auto db_commander =
     std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if.get());
+
+  auto mt_commander =
+    std::make_unique<mg400_interface::MotionCommander>(mt_tcp_if.get());
 
   const bool enable_res = db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
@@ -69,6 +84,66 @@ int main(int argc, char ** argv)
 
   const bool speedfactor_res = db_commander->speedFactor(10);
   show_result(speedfactor_res, "SpeedFactor");
+
+  rclcpp::sleep_for(2s);
+
+  mt_commander->movJ(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->movL(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->jointMovJ(M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2, M_PI_2);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->movLIO(
+    -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
+    mg400_interface::DistanceMode::PERCENTAGE, 50,
+    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->movJIO(
+    -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
+    mg400_interface::DistanceMode::PERCENTAGE, 50,
+    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->arc(
+    -350e-3, -200e-3, 200e-3,
+    M_PI_2, 0, M_PI_2,
+    -300e-3, -250e-3, 200e-3,
+    M_PI_2, 0, M_PI_2);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
+
+  rclcpp::sleep_for(2s);
+
+  mt_commander->sync();
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->relMovJUser(
+    10e-3, 10e-3, 10e-3, 0, 0, 0,
+    mg400_interface::UserIndex::USER0);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->relMovLUser(
+    10e-3, 10e-3, 10e-3, 0, 0, 0,
+    mg400_interface::UserIndex::USER0);
+  
+  rclcpp::sleep_for(2s);
+
+  mt_commander->relJointMovJ(
+    M_PI_2, M_PI_2, M_PI_2,
+    0, 0, 0);
 
   rclcpp::sleep_for(2s);
 

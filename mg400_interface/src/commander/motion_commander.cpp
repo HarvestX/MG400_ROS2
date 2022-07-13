@@ -68,6 +68,18 @@ void MotionCommander::movLIO(
   const DistanceMode & mode, const int distance,
   const DOIndex & index, const DOStatus & status)
 {
+  this->movLIO(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(mode), distance,
+    static_cast<int>(index), static_cast<int>(status));
+}
+
+void MotionCommander::movLIO(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int mode, const int distance,
+  const int index, const int status)
+{
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -83,6 +95,18 @@ void MotionCommander::movJIO(
   const si_rad rx, const si_rad ry, const si_rad rz,
   const DistanceMode & mode, const int distance,
   const DOIndex & index, const DOStatus & status)
+{
+  this->movJIO(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(mode), distance,
+    static_cast<int>(index), static_cast<int>(status));
+}
+
+void MotionCommander::movJIO(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int mode, const int distance,
+  const int index, const int status)
 {
   char buf[100];
   snprintf(
@@ -138,6 +162,16 @@ void MotionCommander::relMovJUser(
   const si_rad rx, const si_rad ry, const si_rad rz,
   const UserIndex & index)
 {
+  this->relMovJUser(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(index));
+}
+
+void MotionCommander::relMovJUser(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int index)
+{
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -151,6 +185,16 @@ void MotionCommander::relMovLUser(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
   const UserIndex & index)
+{
+  this->relMovLUser(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(index));
+}
+
+void MotionCommander::relMovLUser(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int index)
 {
   char buf[100];
   snprintf(

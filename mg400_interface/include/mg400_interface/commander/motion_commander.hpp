@@ -49,11 +49,19 @@ public:
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad,
     const DistanceMode &, const int, const DOIndex &, const DOStatus &);
+  void movLIO(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const int, const int, const int, const int);
 
   void movJIO(
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad,
     const DistanceMode &, const int, const DOIndex &, const DOStatus &);
+  void movJIO(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const int, const int, const int, const int);
 
   void arc(
     const si_m, const si_m, const si_m,
@@ -72,11 +80,19 @@ public:
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad,
     const UserIndex &);
+  void relMovJUser(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const int);
 
   void relMovLUser(
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad,
     const UserIndex &);
+  void relMovLUser(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const int);
 
   void relJointMovJ(
     const si_rad, const si_rad, const si_rad,
