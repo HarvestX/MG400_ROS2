@@ -2,25 +2,8 @@
   "context": "../",
   "dockerFile": "Dockerfile",
   // This will launch the container as a non-root user
-  "remoteUser": "ros",
-  "runArgs": [
-    // This will allow you to use a ptrace-based debugger like C++, Go, and Rust.
-    "--cap-add=SYS_PTRACE",
-    "--security-opt",
-    "seccomp=unconfined",
-  ],
+  "remoteUser": "root",
   // These are the extensions I like to use with ROS2
   "extensions": [
-    "ms-azuretools.vscode-docker",
-    "zachflower.uncrustify",
-    "shardulm94.trailing-spaces",
-    "streetsidesoftware.code-spell-checker",
-    "ms-python.python",
-    "ms-vscode.cpptools",
-    "twxs.cmake",
-    "ms-vscode.cmake-tools",
-    "ms-iot.vscode-ros",
-    "smilerobotics.urdf",
-    "yzhang.markdown-all-in-one"
   ]
 }
