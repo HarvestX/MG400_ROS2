@@ -60,3 +60,8 @@ target/
 
 # VSCode garbages
 *.vc.db*
+
+# Colcon garbages
+build
+install
+log
