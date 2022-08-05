@@ -23,6 +23,19 @@ set_property(TARGET joint_state_publisher_gui PROPERTY AUTOUIC ON)
 set_property(TARGET joint_state_publisher_gui PROPERTY AUTORCC ON)
 # End Joint State Publisher GUI =====================================
 
+# Joint Command Publisher GUI =======================================
+ament_auto_add_executable(
+  joint_command_publisher_gui
+    ./src/joint_command_publisher_gui/main.cpp
+    ./src/joint_command_publisher_gui/main_window.cpp)
+target_include_directories(
+  joint_command_publisher_gui PRIVATE include ${Qt5Widgets_INCLUDE_DIRS})
+target_link_libraries(joint_command_publisher_gui Qt5::Widgets)
+set_property(TARGET joint_command_publisher_gui PROPERTY AUTOMOC ON)
+set_property(TARGET joint_command_publisher_gui PROPERTY AUTOUIC ON)
+set_property(TARGET joint_command_publisher_gui PROPERTY AUTORCC ON)
+# End Joint State Publisher GUI =====================================
+
 # ===================================================================
 ament_auto_add_library(service_node SHARED src/service_node.cpp)
 rclcpp_components_register_node(
