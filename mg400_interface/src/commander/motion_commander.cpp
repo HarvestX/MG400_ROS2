@@ -119,18 +119,18 @@ void MotionCommander::movJIO(
 
 /* https://github.com/Dobot-Arm/TCP-IP-CR-Python/issues/4#:~:text=The%20arc%20function%20needs%20to%20be%20fixed%20by%20Dobot
 void MotionCommander::arc(
-  const si_m x1, const si_m y1, const si_m z1, 
+  const si_m x1, const si_m y1, const si_m z1,
   const si_rad rx1, const si_rad ry1, const si_rad rz1,
-  const si_m x2, const si_m y2, const si_m z2, 
+  const si_m x2, const si_m y2, const si_m z2,
   const si_rad rx2, const si_rad ry2, const si_rad rz2)
 {
   char buf[100];
   snprintf(
     buf, sizeof(buf),
     "Arc(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
-    m2mm(x1), m2mm(y1), m2mm(z1), 
+    m2mm(x1), m2mm(y1), m2mm(z1),
     rad2degree(rx1), rad2degree(ry1), rad2degree(rz1),
-    m2mm(x2), m2mm(y2), m2mm(z2), 
+    m2mm(x2), m2mm(y2), m2mm(z2),
     rad2degree(rx2), rad2degree(ry2), rad2degree(rz2));
   this->tcp_if_->sendCommand(buf);
 }

@@ -64,16 +64,16 @@ public:
 
 /* https://github.com/Dobot-Arm/TCP-IP-CR-Python/issues/4#:~:text=The%20arc%20function%20needs%20to%20be%20fixed%20by%20Dobot
   void arc(
-    const si_m, const si_m, const si_m, 
+    const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad,
-    const si_m, const si_m, const si_m, 
+    const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
 */
 
   void moveJog(const JogMode &);
   void moveJog(const std::string &);
 
-  
+
   void sync();
 
   void relMovJUser(
@@ -97,7 +97,7 @@ public:
   void relJointMovJ(
     const si_rad, const si_rad, const si_rad,
     const si_rad, const si_rad, const si_rad);
-  
+
 
   // End DOBOT MG400 Official Command -----------------------------------------
 };
