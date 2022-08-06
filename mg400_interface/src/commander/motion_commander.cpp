@@ -48,12 +48,17 @@ void MotionCommander::movL(
   this->tcp_if_->sendCommand(buf);
 }
 
-/**
 void MotionCommander::jointMovJ(
   const si_rad j1, const si_rad j2, const si_rad j3,
   const si_rad j4, const si_rad j5, const si_rad j6)
 {
-  // TODO(anyone): Implement it
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "JointMovJ(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
+    rad2degree(j1), rad2degree(j2), rad2degree(j3),
+    rad2degree(j4), rad2degree(j5), rad2degree(j6));
+  this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::movLIO(
@@ -62,7 +67,26 @@ void MotionCommander::movLIO(
   const DistanceMode & mode, const int distance,
   const DOIndex & index, const DOStatus & status)
 {
-  // TODO(anyone): Implement it
+  this->movLIO(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(mode), distance,
+    static_cast<int>(index), static_cast<int>(status));
+}
+
+void MotionCommander::movLIO(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int mode, const int distance,
+  const int index, const int status)
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "MovLIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%d,%d,%d,%d})",
+    m2mm(x), m2mm(y), m2mm(z),
+    rad2degree(rx), rad2degree(ry), rad2degree(rz),
+    mode, distance, index, status);
+  this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::movJIO(
@@ -71,20 +95,46 @@ void MotionCommander::movJIO(
   const DistanceMode & mode, const int distance,
   const DOIndex & index, const DOStatus & status)
 {
-
-  // TODO(anyone): Implement it
+  this->movJIO(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(mode), distance,
+    static_cast<int>(index), static_cast<int>(status));
 }
 
+void MotionCommander::movJIO(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int mode, const int distance,
+  const int index, const int status)
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "MovJIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%d,%d,%d,%d})",
+    m2mm(x), m2mm(y), m2mm(z),
+    rad2degree(rx), rad2degree(ry), rad2degree(rz),
+    mode, distance, index, status);
+  this->tcp_if_->sendCommand(buf);
+}
+
+/* https://github.com/Dobot-Arm/TCP-IP-CR-Python/issues/4#:~:text=The%20arc%20function%20needs%20to%20be%20fixed%20by%20Dobot
 void MotionCommander::arc(
   const si_m x1, const si_m y1, const si_m z1,
   const si_rad rx1, const si_rad ry1, const si_rad rz1,
   const si_m x2, const si_m y2, const si_m z2,
   const si_rad rx2, const si_rad ry2, const si_rad rz2)
 {
-
-  // TODO(anyone): Implement it
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "Arc(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
+    m2mm(x1), m2mm(y1), m2mm(z1),
+    rad2degree(rx1), rad2degree(ry1), rad2degree(rz1),
+    m2mm(x2), m2mm(y2), m2mm(z2),
+    rad2degree(rx2), rad2degree(ry2), rad2degree(rz2));
+  this->tcp_if_->sendCommand(buf);
 }
-**/
+*/
 
 void MotionCommander::moveJog(const JogMode & axis_id)
 {
@@ -99,35 +149,74 @@ void MotionCommander::moveJog(const std::string & axis_id)
 }
 
 
-/**
 void MotionCommander::sync()
 {
-  // TODO(anyone): Implement it
+  char buf[100];
+  snprintf(buf, sizeof(buf), "Sync()");
+  this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::relMovJUser(
-  const si_m, const si_m, const si_m,
-  const si_rad, const si_rad, const si_rad,
-  const UserIndex &)
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const UserIndex & index)
 {
-  // TODO(anyone): Implement it
+  this->relMovJUser(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(index));
+}
+
+void MotionCommander::relMovJUser(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int index)
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "RelMovJUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%d)",
+    m2mm(x), m2mm(y), m2mm(z),
+    rad2degree(rx), rad2degree(ry), rad2degree(rz), index);
+  this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::relMovLUser(
-  const si_m, const si_m, const si_m,
-  const si_rad, const si_rad, const si_rad,
-  const UserIndex &)
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const UserIndex & index)
 {
-  // TODO(anyone): Implement it
+  this->relMovLUser(
+    x, y, z, rx, ry, rz,
+    static_cast<int>(index));
+}
+
+void MotionCommander::relMovLUser(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const int index)
+{
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "RelMovLUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%d)",
+    m2mm(x), m2mm(y), m2mm(z),
+    rad2degree(rx), rad2degree(ry), rad2degree(rz), index);
+  this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::relJointMovJ(
-  const si_rad, const si_rad, const si_rad,
-  const si_rad, const si_rad, const si_rad)
+  const si_rad j1, const si_rad j2, const si_rad j3,
+  const si_rad j4, const si_rad j5, const si_rad j6)
 {
-  // TODO(anyone): Implement it
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf),
+    "RelJointMovJ(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf)",
+    rad2degree(j1), rad2degree(j2), rad2degree(j3),
+    rad2degree(j4), rad2degree(j5), rad2degree(j6));
+  this->tcp_if_->sendCommand(buf);
 }
-**/
+
 // End DOBOT MG400 Official Command -----------------------------------------
 
 }  // namespace mg400_interface
