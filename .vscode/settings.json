@@ -105,7 +105,8 @@
     "variant": "cpp",
     "bit": "cpp",
     "any": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "valarray": "cpp"
   },
   "ros.distro": "galactic"
 }

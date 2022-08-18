@@ -25,6 +25,14 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
       "alarm_controller.json"))
 {
+  this->declare_parameter<std::string>(
+    "service_level",
+    "service_level_1");
+  this->get_parameter("service_level", this->service_level);
+  this->service_level_map["service_level_1"] = 1;
+  this->service_level_map["service_level_2"] = 2;
+  this->service_level_map["service_level_3"] = 3;
+
   const std::string ip_address =
     this->declare_parameter<std::string>("ip_address", "192.168.1.6");
 
@@ -56,103 +64,112 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     500ms, std::bind(&ServiceNode::onErrorTimer, this));
 
   // Service Initialization
-  this->clear_error_srv_ =
-    this->create_service<mg400_msgs::srv::ClearError>(
-    "clear_error",
-    std::bind(
-      &ServiceNode::clearError, this,
-      std::placeholders::_1, std::placeholders::_2));
+  switch (this->get_service_level(this->service_level)) {
+    case 3:
+      /* service_level_3 */
+      this->tool_do_execute_srv_ =
+        this->create_service<mg400_msgs::srv::ToolDOExecute>(
+        "tool_do_execute",
+        std::bind(
+          &ServiceNode::toolDOExecute, this,
+          std::placeholders::_1, std::placeholders::_2));
+    // fall through
+    case 2:
+      /* service_level_2 */
+      this->reset_robot_srv_ =
+        this->create_service<mg400_msgs::srv::ResetRobot>(
+        "reset_robot",
+        std::bind(
+          &ServiceNode::resetRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->reset_robot_srv_ =
-    this->create_service<mg400_msgs::srv::ResetRobot>(
-    "reset_robot",
-    std::bind(
-      &ServiceNode::resetRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->speed_factor_srv_ =
+        this->create_service<mg400_msgs::srv::SpeedFactor>(
+        "speed_factor",
+        std::bind(
+          &ServiceNode::speedFactor, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->disable_robot_srv_ =
-    this->create_service<mg400_msgs::srv::DisableRobot>(
-    "disable_robot",
-    std::bind(
-      &ServiceNode::disableRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->speed_j_srv_ =
+      //   this->create_service<mg400_msgs::srv::SpeedJ>(
+      //   "speed_j",
+      //   std::bind(
+      //     &ServiceNode::speedJ, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->enable_robot_srv_ =
-    this->create_service<mg400_msgs::srv::EnableRobot>(
-    "enable_robot",
-    std::bind(
-      &ServiceNode::enableRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->speed_l_srv_ =
+      //   this->create_service<mg400_msgs::srv::SpeedL>(
+      //   "speed_l",
+      //   std::bind(
+      //     &ServiceNode::speedL, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->tool_do_execute_srv_ =
-    this->create_service<mg400_msgs::srv::ToolDOExecute>(
-    "tool_do_execute",
-    std::bind(
-      &ServiceNode::toolDOExecute, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->acc_j_srv_ =
+      //   this->create_service<mg400_msgs::srv::AccJ>(
+      //   "acc_j",
+      //   std::bind(
+      //     &ServiceNode::accJ, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->speed_factor_srv_ =
-    this->create_service<mg400_msgs::srv::SpeedFactor>(
-    "speed_factor",
-    std::bind(
-      &ServiceNode::speedFactor, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->acc_l_srv_ =
+      //   this->create_service<mg400_msgs::srv::AccL>(
+      //   "acc_l",
+      //   std::bind(
+      //     &ServiceNode::accL, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  // this->speed_j_srv_ =
-  //   this->create_service<mg400_msgs::srv::SpeedJ>(
-  //   "speed_j",
-  //   std::bind(
-  //     &ServiceNode::speedJ, this,
-  //     std::placeholders::_1, std::placeholders::_2));
+      this->joint_mov_j_srv_ =
+        this->create_service<mg400_msgs::srv::JointMovJ>(
+        "joint_mov_j",
+        std::bind(
+          &ServiceNode::jointMovJ, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  // this->speed_l_srv_ =
-  //   this->create_service<mg400_msgs::srv::SpeedL>(
-  //   "speed_l",
-  //   std::bind(
-  //     &ServiceNode::speedL, this,
-  //     std::placeholders::_1, std::placeholders::_2));
+      this->mov_l_srv_ =
+        this->create_service<mg400_msgs::srv::MovL>(
+        "mov_l",
+        std::bind(
+          &ServiceNode::movL, this,
+          std::placeholders::_1, std::placeholders::_2));
+    // fall through
+    case 1:
+      /* service_level_1 */
+      this->clear_error_srv_ =
+        this->create_service<mg400_msgs::srv::ClearError>(
+        "clear_error",
+        std::bind(
+          &ServiceNode::clearError, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  // this->acc_j_srv_ =
-  //   this->create_service<mg400_msgs::srv::AccJ>(
-  //   "acc_j",
-  //   std::bind(
-  //     &ServiceNode::accJ, this,
-  //     std::placeholders::_1, std::placeholders::_2));
+      this->disable_robot_srv_ =
+        this->create_service<mg400_msgs::srv::DisableRobot>(
+        "disable_robot",
+        std::bind(
+          &ServiceNode::disableRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  // this->acc_l_srv_ =
-  //   this->create_service<mg400_msgs::srv::AccL>(
-  //   "acc_l",
-  //   std::bind(
-  //     &ServiceNode::accL, this,
-  //     std::placeholders::_1, std::placeholders::_2));
+      this->enable_robot_srv_ =
+        this->create_service<mg400_msgs::srv::EnableRobot>(
+        "enable_robot",
+        std::bind(
+          &ServiceNode::enableRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->joint_mov_j_srv_ =
-    this->create_service<mg400_msgs::srv::JointMovJ>(
-    "joint_mov_j",
-    std::bind(
-      &ServiceNode::jointMovJ, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->move_jog_srv_ =
+        this->create_service<mg400_msgs::srv::MoveJog>(
+        "move_jog",
+        std::bind(
+          &ServiceNode::moveJog, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->move_jog_srv_ =
-    this->create_service<mg400_msgs::srv::MoveJog>(
-    "move_jog",
-    std::bind(
-      &ServiceNode::moveJog, this,
-      std::placeholders::_1, std::placeholders::_2));
-
-  this->mov_j_srv_ =
-    this->create_service<mg400_msgs::srv::MovJ>(
-    "mov_j",
-    std::bind(
-      &ServiceNode::movJ, this,
-      std::placeholders::_1, std::placeholders::_2));
-
-  this->mov_l_srv_ =
-    this->create_service<mg400_msgs::srv::MovL>(
-    "mov_l",
-    std::bind(
-      &ServiceNode::movL, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->mov_j_srv_ =
+        this->create_service<mg400_msgs::srv::MovJ>(
+        "mov_j",
+        std::bind(
+          &ServiceNode::movJ, this,
+          std::placeholders::_1, std::placeholders::_2));
+      break;
+  }
   // END Ros Interfaces
 
 
@@ -162,6 +179,15 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 
 ServiceNode::~ServiceNode()
 {}
+
+uint8_t ServiceNode::get_service_level(std::string key)
+{
+  auto found = this->service_level_map.find(key);
+  if (found == end(this->service_level_map)) {
+    return 0;
+  }
+  return found->second;
+}
 
 void ServiceNode::initTcpIf()
 {

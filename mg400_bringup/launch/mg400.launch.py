@@ -40,9 +40,15 @@ def generate_launch_description():
             default_value='false',
             description='Determines if joy.launch is called.',
         ),
+        DeclareLaunchArgument(
+            'service_level',
+            default_value='service_level_1',
+            description='Determine the command level that can be called from the service.',
+        ),
     ]
     ip_address = LaunchConfiguration('ip_address')
     joy = LaunchConfiguration('joy')
+    service_level = LaunchConfiguration('service_level')
 
     nodes: List[Node] = [
         Node(
@@ -61,6 +67,7 @@ def generate_launch_description():
             parameters=[
                 {
                     'ip_address': ip_address,
+                    'service_level': service_level
                 }
             ],
         ),
