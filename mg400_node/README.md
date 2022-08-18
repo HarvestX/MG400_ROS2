@@ -13,6 +13,8 @@ ros2 run mg400_node service_node_exec
 - `clear_error`
 - `disable_robot`
 - `enable_robot`
+- `speed_factor`
+- `joint_mov_j`
 - `move_jog`
 - `mov_j`
 - `mov_l`
