@@ -275,6 +275,7 @@ void ServiceNode::speedFactor(
   response->result = this->db_commander_->speedFactor(request->ratio);
 }
 
+//TODO: Uncomment after command implementation.
 // void ServiceNode::speedJ(
 //   const mg400_msgs::srv::SpeedJ::Request::SharedPtr request,
 //   mg400_msgs::srv::SpeedJ::Response::SharedPtr response
@@ -306,6 +307,7 @@ void ServiceNode::speedFactor(
 // {
 //   response->result = this->db_commander_->accL(request->r);
 // }
+// end (Uncomment after command implementation.)
 
 void ServiceNode::jointMovJ(
   const mg400_msgs::srv::JointMovJ::Request::SharedPtr request,

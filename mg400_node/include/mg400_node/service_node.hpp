@@ -74,10 +74,12 @@ private:
   rclcpp::Service<mg400_msgs::srv::ToolDOExecute>::SharedPtr
     tool_do_execute_srv_;
   rclcpp::Service<mg400_msgs::srv::SpeedFactor>::SharedPtr speed_factor_srv_;
+  //TODO: Uncomment after command implementation.
   // rclcpp::Service<mg400_msgs::srv::SpeedJ>::SharedPtr speed_j_srv_;
   // rclcpp::Service<mg400_msgs::srv::SpeedL>::SharedPtr speed_l_srv_;
   // rclcpp::Service<mg400_msgs::srv::AccJ>::SharedPtr acc_j_srv_;
   // rclcpp::Service<mg400_msgs::srv::AccL>::SharedPtr acc_l_srv_;
+  // end (Uncomment after command implementation.)
 
   rclcpp::Service<mg400_msgs::srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
   rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
