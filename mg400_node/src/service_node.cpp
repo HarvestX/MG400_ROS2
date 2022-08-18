@@ -91,6 +91,48 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
       &ServiceNode::toolDOExecute, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  this->speed_factor_srv_ =
+    this->create_service<mg400_msgs::srv::SpeedFactor>(
+    "speed_factor",
+    std::bind(
+      &ServiceNode::speedFactor, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  // this->speed_j_srv_ =
+  //   this->create_service<mg400_msgs::srv::SpeedJ>(
+  //   "speed_j",
+  //   std::bind(
+  //     &ServiceNode::speedJ, this,
+  //     std::placeholders::_1, std::placeholders::_2));
+
+  // this->speed_l_srv_ =
+  //   this->create_service<mg400_msgs::srv::SpeedL>(
+  //   "speed_l",
+  //   std::bind(
+  //     &ServiceNode::speedL, this,
+  //     std::placeholders::_1, std::placeholders::_2));
+
+  // this->acc_j_srv_ =
+  //   this->create_service<mg400_msgs::srv::AccJ>(
+  //   "acc_j",
+  //   std::bind(
+  //     &ServiceNode::accJ, this,
+  //     std::placeholders::_1, std::placeholders::_2));
+
+  // this->acc_l_srv_ =
+  //   this->create_service<mg400_msgs::srv::AccL>(
+  //   "acc_l",
+  //   std::bind(
+  //     &ServiceNode::accL, this,
+  //     std::placeholders::_1, std::placeholders::_2));
+
+  this->joint_mov_j_srv_ =
+    this->create_service<mg400_msgs::srv::JointMovJ>(
+    "joint_mov_j",
+    std::bind(
+      &ServiceNode::jointMovJ, this,
+      std::placeholders::_1, std::placeholders::_2));
+
   this->move_jog_srv_ =
     this->create_service<mg400_msgs::srv::MoveJog>(
     "move_jog",
@@ -223,6 +265,55 @@ void ServiceNode::toolDOExecute(
   response->result = this->db_commander_->toolDOExecute(
     request->index,
     request->status);
+}
+
+void ServiceNode::speedFactor(
+  const mg400_msgs::srv::SpeedFactor::Request::SharedPtr request,
+  mg400_msgs::srv::SpeedFactor::Response::SharedPtr response
+)
+{
+  response->result = this->db_commander_->speedFactor(request->ratio);
+}
+
+// void ServiceNode::speedJ(
+//   const mg400_msgs::srv::SpeedJ::Request::SharedPtr request,
+//   mg400_msgs::srv::SpeedJ::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->speedJ(request->r);
+// }
+
+// void ServiceNode::speedL(
+//   const mg400_msgs::srv::SpeedL::Request::SharedPtr request,
+//   mg400_msgs::srv::SpeedL::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->speedL(request->r);
+// }
+
+// void ServiceNode::accJ(
+//   const mg400_msgs::srv::AccJ::Request::SharedPtr request,
+//   mg400_msgs::srv::AccJ::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->accJ(request->r);
+// }
+
+// void ServiceNode::accL(
+//   const mg400_msgs::srv::AccL::Request::SharedPtr request,
+//   mg400_msgs::srv::AccL::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->accL(request->r);
+// }
+
+void ServiceNode::jointMovJ(
+  const mg400_msgs::srv::JointMovJ::Request::SharedPtr request,
+  mg400_msgs::srv::JointMovJ::Response::SharedPtr)
+{
+  this->mt_commander_->jointMovJ(
+    request->j1, request->j2, request->j3,
+    request->j4, request->j5, request->j6);
 }
 
 void ServiceNode::moveJog(

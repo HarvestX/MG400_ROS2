@@ -22,7 +22,13 @@
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/tool_do_execute.hpp>
+#include <mg400_msgs/srv/speed_factor.hpp>
+#include <mg400_msgs/srv/speed_j.hpp>
+#include <mg400_msgs/srv/speed_l.hpp>
+#include <mg400_msgs/srv/acc_j.hpp>
+#include <mg400_msgs/srv/acc_l.hpp>
 
+#include <mg400_msgs/srv/joint_mov_j.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/mov_j.hpp>
 #include <mg400_msgs/srv/mov_l.hpp>
@@ -67,7 +73,13 @@ private:
   rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
   rclcpp::Service<mg400_msgs::srv::ToolDOExecute>::SharedPtr
     tool_do_execute_srv_;
+  rclcpp::Service<mg400_msgs::srv::SpeedFactor>::SharedPtr speed_factor_srv_;
+  // rclcpp::Service<mg400_msgs::srv::SpeedJ>::SharedPtr speed_j_srv_;
+  // rclcpp::Service<mg400_msgs::srv::SpeedL>::SharedPtr speed_l_srv_;
+  // rclcpp::Service<mg400_msgs::srv::AccJ>::SharedPtr acc_j_srv_;
+  // rclcpp::Service<mg400_msgs::srv::AccL>::SharedPtr acc_l_srv_;
 
+  rclcpp::Service<mg400_msgs::srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
   rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
   rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
   rclcpp::Service<mg400_msgs::srv::MovL>::SharedPtr mov_l_srv_;
@@ -98,7 +110,26 @@ private:
   void toolDOExecute(
     const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr,
     mg400_msgs::srv::ToolDOExecute::Response::SharedPtr);
+  void speedFactor(
+    const mg400_msgs::srv::SpeedFactor::Request::SharedPtr,
+    mg400_msgs::srv::SpeedFactor::Response::SharedPtr);
 
+  // void speedJ(
+  //   const mg400_msgs::srv::SpeedJ::Request::SharedPtr,
+  //   mg400_msgs::srv::SpeedJ::Response::SharedPtr);
+  // void speedL(
+  //   const mg400_msgs::srv::SpeedL::Request::SharedPtr,
+  //   mg400_msgs::srv::SpeedL::Response::SharedPtr);
+  // void accJ(
+  //   const mg400_msgs::srv::AccJ::Request::SharedPtr,
+  //   mg400_msgs::srv::AccJ::Response::SharedPtr);
+  // void accL(
+  //   const mg400_msgs::srv::AccL::Request::SharedPtr,
+  //   mg400_msgs::srv::AccL::Response::SharedPtr);
+
+  void jointMovJ(
+    const mg400_msgs::srv::JointMovJ::Request::SharedPtr,
+    mg400_msgs::srv::JointMovJ::Response::SharedPtr);
   void moveJog(
     const mg400_msgs::srv::MoveJog::Request::SharedPtr,
     mg400_msgs::srv::MoveJog::Response::SharedPtr);
