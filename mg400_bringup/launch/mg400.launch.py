@@ -29,38 +29,38 @@ from mg400_bringup.config_loader import loader as cl
 
 def generate_launch_description():
     """Launch rviz display."""
-    namespace: str = "mg400"
-    this_pkg = "mg400_bringup"
+    namespace: str = 'mg400'
+    this_pkg = 'mg400_bringup'
     launch_args = [
         DeclareLaunchArgument(
-            "ip_address", default_value=TextSubstitution(text="192.168.1.6")
+            'ip_address', default_value=TextSubstitution(text='192.168.1.6')
         ),
         DeclareLaunchArgument(
-            "joy",
-            default_value="false",
-            description="Determines if joy.launch is called.",
+            'joy',
+            default_value='false',
+            description='Determines if joy.launch is called.',
         ),
     ]
-    ip_address = LaunchConfiguration("ip_address")
-    joy = LaunchConfiguration("joy")
+    ip_address = LaunchConfiguration('ip_address')
+    joy = LaunchConfiguration('joy')
 
     nodes: List[Node] = [
         Node(
-            package="rviz2",
-            executable="rviz2",
-            name="rviz2",
-            output="log",
-            arguments=["-d", cl.load_rviz2("mg400.rviz")],
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='log',
+            arguments=['-d', cl.load_rviz2('mg400.rviz')],
         ),
         Node(
-            package="mg400_node",
-            executable="service_node_exec",
+            package='mg400_node',
+            executable='service_node_exec',
             namespace=namespace,
-            name="mg400_service_node",
+            name='mg400_service_node',
             on_exit=Shutdown(),
             parameters=[
                 {
-                    "ip_address": ip_address,
+                    'ip_address': ip_address,
                 }
             ],
         ),
@@ -71,19 +71,19 @@ def generate_launch_description():
                     PythonLaunchDescriptionSource(
                         str(
                             get_package_share_path(this_pkg)
-                            / "launch"
-                            / "joy.launch.py"
+                            / 'launch'
+                            / 'joy.launch.py'
                         ),
                     ),
                     condition=IfCondition(joy),
                 ),
                 Node(
-                    package="robot_state_publisher",
-                    executable="robot_state_publisher",
+                    package='robot_state_publisher',
+                    executable='robot_state_publisher',
                     namespace=namespace,
-                    output="log",
+                    output='log',
                     parameters=[
-                        cl.load_robot_description("mg400.urdf.xacro"),
+                        cl.load_robot_description('mg400.urdf.xacro'),
                     ],
                 ),
             ],
