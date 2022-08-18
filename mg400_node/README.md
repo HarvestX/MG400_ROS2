@@ -10,6 +10,8 @@ ros2 run mg400_node service_node_exec
 
 ### Available Services
 
+The service level can be set from the parameter `service_level`.
+
 #### service level 1
 
 - `clear_error`
