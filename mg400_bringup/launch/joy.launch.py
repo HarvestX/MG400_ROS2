@@ -15,11 +15,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import (
-    LaunchConfiguration,
-    TextSubstitution,
-)
-
+from launch.substitutions import LaunchConfiguration, TextSubstitution
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
