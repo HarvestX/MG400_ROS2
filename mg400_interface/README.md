@@ -49,15 +49,15 @@ This package provide interface library to connect with Dobot MG400 via TCP commu
 | -------------------- | ------------ |
 | :heavy_check_mark:   | MovJ         |
 | :heavy_check_mark:   | MovL         |
-| :white_large_square: | JointMovJ    |
-| :white_large_square: | MovLIO       |
-| :white_large_square: | MovJIO       |
+| :heavy_check_mark:   | JointMovJ    |
+| :heavy_check_mark:   | MovLIO       |
+| :heavy_check_mark:   | MovJIO       |
 | :white_large_square: | Arc          |
 | :heavy_check_mark:   | MoveJog      |
-| :white_large_square: | Sync         |
-| :white_large_square: | RelMovJUser  |
-| :white_large_square: | RelMovLUser  |
-| :white_large_square: | RelJointMovJ |
+| :heavy_check_mark:   | Sync         |
+| :heavy_check_mark:   | RelMovJUser  |
+| :heavy_check_mark:   | RelMovLUser  |
+| :heavy_check_mark:   | RelJointMovJ |
 
 ## References
 - [MG400 Documents](https://www.dropbox.com/s/3sqgd2eew244fyf/TCPIP%20Protocol%20%20for%20CR%20Robot%20V2.0.pdf?dl=0)
