@@ -53,16 +53,16 @@ public:
 
   bool speedFactor(const int) const;
 
-  // TODO(anyone): uncomment following function and implement it
-  /**
-  void user(const UserIndex &) const;
+  int user(const UserIndex &) const;
+  int user(const int) const;
 
-  void tool(const ToolIndex &) const;
+  int tool(const ToolIndex &) const;
+  int tool(const int) const;
 
   RobotMode robotMode() const;
+  RobotMode robotMode(const int) const;
 
-  void payload(const double, const double) const;
-  **/
+  bool payload(const double, const double) const;
 
   bool DO(const DOIndex &&, const DOStatus &&) const;
   bool DO(const int, const int) const;
@@ -70,58 +70,55 @@ public:
   bool toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
   bool toolDOExecute(const int, const int) const;
 
-  // TODO(anyone): uncomment following function and implement it
-  /**
-  void accJ(const int);
+  bool accJ(const int);
 
-  void accL(const int);
+  bool accL(const int);
 
-  void speedJ(const int);
+  bool speedJ(const int);
 
-  void speedL(const int);
+  bool speedL(const int);
 
-  void arch(const ArchIndex &);
+  bool arch(const ArchIndex &);
+  bool arch(const int);
 
-  void cp(const int);
+  bool cp(const int);
 
-  void runScript(const std::string &);
+  bool runScript(const std::string &);
 
-  // void stopScript();
+  bool stopScript();
 
-  // void pauseScript();
+  bool pauseScript();
 
-  void continueScript();
+  bool continueScript();
 
-  void setCollisionLevel(const CollisionLevel &);
+  bool setCollisionLevel(const CollisionLevel &);
+  bool setCollisionLevel(const int);
 
-  void getAngle();
+  std::array<std::vector<double>, 6> getAngle();
 
-  void getPose();
+  std::array<std::vector<double>, 6> getPose();
 
-  void emergencyStop();
+  bool emergencyStop();
 
-  // void modbusCreate();
+  void modbusCreate();
 
-  // void modbusClose();
+  bool modbusClose(const std::string &);
 
-  // void getInBits();
+  void getInBits();
 
-  // void getInRegs();
+  void getInRegs();
 
-  // void getCoils();
+  void getCoils();
 
-  // void setCoils();
+  int setCoils(const int, const int, const int, std::string &);
 
-  // void getHoldRegs();
+  void getHoldRegs();
 
-  // void setHoldRegs();
-  **/
+  int setHoldRegs(const int, const int, const int, std::string &, std::string &);
 
   std::array<std::vector<int>, 6> getErrorId() const;
 
-  /**
   int DI(const int) const;
-  **/
 
   // --------------------------------------------------------------------------
 

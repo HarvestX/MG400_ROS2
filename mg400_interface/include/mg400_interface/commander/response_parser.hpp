@@ -26,5 +26,6 @@ class ResponseParser
 {
 public:
   static std::array<std::vector<int>, 6> parseErrorMessage(const std::string &);
+  static std::array<std::vector<double>, 6> parseAngleorPose(const std::string &);
 };
 }  // namespace mg400_interface

@@ -55,4 +55,44 @@ std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
   }
   return ret;
 }
+
+std::array<std::vector<double>, 6> ResponseParser::parseAngleorPose(
+  const std::string & response)
+{
+  std::array<std::vector<double>, 6> ret = {};
+  // copy to mutable variable
+  std::string s = response;
+
+  s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
+
+  std::smatch m;
+  if (!std::regex_search(s, m, std::regex(R"(\{\[(.*?)\]\})"))) {
+    return ret;
+  }
+
+
+  s = m[1].str();
+  auto iter = s.cbegin();
+  auto end = s.cend();
+  const std::regex re(R"(\[(.*?)\])");
+
+  int i = 0;
+  while (std::regex_search(iter, end, m, re)) {
+    iter = m[0].second;
+
+    std::stringstream ss(m[1].str());
+    std::vector<double> tmp;
+    while (ss.good()) {
+      std::string substr;
+      std::getline(ss, substr, ',');
+      try {
+        tmp.emplace_back(std::stof(substr));
+      } catch (std::invalid_argument &) {
+      }
+    }
+    ret.at(i) = tmp;
+    i++;
+  }
+  return ret;
+}
 }  // namespace mg400_interface
