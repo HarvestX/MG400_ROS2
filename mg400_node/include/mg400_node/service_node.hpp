@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <string>
-#include <map>
 
 #include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/reset_robot.hpp>
@@ -54,9 +53,13 @@ namespace mg400_srv = mg400_msgs::srv;
 class ServiceNode : public rclcpp::Node
 {
 private:
-  std::map<std::string, uint8_t> service_level_map;
-  std::string service_level;
-  uint8_t get_service_level(std::string);
+  enum class SERVICE_EXPORT_LEVEL
+  {
+    BASIC = 1,
+    NORMAL,
+    FULL,
+  };
+  SERVICE_EXPORT_LEVEL level_;
 
   const std::string prefix_;
 

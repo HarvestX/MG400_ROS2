@@ -25,16 +25,20 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
       "alarm_controller.json"))
 {
-  this->declare_parameter<std::string>(
-    "service_level",
-    "service_level_1");
-  this->get_parameter("service_level", this->service_level);
-  this->service_level_map["service_level_1"] = 1;
-  this->service_level_map["service_level_2"] = 2;
-  this->service_level_map["service_level_3"] = 3;
+  this->level_ =
+    static_cast<SERVICE_EXPORT_LEVEL>(
+    this->declare_parameter("service_level", 1));
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Service export level: %d (1:BASIC 2: NORMAL 3:FULL)",
+    static_cast<int>(this->level_));
 
   const std::string ip_address =
     this->declare_parameter<std::string>("ip_address", "192.168.1.6");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Connecting to %s ...",
+    ip_address.c_str());
 
   this->db_tcp_if_ =
     std::make_unique<mg400_interface::DashboardTcpInterface>(ip_address);
@@ -64,9 +68,8 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     500ms, std::bind(&ServiceNode::onErrorTimer, this));
 
   // Service Initialization
-  switch (this->get_service_level(this->service_level)) {
-    case 3:
-      /* service_level_3 */
+  switch (this->level_) {
+    case SERVICE_EXPORT_LEVEL::FULL:
       this->tool_do_execute_srv_ =
         this->create_service<mg400_srv::ToolDOExecute>(
         "tool_do_execute",
@@ -74,8 +77,7 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
           &ServiceNode::toolDOExecute, this,
           std::placeholders::_1, std::placeholders::_2));
     // fall through
-    case 2:
-      /* service_level_2 */
+    case SERVICE_EXPORT_LEVEL::NORMAL:
       this->reset_robot_srv_ =
         this->create_service<mg400_srv::ResetRobot>(
         "reset_robot",
@@ -132,8 +134,7 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
           &ServiceNode::movL, this,
           std::placeholders::_1, std::placeholders::_2));
     // fall through
-    case 1:
-      /* service_level_1 */
+    case SERVICE_EXPORT_LEVEL::BASIC:
       this->clear_error_srv_ =
         this->create_service<mg400_srv::ClearError>(
         "clear_error",
@@ -169,6 +170,12 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
           &ServiceNode::movJ, this,
           std::placeholders::_1, std::placeholders::_2));
       break;
+    default:
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Invalid service level given");
+      rclcpp::shutdown();
+      return;
   }
   // END Ros Interfaces
 
@@ -179,15 +186,6 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 
 ServiceNode::~ServiceNode()
 {}
-
-uint8_t ServiceNode::get_service_level(std::string key)
-{
-  auto found = this->service_level_map.find(key);
-  if (found == end(this->service_level_map)) {
-    return 0;
-  }
-  return found->second;
-}
 
 void ServiceNode::initTcpIf()
 {
