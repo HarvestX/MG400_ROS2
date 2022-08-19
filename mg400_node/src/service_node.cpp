@@ -25,8 +25,20 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
       "alarm_controller.json"))
 {
+  this->level_ =
+    static_cast<SERVICE_EXPORT_LEVEL>(
+    this->declare_parameter("service_level", 1));
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Service export level: %d (1:BASIC 2: NORMAL 3:FULL)",
+    static_cast<int>(this->level_));
+
   const std::string ip_address =
     this->declare_parameter<std::string>("ip_address", "192.168.1.6");
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Connecting to %s ...",
+    ip_address.c_str());
 
   this->db_tcp_if_ =
     std::make_unique<mg400_interface::DashboardTcpInterface>(ip_address);
@@ -56,61 +68,115 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     500ms, std::bind(&ServiceNode::onErrorTimer, this));
 
   // Service Initialization
-  this->clear_error_srv_ =
-    this->create_service<mg400_msgs::srv::ClearError>(
-    "clear_error",
-    std::bind(
-      &ServiceNode::clearError, this,
-      std::placeholders::_1, std::placeholders::_2));
+  switch (this->level_) {
+    case SERVICE_EXPORT_LEVEL::FULL:
+      this->tool_do_execute_srv_ =
+        this->create_service<mg400_srv::ToolDOExecute>(
+        "tool_do_execute",
+        std::bind(
+          &ServiceNode::toolDOExecute, this,
+          std::placeholders::_1, std::placeholders::_2));
+    // fall through
+    case SERVICE_EXPORT_LEVEL::NORMAL:
+      this->reset_robot_srv_ =
+        this->create_service<mg400_srv::ResetRobot>(
+        "reset_robot",
+        std::bind(
+          &ServiceNode::resetRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->reset_robot_srv_ =
-    this->create_service<mg400_msgs::srv::ResetRobot>(
-    "reset_robot",
-    std::bind(
-      &ServiceNode::resetRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->speed_factor_srv_ =
+        this->create_service<mg400_srv::SpeedFactor>(
+        "speed_factor",
+        std::bind(
+          &ServiceNode::speedFactor, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->disable_robot_srv_ =
-    this->create_service<mg400_msgs::srv::DisableRobot>(
-    "disable_robot",
-    std::bind(
-      &ServiceNode::disableRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->speed_j_srv_ =
+      //   this->create_service<mg400_srv::SpeedJ>(
+      //   "speed_j",
+      //   std::bind(
+      //     &ServiceNode::speedJ, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->enable_robot_srv_ =
-    this->create_service<mg400_msgs::srv::EnableRobot>(
-    "enable_robot",
-    std::bind(
-      &ServiceNode::enableRobot, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->speed_l_srv_ =
+      //   this->create_service<mg400_srv::SpeedL>(
+      //   "speed_l",
+      //   std::bind(
+      //     &ServiceNode::speedL, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->tool_do_execute_srv_ =
-    this->create_service<mg400_msgs::srv::ToolDOExecute>(
-    "tool_do_execute",
-    std::bind(
-      &ServiceNode::toolDOExecute, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->acc_j_srv_ =
+      //   this->create_service<mg400_srv::AccJ>(
+      //   "acc_j",
+      //   std::bind(
+      //     &ServiceNode::accJ, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->move_jog_srv_ =
-    this->create_service<mg400_msgs::srv::MoveJog>(
-    "move_jog",
-    std::bind(
-      &ServiceNode::moveJog, this,
-      std::placeholders::_1, std::placeholders::_2));
+      // this->acc_l_srv_ =
+      //   this->create_service<mg400_srv::AccL>(
+      //   "acc_l",
+      //   std::bind(
+      //     &ServiceNode::accL, this,
+      //     std::placeholders::_1, std::placeholders::_2));
 
-  this->mov_j_srv_ =
-    this->create_service<mg400_msgs::srv::MovJ>(
-    "mov_j",
-    std::bind(
-      &ServiceNode::movJ, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->joint_mov_j_srv_ =
+        this->create_service<mg400_srv::JointMovJ>(
+        "joint_mov_j",
+        std::bind(
+          &ServiceNode::jointMovJ, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-  this->mov_l_srv_ =
-    this->create_service<mg400_msgs::srv::MovL>(
-    "mov_l",
-    std::bind(
-      &ServiceNode::movL, this,
-      std::placeholders::_1, std::placeholders::_2));
+      this->mov_l_srv_ =
+        this->create_service<mg400_srv::MovL>(
+        "mov_l",
+        std::bind(
+          &ServiceNode::movL, this,
+          std::placeholders::_1, std::placeholders::_2));
+    // fall through
+    case SERVICE_EXPORT_LEVEL::BASIC:
+      this->clear_error_srv_ =
+        this->create_service<mg400_srv::ClearError>(
+        "clear_error",
+        std::bind(
+          &ServiceNode::clearError, this,
+          std::placeholders::_1, std::placeholders::_2));
+
+      this->disable_robot_srv_ =
+        this->create_service<mg400_srv::DisableRobot>(
+        "disable_robot",
+        std::bind(
+          &ServiceNode::disableRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
+
+      this->enable_robot_srv_ =
+        this->create_service<mg400_srv::EnableRobot>(
+        "enable_robot",
+        std::bind(
+          &ServiceNode::enableRobot, this,
+          std::placeholders::_1, std::placeholders::_2));
+
+      this->move_jog_srv_ =
+        this->create_service<mg400_srv::MoveJog>(
+        "move_jog",
+        std::bind(
+          &ServiceNode::moveJog, this,
+          std::placeholders::_1, std::placeholders::_2));
+
+      this->mov_j_srv_ =
+        this->create_service<mg400_srv::MovJ>(
+        "mov_j",
+        std::bind(
+          &ServiceNode::movJ, this,
+          std::placeholders::_1, std::placeholders::_2));
+      break;
+    default:
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Invalid service level given");
+      rclcpp::shutdown();
+      return;
+  }
   // END Ros Interfaces
 
 
@@ -184,40 +250,40 @@ void ServiceNode::onErrorTimer()
 }
 
 void ServiceNode::clearError(
-  const mg400_msgs::srv::ClearError::Request::SharedPtr,
-  mg400_msgs::srv::ClearError::Response::SharedPtr response
+  const mg400_srv::ClearError::Request::SharedPtr,
+  mg400_srv::ClearError::Response::SharedPtr response
 )
 {
   response->result = this->db_commander_->clearError();
 }
 
 void ServiceNode::resetRobot(
-  const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
-  mg400_msgs::srv::ResetRobot::Response::SharedPtr response
+  const mg400_srv::ResetRobot::Request::SharedPtr,
+  mg400_srv::ResetRobot::Response::SharedPtr response
 )
 {
   response->result = this->db_commander_->resetRobot();
 }
 
 void ServiceNode::disableRobot(
-  const mg400_msgs::srv::DisableRobot::Request::SharedPtr,
-  mg400_msgs::srv::DisableRobot::Response::SharedPtr response
+  const mg400_srv::DisableRobot::Request::SharedPtr,
+  mg400_srv::DisableRobot::Response::SharedPtr response
 )
 {
   response->result = this->db_commander_->disableRobot();
 }
 
 void ServiceNode::enableRobot(
-  const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
-  mg400_msgs::srv::EnableRobot::Response::SharedPtr response
+  const mg400_srv::EnableRobot::Request::SharedPtr,
+  mg400_srv::EnableRobot::Response::SharedPtr response
 )
 {
   response->result = this->db_commander_->enableRobot();
 }
 
 void ServiceNode::toolDOExecute(
-  const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr request,
-  mg400_msgs::srv::ToolDOExecute::Response::SharedPtr response
+  const mg400_srv::ToolDOExecute::Request::SharedPtr request,
+  mg400_srv::ToolDOExecute::Response::SharedPtr response
 )
 {
   response->result = this->db_commander_->toolDOExecute(
@@ -225,16 +291,67 @@ void ServiceNode::toolDOExecute(
     request->status);
 }
 
+void ServiceNode::speedFactor(
+  const mg400_srv::SpeedFactor::Request::SharedPtr request,
+  mg400_srv::SpeedFactor::Response::SharedPtr response
+)
+{
+  response->result = this->db_commander_->speedFactor(request->ratio);
+}
+
+//TODO: Uncomment after command implementation.
+// void ServiceNode::speedJ(
+//   const mg400_srv::SpeedJ::Request::SharedPtr request,
+//   mg400_srv::SpeedJ::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->speedJ(request->r);
+// }
+
+// void ServiceNode::speedL(
+//   const mg400_srv::SpeedL::Request::SharedPtr request,
+//   mg400_srv::SpeedL::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->speedL(request->r);
+// }
+
+// void ServiceNode::accJ(
+//   const mg400_srv::AccJ::Request::SharedPtr request,
+//   mg400_srv::AccJ::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->accJ(request->r);
+// }
+
+// void ServiceNode::accL(
+//   const mg400_srv::AccL::Request::SharedPtr request,
+//   mg400_srv::AccL::Response::SharedPtr response
+// )
+// {
+//   response->result = this->db_commander_->accL(request->r);
+// }
+// end (Uncomment after command implementation.)
+
+void ServiceNode::jointMovJ(
+  const mg400_srv::JointMovJ::Request::SharedPtr request,
+  mg400_srv::JointMovJ::Response::SharedPtr)
+{
+  this->mt_commander_->jointMovJ(
+    request->j1, request->j2, request->j3,
+    request->j4, request->j5, request->j6);
+}
+
 void ServiceNode::moveJog(
-  const mg400_msgs::srv::MoveJog::Request::SharedPtr request,
-  mg400_msgs::srv::MoveJog::Response::SharedPtr)
+  const mg400_srv::MoveJog::Request::SharedPtr request,
+  mg400_srv::MoveJog::Response::SharedPtr)
 {
   this->mt_commander_->moveJog(request->axis_id);
 }
 
 void ServiceNode::movJ(
-  const mg400_msgs::srv::MovJ::Request::SharedPtr request,
-  mg400_msgs::srv::MovJ::Response::SharedPtr
+  const mg400_srv::MovJ::Request::SharedPtr request,
+  mg400_srv::MovJ::Response::SharedPtr
 )
 {
   this->mt_commander_->movJ(
@@ -243,8 +360,8 @@ void ServiceNode::movJ(
 }
 
 void ServiceNode::movL(
-  const mg400_msgs::srv::MovL::Request::SharedPtr request,
-  mg400_msgs::srv::MovL::Response::SharedPtr)
+  const mg400_srv::MovL::Request::SharedPtr request,
+  mg400_srv::MovL::Response::SharedPtr)
 {
   this->mt_commander_->movL(
     request->x, request->y, request->z,

@@ -5,6 +5,10 @@
   "python.analysis.extraPaths": [
     "/opt/ros/galactic/lib/python3.8/site-packages"
   ],
+  "[jsonc]": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+  },
   "[cpp]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "zachflower.uncrustify"
@@ -21,8 +25,14 @@
     "--config-file",
     ".vscode/cmake-format"
   ],
+  "cpplint.filters": [
+    "-whitespace/braces",
+    "-whitespace/indent",
+    "-build/namespaces"
+  ],
   "python.linting.enabled": true,
   "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "autopep8",
   "files.associations": {
     "*.ui": "xml",
     "qapplication": "cpp",
@@ -95,7 +105,8 @@
     "variant": "cpp",
     "bit": "cpp",
     "any": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "valarray": "cpp"
   },
   "ros.distro": "galactic"
 }

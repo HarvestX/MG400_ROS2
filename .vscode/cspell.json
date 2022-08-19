@@ -2,18 +2,19 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "rclcpp",
-    "m12watanabe1a",
+    "backdrive",
+    "bringup",
+    "colcon",
     "dobot",
+    "dpad",
+    "geochelone",
+    "m12watanabe1a",
+    "mkdir",
+    "modbus",
+    "nlohmann",
+    "rclcpp",
     "rviz",
     "urdf",
-    "xacro",
-    "bringup",
-    "geochelone",
-    "colcon",
-    "dpad",
-    "modbus",
-    "backdrive",
-    "nlohmann"
+    "xacro"
   ]
 }

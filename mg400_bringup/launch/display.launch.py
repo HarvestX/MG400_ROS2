@@ -16,7 +16,6 @@
 from typing import List
 
 from launch import LaunchDescription
-
 from launch.actions import Shutdown
 from launch_ros.actions import Node
 
