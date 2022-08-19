@@ -59,7 +59,7 @@ TEST_F(TestMotionCommander, MovL) {
   commander->movL(1.0e-3, 2.0e-3, 3.0e-3, M_PI, M_PI, M_PI);
 }
 
-/**
+
 TEST_F(TestMotionCommander, JointMovJ)
 {
   EXPECT_CALL(
@@ -92,7 +92,7 @@ TEST_F(TestMotionCommander, MovJIO) {
     mg400_interface::DistanceMode::PERCENTAGE, 50,
     mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
 }
-
+/*
 TEST_F(TestMotionCommander, Arc) {
   EXPECT_CALL(
     mock, sendCommand(
@@ -107,7 +107,7 @@ TEST_F(TestMotionCommander, Arc) {
     -300e-3, -250e-3, 200e-3,
     M_PI_2, 0, M_PI_2);
 }
-**/
+*/
 
 TEST_F(TestMotionCommander, MoveJog) {
   EXPECT_CALL(
@@ -117,12 +117,12 @@ TEST_F(TestMotionCommander, MoveJog) {
   commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
 }
 
-/**
+
 TEST_F(TestMotionCommander, Sync) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq(
-        "Sync"))).Times(1);
+        "Sync()"))).Times(1);
   commander->sync();
 }
 
@@ -158,4 +158,3 @@ TEST_F(TestMotionCommander, RelJointMovJ) {
     M_PI_2, M_PI_2, M_PI_2,
     0, 0, 0);
 }
-**/
