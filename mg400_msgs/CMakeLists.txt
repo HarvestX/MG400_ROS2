@@ -18,7 +18,6 @@ set(srv_files
     "srv/DisableRobot.srv"
     "srv/EnableRobot.srv"
     "srv/JointMovJ.srv"
-    "srv/ToolDOExecute.srv"
     "srv/MoveJog.srv"
     "srv/MovJ.srv"
     "srv/MovL.srv"
@@ -26,7 +25,7 @@ set(srv_files
     "srv/SpeedFactor.srv"
     "srv/SpeedJ.srv"
     "srv/SpeedL.srv"
-)
+    "srv/ToolDOExecute.srv")
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_files}
