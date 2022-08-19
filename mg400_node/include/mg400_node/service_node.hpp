@@ -47,8 +47,10 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+
 namespace mg400_node
 {
+namespace mg400_srv = mg400_msgs::srv;
 class ServiceNode : public rclcpp::Node
 {
 private:
@@ -72,24 +74,23 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
-  rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr clear_error_srv_;
-  rclcpp::Service<mg400_msgs::srv::ResetRobot>::SharedPtr reset_robot_srv_;
-  rclcpp::Service<mg400_msgs::srv::DisableRobot>::SharedPtr disable_robot_srv_;
-  rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
-  rclcpp::Service<mg400_msgs::srv::ToolDOExecute>::SharedPtr
-    tool_do_execute_srv_;
+  rclcpp::Service<mg400_srv::ClearError>::SharedPtr clear_error_srv_;
+  rclcpp::Service<mg400_srv::ResetRobot>::SharedPtr reset_robot_srv_;
+  rclcpp::Service<mg400_srv::DisableRobot>::SharedPtr disable_robot_srv_;
+  rclcpp::Service<mg400_srv::EnableRobot>::SharedPtr enable_robot_srv_;
+  rclcpp::Service<mg400_srv::ToolDOExecute>::SharedPtr tool_do_execute_srv_;
   rclcpp::Service<mg400_msgs::srv::SpeedFactor>::SharedPtr speed_factor_srv_;
   //TODO: Uncomment after command implementation.
-  // rclcpp::Service<mg400_msgs::srv::SpeedJ>::SharedPtr speed_j_srv_;
-  // rclcpp::Service<mg400_msgs::srv::SpeedL>::SharedPtr speed_l_srv_;
-  // rclcpp::Service<mg400_msgs::srv::AccJ>::SharedPtr acc_j_srv_;
-  // rclcpp::Service<mg400_msgs::srv::AccL>::SharedPtr acc_l_srv_;
+  // rclcpp::Service<mg400_srv::SpeedJ>::SharedPtr speed_j_srv_;
+  // rclcpp::Service<mg400_srv::SpeedL>::SharedPtr speed_l_srv_;
+  // rclcpp::Service<mg400_srv::AccJ>::SharedPtr acc_j_srv_;
+  // rclcpp::Service<mg400_srv::AccL>::SharedPtr acc_l_srv_;
   // end (Uncomment after command implementation.)
 
-  rclcpp::Service<mg400_msgs::srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
-  rclcpp::Service<mg400_msgs::srv::MoveJog>::SharedPtr move_jog_srv_;
-  rclcpp::Service<mg400_msgs::srv::MovJ>::SharedPtr mov_j_srv_;
-  rclcpp::Service<mg400_msgs::srv::MovL>::SharedPtr mov_l_srv_;
+  rclcpp::Service<mg400_srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
+  rclcpp::Service<mg400_srv::MoveJog>::SharedPtr move_jog_srv_;
+  rclcpp::Service<mg400_srv::MovJ>::SharedPtr mov_j_srv_;
+  rclcpp::Service<mg400_srv::MovL>::SharedPtr mov_l_srv_;
 
 public:
   explicit ServiceNode(const rclcpp::NodeOptions &);
@@ -103,49 +104,49 @@ private:
   void onErrorTimer();
 
   void clearError(
-    const mg400_msgs::srv::ClearError::Request::SharedPtr,
-    mg400_msgs::srv::ClearError::Response::SharedPtr);
+    const mg400_srv::ClearError::Request::SharedPtr,
+    mg400_srv::ClearError::Response::SharedPtr);
   void resetRobot(
-    const mg400_msgs::srv::ResetRobot::Request::SharedPtr,
-    mg400_msgs::srv::ResetRobot::Response::SharedPtr);
+    const mg400_srv::ResetRobot::Request::SharedPtr,
+    mg400_srv::ResetRobot::Response::SharedPtr);
   void disableRobot(
-    const mg400_msgs::srv::DisableRobot::Request::SharedPtr,
-    mg400_msgs::srv::DisableRobot::Response::SharedPtr);
+    const mg400_srv::DisableRobot::Request::SharedPtr,
+    mg400_srv::DisableRobot::Response::SharedPtr);
   void enableRobot(
-    const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
-    mg400_msgs::srv::EnableRobot::Response::SharedPtr);
+    const mg400_srv::EnableRobot::Request::SharedPtr,
+    mg400_srv::EnableRobot::Response::SharedPtr);
   void toolDOExecute(
-    const mg400_msgs::srv::ToolDOExecute::Request::SharedPtr,
-    mg400_msgs::srv::ToolDOExecute::Response::SharedPtr);
+    const mg400_srv::ToolDOExecute::Request::SharedPtr,
+    mg400_srv::ToolDOExecute::Response::SharedPtr);
   void speedFactor(
-    const mg400_msgs::srv::SpeedFactor::Request::SharedPtr,
-    mg400_msgs::srv::SpeedFactor::Response::SharedPtr);
+    const mg400_srv::SpeedFactor::Request::SharedPtr,
+    mg400_srv::SpeedFactor::Response::SharedPtr);
 
   // void speedJ(
-  //   const mg400_msgs::srv::SpeedJ::Request::SharedPtr,
-  //   mg400_msgs::srv::SpeedJ::Response::SharedPtr);
+  //   const mg400_srv::SpeedJ::Request::SharedPtr,
+  //   mg400_srv::SpeedJ::Response::SharedPtr);
   // void speedL(
-  //   const mg400_msgs::srv::SpeedL::Request::SharedPtr,
-  //   mg400_msgs::srv::SpeedL::Response::SharedPtr);
+  //   const mg400_srv::SpeedL::Request::SharedPtr,
+  //   mg400_srv::SpeedL::Response::SharedPtr);
   // void accJ(
-  //   const mg400_msgs::srv::AccJ::Request::SharedPtr,
-  //   mg400_msgs::srv::AccJ::Response::SharedPtr);
+  //   const mg400_srv::AccJ::Request::SharedPtr,
+  //   mg400_srv::AccJ::Response::SharedPtr);
   // void accL(
-  //   const mg400_msgs::srv::AccL::Request::SharedPtr,
-  //   mg400_msgs::srv::AccL::Response::SharedPtr);
+  //   const mg400_srv::AccL::Request::SharedPtr,
+  //   mg400_srv::AccL::Response::SharedPtr);
 
   void jointMovJ(
-    const mg400_msgs::srv::JointMovJ::Request::SharedPtr,
-    mg400_msgs::srv::JointMovJ::Response::SharedPtr);
+    const mg400_srv::JointMovJ::Request::SharedPtr,
+    mg400_srv::JointMovJ::Response::SharedPtr);
   void moveJog(
-    const mg400_msgs::srv::MoveJog::Request::SharedPtr,
-    mg400_msgs::srv::MoveJog::Response::SharedPtr);
+    const mg400_srv::MoveJog::Request::SharedPtr,
+    mg400_srv::MoveJog::Response::SharedPtr);
   void movJ(
-    const mg400_msgs::srv::MovJ::Request::SharedPtr,
-    mg400_msgs::srv::MovJ::Response::SharedPtr);
+    const mg400_srv::MovJ::Request::SharedPtr,
+    mg400_srv::MovJ::Response::SharedPtr);
   void movL(
-    const mg400_msgs::srv::MovL::Request::SharedPtr,
-    mg400_msgs::srv::MovL::Response::SharedPtr);
+    const mg400_srv::MovL::Request::SharedPtr,
+    mg400_srv::MovL::Response::SharedPtr);
 };
 }  // namespace mg400_node
 
