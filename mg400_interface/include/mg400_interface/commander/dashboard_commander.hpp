@@ -77,10 +77,10 @@ public:
   bool speedJ(const int);
 
   bool speedL(const int);
-
+/*
   bool arch(const ArchIndex &);
   bool arch(const int);
-
+*/
   bool cp(const int);
 
   bool runScript(const std::string &);
@@ -100,19 +100,19 @@ public:
 
   bool emergencyStop();
 
-  void modbusCreate();
+  void modbusCreate(std::string &, const int, const int, const int);
 
   bool modbusClose(const std::string &);
 
-  void getInBits();
+  std::vector<int> getInBits(const int, const int, const int);
 
-  void getInRegs();
+  std::vector<int> getInRegs(const int, const int, const int, std::string &);
 
-  void getCoils();
+  std::vector<int> getCoils(const int, const int, const int);
 
   int setCoils(const int, const int, const int, std::string &);
 
-  void getHoldRegs();
+  std::vector<int> getHoldRegs(const int, const int, const int, std::string &);
 
   int setHoldRegs(const int, const int, const int, std::string &, std::string &);
 

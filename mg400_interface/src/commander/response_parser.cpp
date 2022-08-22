@@ -95,4 +95,63 @@ std::array<std::vector<double>, 6> ResponseParser::parseAngleorPose(
   }
   return ret;
 }
+
+int ResponseParser::parseRobotModeorDI(const std::string & response)
+{
+  std::regex re(R"(\{.*?\})");
+  std::string s = response, c;
+  std::smatch m;
+
+  if (!std::regex_search(s, m, re)) {
+    return 0;
+  }
+  c = m.str();
+  c = c.substr(1, c.length() - 2);
+  return atoi(c.c_str());
+}
+
+std::vector<int> ResponseParser::parsearray(const std::string & response, const int count)
+{
+  std::vector<int> ret(count + 1);
+  std::regex re1(R"(\{.*?\})"), re2(R"(\.*?\,)");
+  std::string s = response, s1, s2;
+  std::smatch m;
+
+  std::regex_search(s, m, re2);
+  s1 = m.str();
+  s1 = s1.substr(0, s1.length() - 2);
+  ret[0] = atoi(s1.c_str());
+
+  if (!std::regex_search(s, m, re1)) {
+    return std::vector<int>(0);
+  }
+  s1 = m.str();
+  s1 = s1.substr(1, s1.length() - 2);
+
+  for (int i = 1; i <= count; i++) {
+    if (!std::regex_search(s1, m, re2)) {
+      s2 = m.str();
+      ret[i] = atoi(s2.c_str());
+      continue;
+    }
+    s2 = m.str();
+    s2 = s2.substr(0, s2.length() - 2);
+    ret[i] = atoi(s2.c_str());
+  }
+
+  return ret;
+}
+
+int ResponseParser::parseOnlyErrorID(const std::string & response)
+{
+  std::regex re(R"(\.*?\,)");
+  std::string s = response;
+  std::smatch m;
+
+  std::regex_search(s, m, re);
+  s = m.str();
+  s = s.substr(0, s.length() - 2);
+
+  return atoi(s.c_str());
+}
 }  // namespace mg400_interface
