@@ -99,23 +99,23 @@ public:
   std::vector<double> getPose();
 
   bool emergencyStop();
-
+/*
   int modbusCreate(const std::string &, const int, const int, const int);
 
   bool modbusClose(const std::string &);
 
   std::vector<int> getInBits(const int, const int, const int);
 
-  std::vector<int> getInRegs(const int, const int, const int, const std::string &);
+  std::vector<int> getInRegs(const int, const int, const int, const std::string & = "U16");
 
   std::vector<int> getCoils(const int, const int, const int);
 
   int setCoils(const int, const int, const int, const std::string &);
 
-  std::vector<int> getHoldRegs(const int, const int, const int, const std::string &);
+  std::vector<int> getHoldRegs(const int, const int, const int, const std::string & = "U16");
 
   int setHoldRegs(const int, const int, const int, const std::string &, const std::string &);
-
+*/
   std::array<std::vector<int>, 6> getErrorId() const;
 
   int DI(const int) const;

@@ -57,7 +57,7 @@ bool DashboardCommander::speedFactor(const int ratio) const
 
 int DashboardCommander::user(const UserIndex & index) const
 {
-  this->user(static_cast<int>(index));
+  return this->user(static_cast<int>(index));
 }
 
 int DashboardCommander::user(const int index) const
@@ -71,7 +71,7 @@ int DashboardCommander::user(const int index) const
 
 int DashboardCommander::tool(const ToolIndex & index) const
 {
-  this->tool(static_cast<int>(index));
+  return this->tool(static_cast<int>(index));
 }
 
 int DashboardCommander::tool(const int index) const
@@ -115,7 +115,7 @@ RobotMode DashboardCommander::robotMode(const int mode) const
     case 11:
       return RobotMode::JOG;
     default:
-      break;
+      return RobotMode::INVALID;
   }
 }
 
@@ -265,7 +265,7 @@ bool DashboardCommander::emergencyStop()
 {
   return this->sendCommand("EmergencyStop()");
 }
-
+/*
 int DashboardCommander::modbusCreate(
   const std::string & ip, const int port,
   const int slave_id, const int isRTU)
@@ -301,7 +301,7 @@ std::vector<int> DashboardCommander::getInBits(
 
 std::vector<int> DashboardCommander::getInRegs(
   const int index, const int addr,
-  const int count, const std::string & valType = "U16")
+  const int count, const std::string & valType)
 {
   char buf[100];
   snprintf(
@@ -365,7 +365,7 @@ int DashboardCommander::setHoldRegs(
   std::string res = this->tcp_if_->recvResponse();
   return ResponseParser::parseOnlyErrorID(res);
 }
-
+*/
 std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
 {
   this->tcp_if_->sendCommand("GetErrorID()");

@@ -220,7 +220,7 @@ TEST_F(TestDashboardCommander, EmergencyStop) {
       StrEq("EmergencyStop()"))).Times(1);
   commander->emergencyStop();
 }
-
+/*
 TEST_F(TestDashboardCommander, ModbusCreate) {
   EXPECT_CALL(
     mock, sendCommand(
@@ -276,7 +276,7 @@ TEST_F(TestDashboardCommander, SetHoldRegs) {
       StrEq("SetHoldRegs(0,3095,2,{6000,300},U16)"))).Times(1);
   commander->setHoldRegs(0, 3095, 2, "6000,300", "U16");
 }
-
+*/
 TEST_F(TestDashboardCommander, DI) {
   EXPECT_CALL(
     mock, sendCommand(
