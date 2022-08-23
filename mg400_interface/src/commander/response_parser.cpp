@@ -56,47 +56,36 @@ std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
   return ret;
 }
 
-std::array<std::vector<double>, 6> ResponseParser::parseAngleorPose(
+std::vector<double> ResponseParser::parsedouble(
   const std::string & response)
 {
-  std::array<std::vector<double>, 6> ret = {};
-  // copy to mutable variable
-  std::string s = response;
-
-  s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
-
+  std::vector<double> ret(6);
+  std::regex re1(R"(\{.*?\})"), re2(R"(.*?,)");
+  std::string s = response, s1, s2;
   std::smatch m;
-  if (!std::regex_search(s, m, std::regex(R"(\{\[(.*?)\]\})"))) {
-    return ret;
+
+  if (!std::regex_search(s, m, re1)) {
+    return std::vector<double>(0);
   }
+  s1 = m.str();
+  s1 = s1.substr(1, s1.length() - 2);
 
-
-  s = m[1].str();
-  auto iter = s.cbegin();
-  auto end = s.cend();
-  const std::regex re(R"(\[(.*?)\])");
-
-  int i = 0;
-  while (std::regex_search(iter, end, m, re)) {
-    iter = m[0].second;
-
-    std::stringstream ss(m[1].str());
-    std::vector<double> tmp;
-    while (ss.good()) {
-      std::string substr;
-      std::getline(ss, substr, ',');
-      try {
-        tmp.emplace_back(std::stof(substr));
-      } catch (std::invalid_argument &) {
-      }
+  for (int i = 0; i < 6; i++) {
+    if (!std::regex_search(s1, m, re2)) {
+      s2 = m.str();
+      ret[i] = atof(s2.c_str());
+      continue;
     }
-    ret.at(i) = tmp;
-    i++;
+    s2 = m.str();
+    s2 = s2.substr(0, s2.length() - 1);
+    ret[i] = atof(s2.c_str());
+    s1.erase(s1.begin(), s1.begin() + s2.length() + 1);
   }
+
   return ret;
 }
 
-int ResponseParser::parseRobotModeorDI(const std::string & response)
+int ResponseParser::parseOneValue(const std::string & response)
 {
   std::regex re(R"(\{.*?\})");
   std::string s = response, c;
@@ -112,15 +101,10 @@ int ResponseParser::parseRobotModeorDI(const std::string & response)
 
 std::vector<int> ResponseParser::parsearray(const std::string & response, const int count)
 {
-  std::vector<int> ret(count + 1);
-  std::regex re1(R"(\{.*?\})"), re2(R"(\.*?\,)");
+  std::vector<int> ret(count);
+  std::regex re1(R"(\{.*?\})"), re2(R"(.*?,)");
   std::string s = response, s1, s2;
   std::smatch m;
-
-  std::regex_search(s, m, re2);
-  s1 = m.str();
-  s1 = s1.substr(0, s1.length() - 2);
-  ret[0] = atoi(s1.c_str());
 
   if (!std::regex_search(s, m, re1)) {
     return std::vector<int>(0);
@@ -128,15 +112,16 @@ std::vector<int> ResponseParser::parsearray(const std::string & response, const 
   s1 = m.str();
   s1 = s1.substr(1, s1.length() - 2);
 
-  for (int i = 1; i <= count; i++) {
+  for (int i = 0; i < 6; i++) {
     if (!std::regex_search(s1, m, re2)) {
       s2 = m.str();
       ret[i] = atoi(s2.c_str());
       continue;
     }
     s2 = m.str();
-    s2 = s2.substr(0, s2.length() - 2);
+    s2 = s2.substr(0, s2.length() - 1);
     ret[i] = atoi(s2.c_str());
+    s1.erase(s1.begin(), s1.begin() + s2.length() + 1);
   }
 
   return ret;
@@ -144,13 +129,13 @@ std::vector<int> ResponseParser::parsearray(const std::string & response, const 
 
 int ResponseParser::parseOnlyErrorID(const std::string & response)
 {
-  std::regex re(R"(\.*?\,)");
+  std::regex re(R"(.*?,)");
   std::string s = response;
   std::smatch m;
 
   std::regex_search(s, m, re);
   s = m.str();
-  s = s.substr(0, s.length() - 2);
+  s = s.substr(0, s.length() - 1);
 
   return atoi(s.c_str());
 }

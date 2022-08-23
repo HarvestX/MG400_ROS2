@@ -82,7 +82,7 @@ public:
   bool arch(const int);
 */
   bool cp(const int);
-
+/*
   bool runScript(const std::string &);
 
   bool stopScript();
@@ -90,31 +90,31 @@ public:
   bool pauseScript();
 
   bool continueScript();
-
+*/
   bool setCollisionLevel(const CollisionLevel &);
   bool setCollisionLevel(const int);
 
-  std::array<std::vector<double>, 6> getAngle();
+  std::vector<double> getAngle();
 
-  std::array<std::vector<double>, 6> getPose();
+  std::vector<double> getPose();
 
   bool emergencyStop();
 
-  void modbusCreate(std::string &, const int, const int, const int);
+  int modbusCreate(const std::string &, const int, const int, const int);
 
   bool modbusClose(const std::string &);
 
   std::vector<int> getInBits(const int, const int, const int);
 
-  std::vector<int> getInRegs(const int, const int, const int, std::string &);
+  std::vector<int> getInRegs(const int, const int, const int, const std::string &);
 
   std::vector<int> getCoils(const int, const int, const int);
 
-  int setCoils(const int, const int, const int, std::string &);
+  int setCoils(const int, const int, const int, const std::string &);
 
-  std::vector<int> getHoldRegs(const int, const int, const int, std::string &);
+  std::vector<int> getHoldRegs(const int, const int, const int, const std::string &);
 
-  int setHoldRegs(const int, const int, const int, std::string &, std::string &);
+  int setHoldRegs(const int, const int, const int, const std::string &, const std::string &);
 
   std::array<std::vector<int>, 6> getErrorId() const;
 

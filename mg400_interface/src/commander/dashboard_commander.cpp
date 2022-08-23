@@ -87,7 +87,7 @@ RobotMode DashboardCommander::robotMode() const
 {
   this->tcp_if_->sendCommand("RobotMode()");
   std::string res = this->tcp_if_->recvResponse();
-  int mode = ResponseParser::parseRobotModeorDI(res);
+  int mode = ResponseParser::parseOneValue(res);
   return this->robotMode(mode);
 }
 
@@ -210,11 +210,11 @@ bool DashboardCommander::cp(const int R)
   snprintf(buf, sizeof(buf), "CP(%d)", R);
   return this->sendCommand(buf);
 }
-
+/*
 bool DashboardCommander::runScript(const std::string & name)
 {
   char buf[100];
-  snprintf(buf, sizeof(buf), "RunScript(%s),", name.c_str());
+  snprintf(buf, sizeof(buf), "RunScript(%s)", name.c_str());
   return this->sendCommand(buf);
 }
 
@@ -232,7 +232,7 @@ bool DashboardCommander::continueScript()
 {
   return this->sendCommand("ContinueScript()");
 }
-
+*/
 bool DashboardCommander::setCollisionLevel(const CollisionLevel & level)
 {
   return this->setCollisionLevel(static_cast<int>(level));
@@ -245,33 +245,19 @@ bool DashboardCommander::setCollisionLevel(const int level)
   return this->sendCommand(buf);
 }
 
-std::array<std::vector<double>, 6> DashboardCommander::getAngle()
+std::vector<double> DashboardCommander::getAngle()
 {
   this->tcp_if_->sendCommand("GetAngle()");
-
-  const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(this->TIMEOUT)) {
-    const std::string res = this->tcp_if_->recvResponse();
-    if (res.find("GetAngle()") != std::string::npos) {
-      return ResponseParser::parseAngleorPose(res);
-    }
-  }
-  std::array<std::vector<double>, 6> ret;
+  std::string res = this->tcp_if_->recvResponse();
+  std::vector<double> ret = ResponseParser::parsedouble(res);
   return ret;
 }
 
-std::array<std::vector<double>, 6> DashboardCommander::getPose()
+std::vector<double> DashboardCommander::getPose()
 {
   this->tcp_if_->sendCommand("GetPose()");
-
-  const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(this->TIMEOUT)) {
-    const std::string res = this->tcp_if_->recvResponse();
-    if (res.find("GetPose()") != std::string::npos) {
-      return ResponseParser::parseAngleorPose(res);
-    }
-  }
-  std::array<std::vector<double>, 6> ret;
+  std::string res = this->tcp_if_->recvResponse();
+  std::vector<double> ret = ResponseParser::parsedouble(res);
   return ret;
 }
 
@@ -280,8 +266,8 @@ bool DashboardCommander::emergencyStop()
   return this->sendCommand("EmergencyStop()");
 }
 
-void DashboardCommander::modbusCreate(
-  std::string & ip, const int port,
+int DashboardCommander::modbusCreate(
+  const std::string & ip, const int port,
   const int slave_id, const int isRTU)
 {
   char buf[100];
@@ -289,6 +275,9 @@ void DashboardCommander::modbusCreate(
     buf, sizeof(buf), "ModbusCreate(%s,%d,%d,%d)",
     ip.c_str(), port, slave_id, isRTU);
   this->tcp_if_->sendCommand(buf);
+  std::string res = this->tcp_if_->recvResponse();
+  int ret = ResponseParser::parseOneValue(res);
+  return ret;
 }
 
 bool DashboardCommander::modbusClose(const std::string & index)
@@ -312,7 +301,7 @@ std::vector<int> DashboardCommander::getInBits(
 
 std::vector<int> DashboardCommander::getInRegs(
   const int index, const int addr,
-  const int count, std::string & valType)
+  const int count, const std::string & valType = "U16")
 {
   char buf[100];
   snprintf(
@@ -320,7 +309,8 @@ std::vector<int> DashboardCommander::getInRegs(
     index, addr, count, valType.c_str());
   this->tcp_if_->sendCommand(buf);
   std::string res = this->tcp_if_->recvResponse();
-  return ResponseParser::parsearray(res, count);
+  std::vector<int> ret = ResponseParser::parsearray(res, count);
+  return ret;
 }
 
 std::vector<int> DashboardCommander::getCoils(
@@ -332,12 +322,13 @@ std::vector<int> DashboardCommander::getCoils(
     index, addr, count);
   this->tcp_if_->sendCommand(buf);
   std::string res = this->tcp_if_->recvResponse();
-  return ResponseParser::parsearray(res, count);
+  std::vector<int> ret = ResponseParser::parsearray(res, count);
+  return ret;
 }
 
 int DashboardCommander::setCoils(
   const int index, const int addr,
-  const int count, std::string & valTab)
+  const int count, const std::string & valTab)
 {
   char buf[100];
   snprintf(
@@ -345,12 +336,13 @@ int DashboardCommander::setCoils(
     index, addr, count, valTab.c_str());
   this->tcp_if_->sendCommand(buf);
   std::string res = this->tcp_if_->recvResponse();
-  return ResponseParser::parseOnlyErrorID(res);
+  int ret = ResponseParser::parseOnlyErrorID(res);
+  return ret;
 }
 
 std::vector<int> DashboardCommander::getHoldRegs(
   const int index, const int addr,
-  const int count, std::string & valType)
+  const int count, const std::string & valType)
 {
   char buf[100];
   snprintf(
@@ -363,11 +355,11 @@ std::vector<int> DashboardCommander::getHoldRegs(
 
 int DashboardCommander::setHoldRegs(
   const int index, const int addr,
-  const int count, std::string & valTab, std::string & valType)
+  const int count, const std::string & valTab, const std::string & valType)
 {
   char buf[100];
   snprintf(
-    buf, sizeof(buf), "SetHoldRegs(%d,%d,%d,{%s},{%s})",
+    buf, sizeof(buf), "SetHoldRegs(%d,%d,%d,{%s},%s)",
     index, addr, count, valTab.c_str(), valType.c_str());
   this->tcp_if_->sendCommand(buf);
   std::string res = this->tcp_if_->recvResponse();
@@ -395,7 +387,8 @@ int DashboardCommander::DI(const int index) const
   snprintf(buf, sizeof(buf), "DI(%d)", index);
   this->tcp_if_->sendCommand(buf);
   std::string res = this->tcp_if_->recvResponse();
-  return ResponseParser::parseRobotModeorDI(res);
+  int ret = ResponseParser::parseOneValue(res);
+  return ret;
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 

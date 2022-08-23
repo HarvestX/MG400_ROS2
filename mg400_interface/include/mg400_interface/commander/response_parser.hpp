@@ -26,8 +26,8 @@ class ResponseParser
 {
 public:
   static std::array<std::vector<int>, 6> parseErrorMessage(const std::string &);
-  static std::array<std::vector<double>, 6> parseAngleorPose(const std::string &);
-  static int parseRobotModeorDI(const std::string &);
+  static std::vector<double> parsedouble(const std::string &);
+  static int parseOneValue(const std::string &);
   static std::vector<int> parsearray(const std::string &, const int count);
   static int parseOnlyErrorID(const std::string &);
 };
