@@ -42,7 +42,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'service_level',
-            default_value='service_level_1',
+            default_value='1',
             description='Determine the command level that can be called from the service.',
         ),
     ]
