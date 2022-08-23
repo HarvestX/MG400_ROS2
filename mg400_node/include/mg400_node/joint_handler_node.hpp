@@ -58,6 +58,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
   rclcpp::Service<mg400_msgs::srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
+  rclcpp::Service<mg400_msgs::srv::EnableRobot>::SharedPtr enable_robot_srv_;
 
 public:
   explicit JointHandlerNode(const rclcpp::NodeOptions &);
@@ -70,6 +71,10 @@ private:
   void onJsTimer();
 
   void onErrorTimer();
+
+  void enableRobot(
+    const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
+    mg400_msgs::srv::EnableRobot::Response::SharedPtr);
 
   void callJointMovJ(
     const double, const double, const double,

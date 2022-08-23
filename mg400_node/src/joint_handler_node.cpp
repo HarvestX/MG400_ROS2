@@ -47,17 +47,24 @@ JointHandlerNode::JointHandlerNode(const rclcpp::NodeOptions & options)
   // ROS Interfaces
   this->joint_state_pub_ =
     this->create_publisher<sensor_msgs::msg::JointState>(
-    "joint_states_res",
-    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+    "joint_states",
+    rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile());
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
-    10ms, std::bind(&JointHandlerNode::onJsTimer, this));
+    500ms, std::bind(&JointHandlerNode::onJsTimer, this));
   this->error_timer_ = this->create_wall_timer(
     500ms, std::bind(&JointHandlerNode::onErrorTimer, this));
 
   this->joint_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
-    "joint_states", rclcpp::SensorDataQoS().keep_last(1),
+    "joint_commands", rclcpp::SensorDataQoS().keep_last(1).best_effort(),
     std::bind(&JointHandlerNode::onJoint, this, std::placeholders::_1));
+
+  this->enable_robot_srv_ =
+    this->create_service<mg400_msgs::srv::EnableRobot>(
+    "enable_robot",
+    std::bind(
+      &JointHandlerNode::enableRobot, this,
+      std::placeholders::_1, std::placeholders::_2));
 }
 
 JointHandlerNode::~JointHandlerNode()
@@ -65,10 +72,13 @@ JointHandlerNode::~JointHandlerNode()
 
 void JointHandlerNode::onJoint(sensor_msgs::msg::JointState::ConstSharedPtr joint_msg)
 {
-  printf("%lf", joint_msg->position.at(1));
   callJointMovJ(
-    0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0
+    joint_msg->position.at(0),
+    joint_msg->position.at(1),
+    joint_msg->position.at(6),
+    joint_msg->position.at(7),
+    0.0,
+    0.0
   );
 }
 
@@ -132,6 +142,13 @@ void JointHandlerNode::onErrorTimer()
     this->get_logger(),
     ss.str().c_str());
   this->db_commander_->clearError();
+}
+void JointHandlerNode::enableRobot(
+  const mg400_msgs::srv::EnableRobot::Request::SharedPtr,
+  mg400_msgs::srv::EnableRobot::Response::SharedPtr response
+)
+{
+  response->result = this->db_commander_->enableRobot();
 }
 
 void JointHandlerNode::callJointMovJ(
