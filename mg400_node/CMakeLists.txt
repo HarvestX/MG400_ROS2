@@ -44,6 +44,14 @@ rclcpp_components_register_node(
     EXECUTABLE service_node_exec)
 # ===================================================================
 
+# ===================================================================
+ament_auto_add_library(joint_handler_node SHARED src/joint_handler_node.cpp)
+rclcpp_components_register_node(
+  joint_handler_node
+    PLUGIN "mg400_node::JointHandlerNode"
+    EXECUTABLE joint_handler_node_exec)
+# ===================================================================
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
