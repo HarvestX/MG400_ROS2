@@ -12,7 +12,8 @@
         "${HOME}/ws_galactic/install/p9n_interface/include/**",
         "/usr/include/**",
         "${workspaceFolder}/mg400_node/include/**",
-        "${workspaceFolder}/mg400_interface/include/**"
+        "${workspaceFolder}/mg400_interface/include/**",
+        "${workspaceFolder}/mg400_node/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "clang-x64",

@@ -22,7 +22,11 @@ set(srv_files
     "srv/MoveJog.srv"
     "srv/MovJ.srv"
     "srv/MovL.srv"
-    "srv/JointMovJ.srv"
+    "srv/ResetRobot.srv"
+    "srv/SpeedFactor.srv"
+    "srv/SpeedJ.srv"
+    "srv/SpeedL.srv"
+    "srv/ToolDOExecute.srv")
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME} ${srv_files})

@@ -96,7 +96,8 @@
     "bit": "cpp",
     "any": "cpp",
     "regex": "cpp",
-    "*.ipp": "cpp"
+    "*.ipp": "cpp",
+    "valarray": "cpp"
   },
   "ros.distro": "galactic"
 }
