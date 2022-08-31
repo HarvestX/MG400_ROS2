@@ -27,7 +27,6 @@ set(srv_files
     "srv/SpeedJ.srv"
     "srv/SpeedL.srv"
     "srv/ToolDOExecute.srv")
-)
 
 rosidl_generate_interfaces(${PROJECT_NAME} ${srv_files})
 
