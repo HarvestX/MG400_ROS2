@@ -70,7 +70,13 @@ RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
 
 void RealtimeFeedbackTcpInterface::recvData()
 {
-  while (this->is_running_) {
+  static const int CONNECTION_TRIAL = 3;
+  using namespace std::chrono_literals;
+  int failed_cnd = 0;
+  while (failed_cnd < CONNECTION_TRIAL) {
+    if (!this->is_running_) {
+      return;
+    }
     try {
       if (this->tcp_socket_->isConnected()) {
         if (this->tcp_socket_->recv(
@@ -97,6 +103,8 @@ void RealtimeFeedbackTcpInterface::recvData()
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(
             this->getLogger(), "Tcp recv error: %s", err.what());
+          rclcpp::sleep_for(500ms);
+          failed_cnd++;
         }
       }
     } catch (const TcpSocketException & err) {
@@ -104,8 +112,16 @@ void RealtimeFeedbackTcpInterface::recvData()
       RCLCPP_ERROR(
         this->getLogger(),
         "Tcp recv error: %s", err.what());
+      rclcpp::sleep_for(500ms);
+      failed_cnd++;
     }
   }
+
+  RCLCPP_ERROR(
+    this->getLogger(),
+    "Failed more than %d times.. . Close connection.",
+    failed_cnd);
+  this->is_running_ = false;
 }
 
 }  // namespace mg400_interface

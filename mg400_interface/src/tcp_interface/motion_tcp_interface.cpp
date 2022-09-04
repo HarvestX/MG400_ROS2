@@ -47,9 +47,10 @@ void MotionTcpInterface::init() noexcept
 
 void MotionTcpInterface::checkConnection()
 {
+  static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;
   int failed_cnt = 0;
-  while (failed_cnt < this->CONNECTION_TRIAL_) {
+  while (failed_cnt < CONNECTION_TRIAL) {
     if (!this->is_running_) {
       return;
     }
@@ -65,7 +66,8 @@ void MotionTcpInterface::checkConnection()
           RCLCPP_ERROR(
             this->getLogger(),
             "Tcp recv error : %s", err.what());
-          rclcpp::sleep_for(1s);
+          rclcpp::sleep_for(500ms);
+          failed_cnt++;
         }
       }
     } catch (const TcpSocketException & err) {
@@ -73,14 +75,15 @@ void MotionTcpInterface::checkConnection()
       RCLCPP_ERROR(
         this->getLogger(),
         "Tcp recv error : %s", err.what());
+      rclcpp::sleep_for(500ms);
+      failed_cnt++;
     }
-    failed_cnt++;
   }
 
   RCLCPP_ERROR(
     this->getLogger(),
     "Failed more than %d times... Close connection.",
-    this->CONNECTION_TRIAL_);
+    failed_cnt);
   this->is_running_ = false;
 }
 
