@@ -39,7 +39,6 @@ class MotionTcpInterface : public MotionTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 30003;
-  const int CONNECTION_TRIAL_ = 3;
 
   std::mutex mutex_;
   std::atomic<bool> is_running_;

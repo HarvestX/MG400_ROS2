@@ -38,7 +38,6 @@ class DashboardTcpInterface : public DashboardTcpInterfaceBase
 {
 private:
   const uint16_t PORT_ = 29999;
-  const int CONNECTION_TRIAL_ = 3;
 
   std::atomic<bool> is_running_;
   std::mutex mutex_;
