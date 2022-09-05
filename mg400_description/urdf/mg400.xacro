@@ -538,7 +538,7 @@
           xyz="0 0 ${(-70.0 - 14.0) * const.SCALE_MM}"
           rpy="0 0 0" />
       <parent link="${prefix}mg400_link5" />
-      <child link="${prefix}mg400_end_effector_shaft" />
+      <child link="${prefix}mg400_end_effector_flange" />
       <axis xyz="0 0 1" />
       <limit
           lower="${-180.0 * const.TO_RADIAN}"
