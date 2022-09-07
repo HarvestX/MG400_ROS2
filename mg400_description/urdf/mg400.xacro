@@ -365,10 +365,10 @@
             rpy="0 0 0" />
         <mass value="24.0e-3" />
         <inertia
-            ixx="2.058-6"
+            ixx="2.058e-6"
             ixy="0.0"
             ixz="0.0"
-            iyy="2.058-6"
+            iyy="2.058e-6"
             iyz="0.0"
             izz="3.335e-6" />
       </inertial>
