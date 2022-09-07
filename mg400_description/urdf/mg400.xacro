@@ -40,8 +40,8 @@
       name="MESH_LINK_5"
       value="${BASE_PATH}/link5.dae" />
   <xacro:property
-      name="MESH_SHAFT"
-      value="${BASE_PATH}/shaft.dae" />
+      name="MESH_FLANGE"
+      value="${BASE_PATH}/flange.dae" />
 
   <xacro:macro
       name="mg400"
@@ -358,21 +358,34 @@
         </geometry>
       </collision>
     </link>
-    <link name="${prefix}mg400_end_effector_shaft">
+    <link name="${prefix}mg400_end_effector_flange">
+      <inertial>
+        <origin
+            xyz="0 0 5.0e-3"
+            rpy="0 0 0" />
+        <mass value="24.0e-3" />
+        <inertia
+            ixx="2.058-6"
+            ixy="0.0"
+            ixz="0.0"
+            iyy="2.058-6"
+            iyz="0.0"
+            izz="3.335e-6" />
+      </inertial>
       <visual>
         <origin
             xyz="0 0 0"
-            rpy="${180.0 * const.TO_RADIAN} 0 0" />
+            rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://${MESH_SHAFT}" />
+          <mesh filename="package://${MESH_FLANGE}" />
         </geometry>
       </visual>
       <collision>
         <origin
             xyz="0 0 0"
-            rpy="${180.0 * const.TO_RADIAN} 0 0" />
+            rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://${MESH_SHAFT}" />
+          <mesh filename="package://${MESH_FLANGE}" />
         </geometry>
       </collision>
     </link>
@@ -522,10 +535,10 @@
         name="${prefix}mg400_j5"
         type="revolute">
       <origin
-          xyz="0 0 ${-70.0 * const.SCALE_MM}"
+          xyz="0 0 ${(-70.0 - 14.0) * const.SCALE_MM}"
           rpy="0 0 0" />
       <parent link="${prefix}mg400_link5" />
-      <child link="${prefix}mg400_end_effector_shaft" />
+      <child link="${prefix}mg400_end_effector_flange" />
       <axis xyz="0 0 1" />
       <limit
           lower="${-180.0 * const.TO_RADIAN}"
