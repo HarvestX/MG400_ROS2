@@ -103,6 +103,9 @@ void RealtimeFeedbackTcpInterface::recvData()
             this->current_joints_[i] =
               this->rt_data_.q_actual[i] * TO_RADIAN;
           }
+          RCLCPP_INFO(
+            this->getLogger(), "Robot mode is %ld",
+            RealtimeFeedbackTcpInterface::getRobotMode());
           this->mutex_.unlock();
           continue;
         } else {
