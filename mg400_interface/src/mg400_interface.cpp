@@ -81,7 +81,6 @@ bool MG400Interface::deactivate()
   this->dashboard_tcp_if_->disConnect();
   this->motion_tcp_if_->disConnect();
   this->realtime_tcp_interface->disConnect();
-
   return true;
 }
 

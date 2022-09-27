@@ -49,34 +49,39 @@ void DashboardTcpInterface::checkConnection()
   static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;
   int failed_cnt = 0;
-  while (failed_cnt < CONNECTION_TRIAL) {
-    if (!this->is_running_) {
-      return;
-    }
-    try {
-      if (this->tcp_socket_->isConnected()) {
-        failed_cnt = 0;
-        rclcpp::sleep_for(1s);
-        continue;
-      } else {
-        try {
-          this->tcp_socket_->connect();
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(
-            this->getLogger(),
-            "Tcp recv error : %s", err.what());
-          rclcpp::sleep_for(500ms);
-          failed_cnt++;
-        }
+  try {
+    while (failed_cnt < CONNECTION_TRIAL) {
+      if (!this->is_running_) {
+        return;
       }
-    } catch (const TcpSocketException & err) {
-      this->tcp_socket_->disConnect();
-      RCLCPP_ERROR(
-        this->getLogger(),
-        "Tcp recv error : %s", err.what());
-      rclcpp::sleep_for(500ms);
-      failed_cnt++;
+      try {
+        if (this->tcp_socket_->isConnected()) {
+          failed_cnt = 0;
+          rclcpp::sleep_for(1s);
+          continue;
+        } else {
+          try {
+            this->tcp_socket_->connect();
+          } catch (const TcpSocketException & err) {
+            RCLCPP_ERROR(
+              this->getLogger(),
+              "Tcp recv error : %s", err.what());
+            rclcpp::sleep_for(500ms);
+            failed_cnt++;
+          }
+        }
+      } catch (const TcpSocketException & err) {
+        this->tcp_socket_->disConnect();
+        RCLCPP_ERROR(
+          this->getLogger(),
+          "Tcp recv error : %s", err.what());
+        rclcpp::sleep_for(500ms);
+        failed_cnt++;
+      }
     }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->getLogger(), e.what());
   }
 
   RCLCPP_ERROR(
