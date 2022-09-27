@@ -57,35 +57,33 @@ int main(int argc, char ** argv)
 
   rclcpp::NodeOptions options;
   auto ck_node = std::make_unique<CommanderCheckNode>(options);
-  if(!ck_node->configure()) {
+  if (!ck_node->configure()) {
     return EXIT_FAILURE;
   }
-  if(!ck_node->activate()) {
+  if (!ck_node->activate()) {
     return EXIT_FAILURE;
   }
 
   try {
     ck_node->interface->dashboard_commander->enableRobot();
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      ck_node->get_logger(),
-      "%s", e.what());
-    return EXIT_FAILURE;
-  }
-  rclcpp::sleep_for(2s);
+    rclcpp::sleep_for(2s);
 
-  try {
     ck_node->interface->dashboard_commander->tool(0);
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      ck_node->get_logger(),
-      "%s", e.what());
-    return EXIT_FAILURE;
-  }
-  rclcpp::sleep_for(2s);
+    rclcpp::sleep_for(2s);
 
-  try {
+    ck_node->interface->motion_commander->movJ(
+      0.35, 0.0, 0.0, 0.0, 0.0, 0.0);
+    rclcpp::sleep_for(2s);
+
+    ck_node->interface->dashboard_commander->tool(1);
+    rclcpp::sleep_for(2s);
+
+    ck_node->interface->motion_commander->movJ(
+      0.35, 0.0, 0.0, 0.0, 0.0, 0.0);
+    rclcpp::sleep_for(2s);
+
     ck_node->interface->dashboard_commander->disableRobot();
+
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       ck_node->get_logger(),
