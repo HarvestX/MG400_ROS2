@@ -82,54 +82,48 @@ void RealtimeFeedbackTcpInterface::recvData()
   static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;
   int failed_cnd = 0;
-  try {
-    while (failed_cnd < CONNECTION_TRIAL) {
-      if (!this->is_running_) {
-        return;
-      }
-      try {
-        if (this->tcp_socket_->isConnected()) {
-          if (this->tcp_socket_->recv(
-              &this->rt_data_, sizeof(this->rt_data_), 5000))
-          {
-            if (this->rt_data_.len != 1440) {
-              continue;
-            }
-
-            this->mutex_.lock();
-            for (uint64_t i = 0; i < 4; ++i) {
-              this->current_joints_[i] =
-                this->rt_data_.q_actual[i] * TO_RADIAN;
-            }
-            this->mutex_.unlock();
-            continue;
-          } else {
-            // timeout
-            RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
-          }
-        } else {
-          try {
-            this->tcp_socket_->connect();
-          } catch (const TcpSocketException & err) {
-            RCLCPP_ERROR(
-              this->getLogger(), "Tcp recv error: %s", err.what());
-            rclcpp::sleep_for(500ms);
-            failed_cnd++;
-          }
-        }
-      } catch (const TcpSocketException & err) {
-        this->tcp_socket_->disConnect();
-        RCLCPP_ERROR(
-          this->getLogger(),
-          "Tcp recv error: %s", err.what());
-        rclcpp::sleep_for(500ms);
-        failed_cnd++;
-      }
+  while (failed_cnd < CONNECTION_TRIAL) {
+    if (!this->is_running_) {
+      return;
     }
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      this->getLogger(),
-      e.what());
+    try {
+      if (this->tcp_socket_->isConnected()) {
+        if (this->tcp_socket_->recv(
+            &this->rt_data_, sizeof(this->rt_data_), 5000))
+        {
+          if (this->rt_data_.len != 1440) {
+            continue;
+          }
+
+          this->mutex_.lock();
+          for (uint64_t i = 0; i < 4; ++i) {
+            this->current_joints_[i] =
+              this->rt_data_.q_actual[i] * TO_RADIAN;
+          }
+          this->mutex_.unlock();
+          continue;
+        } else {
+          // timeout
+          RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
+        }
+      } else {
+        try {
+          this->tcp_socket_->connect();
+        } catch (const TcpSocketException & err) {
+          RCLCPP_ERROR(
+            this->getLogger(), "Tcp recv error: %s", err.what());
+          rclcpp::sleep_for(500ms);
+          failed_cnd++;
+        }
+      }
+    } catch (const TcpSocketException & err) {
+      this->tcp_socket_->disConnect();
+      RCLCPP_ERROR(
+        this->getLogger(),
+        "Tcp recv error: %s", err.what());
+      rclcpp::sleep_for(500ms);
+      failed_cnd++;
+    }
   }
 
   RCLCPP_ERROR(
