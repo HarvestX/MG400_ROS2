@@ -69,12 +69,12 @@ RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
 
 void RealtimeFeedbackTcpInterface::disConnect()
 {
-  RCLCPP_INFO(
-    this->getLogger(),
-    "Close connection.");
   this->is_running_ = false;
   this->thread_->join();
   this->tcp_socket_->disConnect();
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
 }
 
 void RealtimeFeedbackTcpInterface::recvData()

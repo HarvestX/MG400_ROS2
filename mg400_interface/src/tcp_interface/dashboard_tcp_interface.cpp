@@ -98,12 +98,12 @@ void DashboardTcpInterface::sendCommand(const std::string & cmd)
 
 void DashboardTcpInterface::disConnect()
 {
-  RCLCPP_INFO(
-    this->getLogger(),
-    "Close connection.");
   this->is_running_ = false;
   this->thread_->join();
   this->tcp_socket_->disConnect();
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
 }
 
 std::string DashboardTcpInterface::recvResponse()
