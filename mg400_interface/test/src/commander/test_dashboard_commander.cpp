@@ -139,7 +139,7 @@ TEST_F(TestDashboardCommander, PayLoad) {
       StrEq("PayLoad(3.000,0.400)"))).Times(1);
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
-    Return("0,{},Payload(3.000,0.400);"));
+    Return("0,{},PayLoad(3.000,0.400);"));
   commander->payload(3, 0.4);
 }
 
@@ -264,6 +264,12 @@ TEST_F(TestDashboardCommander, GetAngle) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("GetAngle()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return(
+      "0,"
+      "{0.000000,0.000000,45.000000,45.000000,0.000000,0.000000}"
+      ",GetAngle();"));
   commander->getAngle();
 }
 
@@ -271,6 +277,12 @@ TEST_F(TestDashboardCommander, GetPose) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("GetPose()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return(
+      "0,"
+      "{350.000000,0.000000,0.000000,0.000000,0.000000,0.000000}"
+      ",GetPose();"));
   commander->getPose();
 }
 
@@ -278,6 +290,9 @@ TEST_F(TestDashboardCommander, EmergencyStop) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("EmergencyStop()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},EmergencyStop();"));
   commander->emergencyStop();
 }
 /*
@@ -341,6 +356,9 @@ TEST_F(TestDashboardCommander, DI) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("DI(1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{0},DI(1);"));
   commander->DI(1);
 }
 
@@ -348,5 +366,8 @@ TEST_F(TestDashboardCommander, GetErrorID) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("GetErrorID()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("(0,{[[69,72],[1],[],[],[],[]]},GetErrorID();"));
   commander->getErrorId();
 }
