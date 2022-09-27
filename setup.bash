@@ -13,7 +13,10 @@ unset colcon_ws
 
 ## From apt repositories
 rosdep update
-rosdep install -r -y -i --from-paths ${THIS_PROJECT_ROOT} --rosdistro $ROS_DISTRO
+rosdep install -r -y -i \
+  --from-paths ${THIS_PROJECT_ROOT} \
+  --rosdistro $ROS_DISTRO \
+  --skip-keys p9n_interface
 
 unset THIS_FILE
 unset THIS_PROJECT_ROOT
