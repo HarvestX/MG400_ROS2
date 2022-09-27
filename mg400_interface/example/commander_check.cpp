@@ -14,54 +14,38 @@
 
 #include <string>
 #include <memory>
-#include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
-#include "mg400_interface/commander/dashboard_commander.hpp"
+#include "mg400_interface/mg400_interface.hpp"
 
 class CommanderCheckNode : public rclcpp::Node
 {
 public:
-  std::unique_ptr<mg400_interface::DashboardCommander> db_commander;
+  std::unique_ptr<mg400_interface::MG400Interface> interface;
 
 private:
   const std::string ip_address;
-  std::unique_ptr<mg400_interface::DashboardTcpInterface> db_tcp_if_;
 
 public:
   explicit CommanderCheckNode(const rclcpp::NodeOptions & options)
   : Node("commander_check_node", options),
     ip_address(this->declare_parameter("ip_address", "127.0.0.1"))
   {
-    this->db_tcp_if_ =
-      std::make_unique<mg400_interface::DashboardTcpInterface>(
+    this->interface = std::make_unique<mg400_interface::MG400Interface>(
       this->ip_address);
+  }
+
+  bool configure()
+  {
+    this->interface->configure();
   }
 
   bool activate()
   {
-    this->db_tcp_if_->init();
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Connecting to: %s", this->ip_address.c_str());
-
-    using namespace std::chrono_literals;
-    while (!this->db_tcp_if_->isConnected()) {
-      std::cout << "Waiting for the connection..." << std::endl;
-      rclcpp::sleep_for(1s);
-    }
-
-    const bool ret = this->db_tcp_if_->isConnected();
-    if (ret) {
-      this->db_commander =
-        std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if_.get());
-    }
-
-    return ret;
+    this->interface->activate();
   }
 
   bool deactivate()
   {
-    this->db_commander = nullptr;
-    return true;
+    this->interface->deactivate();
   }
 };
 
@@ -76,7 +60,7 @@ int main(int argc, char ** argv)
   ck_node->activate();
 
   try {
-    ck_node->db_commander->enableRobot();
+    ck_node->interface->dashboard_commander->enableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       ck_node->get_logger(),
@@ -86,7 +70,7 @@ int main(int argc, char ** argv)
   rclcpp::sleep_for(2s);
 
   try {
-    ck_node->db_commander->tool(0);
+    ck_node->interface->dashboard_commander->tool(0);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       ck_node->get_logger(),
@@ -96,7 +80,7 @@ int main(int argc, char ** argv)
   rclcpp::sleep_for(2s);
 
   try {
-    ck_node->db_commander->disableRobot();
+    ck_node->interface->dashboard_commander->disableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       ck_node->get_logger(),
