@@ -254,7 +254,15 @@ void ServiceNode::clearError(
   mg400_srv::ClearError::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->clearError();
+  try {
+    this->db_commander_->clearError();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 void ServiceNode::resetRobot(
@@ -262,7 +270,15 @@ void ServiceNode::resetRobot(
   mg400_srv::ResetRobot::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->resetRobot();
+  try {
+    this->db_commander_->resetRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 void ServiceNode::disableRobot(
@@ -270,7 +286,15 @@ void ServiceNode::disableRobot(
   mg400_srv::DisableRobot::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->disableRobot();
+  try {
+    this->db_commander_->disableRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 void ServiceNode::enableRobot(
@@ -278,7 +302,15 @@ void ServiceNode::enableRobot(
   mg400_srv::EnableRobot::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->enableRobot();
+  try {
+    this->db_commander_->enableRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 void ServiceNode::toolDOExecute(
@@ -286,9 +318,16 @@ void ServiceNode::toolDOExecute(
   mg400_srv::ToolDOExecute::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->toolDOExecute(
-    request->index,
-    request->status);
+  try {
+    this->db_commander_->toolDOExecute(
+      request->index, request->status);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 void ServiceNode::speedFactor(
@@ -296,7 +335,15 @@ void ServiceNode::speedFactor(
   mg400_srv::SpeedFactor::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->speedFactor(request->ratio);
+  try {
+    this->db_commander_->speedFactor(request->ratio);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
 }
 
 //TODO: Uncomment after command implementation.

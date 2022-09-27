@@ -28,67 +28,61 @@ DashboardCommander::DashboardCommander(
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
-bool DashboardCommander::enableRobot() const
+void DashboardCommander::enableRobot() const
 {
-  return this->sendCommand("EnableRobot()");
+  this->sendCommand("EnableRobot()");
 }
 
-bool DashboardCommander::disableRobot() const
+void DashboardCommander::disableRobot() const
 {
-  return this->sendCommand("DisableRobot()");
+  this->sendCommand("DisableRobot()");
 }
 
-bool DashboardCommander::clearError() const
+void DashboardCommander::clearError() const
 {
-  return this->sendCommand("ClearError()");
+  this->sendCommand("ClearError()");
 }
 
-bool DashboardCommander::resetRobot() const
+void DashboardCommander::resetRobot() const
 {
-  return this->sendCommand("ResetRobot()");
+  this->sendCommand("ResetRobot()");
 }
 
-bool DashboardCommander::speedFactor(const int ratio) const
+void DashboardCommander::speedFactor(const int ratio) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SpeedFactor(%d)", ratio);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-int DashboardCommander::user(const UserIndex & index) const
+void DashboardCommander::user(const UserIndex & index) const
 {
-  return this->user(static_cast<int>(index));
+  this->user(static_cast<int>(index));
 }
 
-int DashboardCommander::user(const int index) const
+void DashboardCommander::user(const int index) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "User(%d)", index);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-int DashboardCommander::tool(const ToolIndex & index) const
+void DashboardCommander::tool(const ToolIndex & index) const
 {
   return this->tool(static_cast<int>(index));
 }
 
-int DashboardCommander::tool(const int index) const
+void DashboardCommander::tool(const int index) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "Tool(%d)", index);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
 RobotMode DashboardCommander::robotMode() const
 {
-  this->tcp_if_->sendCommand("RobotMode()");
-  std::string res = this->tcp_if_->recvResponse();
-  int mode = ResponseParser::parseOneValue(res);
-  return this->robotMode(mode);
-}
-
-RobotMode DashboardCommander::robotMode(const int mode) const
-{
+  const std::string response = this->sendCommand("RobotMode()");
+  int mode = ResponseParser::parseOneValue(response);
   switch (mode) {
     case 1:
       return RobotMode::INIT;
@@ -115,43 +109,43 @@ RobotMode DashboardCommander::robotMode(const int mode) const
   }
 }
 
-bool DashboardCommander::payload(
+void DashboardCommander::payload(
   const double weight,
   const double inertia) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "PayLoad(%.3lf,%.3lf)", weight, inertia);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::DO(
+void DashboardCommander::DO(
   const DOIndex && do_index,
   const DOStatus && do_status) const
 {
-  return this->DO(
+  this->DO(
     static_cast<int>(do_index),
     static_cast<int>(do_status));
 }
 
-bool DashboardCommander::DO(
+void DashboardCommander::DO(
   const int do_index,
   const int do_status) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "DO(%d,%d)", do_index, do_status);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::toolDOExecute(
+void DashboardCommander::toolDOExecute(
   const ToolDOIndex && tool_do_index,
   const DOStatus && do_status) const
 {
-  return this->toolDOExecute(
+  this->toolDOExecute(
     static_cast<int>(tool_do_index),
     static_cast<int>(do_status));
 }
 
-bool DashboardCommander::toolDOExecute(
+void DashboardCommander::toolDOExecute(
   const int tool_do_index,
   const int do_status) const
 {
@@ -159,35 +153,35 @@ bool DashboardCommander::toolDOExecute(
   snprintf(
     buf, sizeof(buf), "ToolDOExecute(%d,%d)",
     tool_do_index, do_status);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::accJ(const int R)
+void DashboardCommander::accJ(const int R)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "AccJ(%d)", R);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::accL(const int R)
+void DashboardCommander::accL(const int R)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "AccL(%d)", R);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::speedJ(const int R)
+void DashboardCommander::speedJ(const int R)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SpeedJ(%d)", R);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
-bool DashboardCommander::speedL(const int R)
+void DashboardCommander::speedL(const int R)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SpeedL(%d)", R);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 /*
 bool DashboardCommander::arch(const ArchIndex & index)
@@ -202,11 +196,11 @@ bool DashboardCommander::arch(const int index)
   return this->sendCommand(buf);
 }
 */
-bool DashboardCommander::cp(const int R)
+void DashboardCommander::cp(const int R)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "CP(%d)", R);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 /*
 bool DashboardCommander::runScript(const std::string & name)
@@ -231,37 +225,35 @@ bool DashboardCommander::continueScript()
   return this->sendCommand("ContinueScript()");
 }
 */
-bool DashboardCommander::setCollisionLevel(const CollisionLevel & level)
+void DashboardCommander::setCollisionLevel(const CollisionLevel & level)
 {
-  return this->setCollisionLevel(static_cast<int>(level));
+  this->setCollisionLevel(static_cast<int>(level));
 }
 
-bool DashboardCommander::setCollisionLevel(const int level)
+void DashboardCommander::setCollisionLevel(const int level)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "SetCollisionLevel(%d)", level);
-  return this->sendCommand(buf);
+  this->sendCommand(buf);
 }
 
 std::vector<double> DashboardCommander::getAngle()
 {
-  this->tcp_if_->sendCommand("GetAngle()");
-  std::string res = this->tcp_if_->recvResponse();
+  const std::string res = this->sendCommand("GetAngle");
   std::vector<double> ret = ResponseParser::parseDouble(res);
   return ret;
 }
 
 std::vector<double> DashboardCommander::getPose()
 {
-  this->tcp_if_->sendCommand("GetPose()");
-  std::string res = this->tcp_if_->recvResponse();
+  const std::string res = this->sendCommand("GetPose");
   std::vector<double> ret = ResponseParser::parseDouble(res);
   return ret;
 }
 
-bool DashboardCommander::emergencyStop()
+void DashboardCommander::emergencyStop()
 {
-  return this->sendCommand("EmergencyStop()");
+  this->sendCommand("EmergencyStop()");
 }
 /*
 int DashboardCommander::modbusCreate(
@@ -364,29 +356,19 @@ int DashboardCommander::setHoldRegs(
   return ResponseParser::parseOnlyErrorID(res);
 }
 */
+
 std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
 {
-  this->tcp_if_->sendCommand("GetErrorID()");
-
-  const auto start = this->clock_->now();
-  while (this->clock_->now() - start < rclcpp::Duration(this->TIMEOUT)) {
-    const std::string res = this->tcp_if_->recvResponse();
-    if (res.find("GetErrorID()") != std::string::npos) {
-      return ResponseParser::parseErrorMessage(res);
-    }
-  }
-  std::array<std::vector<int>, 6> ret;
-  return ret;
+  const std::string res = this->sendCommand("GetErrorID()");
+  return ResponseParser::parseErrorMessage(res);
 }
 
 int DashboardCommander::DI(const int index) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "DI(%d)", index);
-  this->tcp_if_->sendCommand(buf);
-  std::string res = this->tcp_if_->recvResponse();
-  int ret = ResponseParser::parseOneValue(res);
-  return ret;
+  const std::string res = this->sendCommand(buf);
+  return ResponseParser::parseOneValue(res);
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 
@@ -395,7 +377,8 @@ const rclcpp::Logger DashboardCommander::getLogger()
   return rclcpp::get_logger("DashboardCommander");
 }
 
-bool DashboardCommander::sendCommand(const std::string & command) const
+std::string DashboardCommander::sendCommand(
+  const std::string & command) const
 {
   this->tcp_if_->sendCommand(command);
 
@@ -404,9 +387,9 @@ bool DashboardCommander::sendCommand(const std::string & command) const
   while (this->clock_->now() - start < timeout) {
     const std::string res = this->tcp_if_->recvResponse();
     if (res.find(command) != std::string::npos) {
-      return true;
+      return res;
     }
   }
-  return false;
+  throw std::runtime_error("Robot not responded.");
 }
 }  // namespace mg400_interface

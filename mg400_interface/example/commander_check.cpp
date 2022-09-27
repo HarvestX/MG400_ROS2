@@ -17,16 +17,6 @@
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 #include "mg400_interface/commander/dashboard_commander.hpp"
 
-
-void show_result(const bool res, const std::string & command)
-{
-  if (res) {
-    std::cout << command << " successfully called!" << std::endl;
-  } else {
-    std::cerr << command << " failed" << std::endl;
-  }
-}
-
 class CommanderCheckNode : public rclcpp::Node
 {
 public:
@@ -85,17 +75,34 @@ int main(int argc, char ** argv)
   auto ck_node = std::make_unique<CommanderCheckNode>(options);
   ck_node->activate();
 
-  const bool enable_res = ck_node->db_commander->enableRobot();
-  show_result(enable_res, "EnableRobot");
+  try {
+    ck_node->db_commander->enableRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      ck_node->get_logger(),
+      "%s", e.what());
+    return EXIT_FAILURE;
+  }
   rclcpp::sleep_for(2s);
 
-  const bool res = ck_node->db_commander->tool(0);
-  show_result(res, "Tool");
+  try {
+    ck_node->db_commander->tool(0);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      ck_node->get_logger(),
+      "%s", e.what());
+    return EXIT_FAILURE;
+  }
   rclcpp::sleep_for(2s);
 
-  const bool disable_res = ck_node->db_commander->disableRobot();
-  show_result(disable_res, "DisableRobot");
-  rclcpp::sleep_for(1s);
+  try {
+    ck_node->db_commander->disableRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      ck_node->get_logger(),
+      "%s", e.what());
+    return EXIT_FAILURE;
+  }
 
   ck_node->deactivate();
 

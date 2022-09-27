@@ -70,7 +70,8 @@ JointHandlerNode::JointHandlerNode(const rclcpp::NodeOptions & options)
 JointHandlerNode::~JointHandlerNode()
 {}
 
-void JointHandlerNode::onJoint(sensor_msgs::msg::JointState::ConstSharedPtr joint_msg)
+void JointHandlerNode::onJoint(
+  sensor_msgs::msg::JointState::ConstSharedPtr joint_msg)
 {
   callJointMovJ(
     joint_msg->position.at(0),
@@ -148,7 +149,15 @@ void JointHandlerNode::enableRobot(
   mg400_msgs::srv::EnableRobot::Response::SharedPtr response
 )
 {
-  response->result = this->db_commander_->enableRobot();
+  try {
+    this->db_commander_->enableRobot();
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "%s", e.what());
+    response->result = false;
+  }
+  response->result = true;
 }
 
 void JointHandlerNode::callJointMovJ(

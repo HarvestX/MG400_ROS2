@@ -43,62 +43,61 @@ public:
     const std::chrono::nanoseconds = 5s);
 
   // DOBOT MG400 Official Command ---------------------------------------------
-  bool enableRobot() const;
+  void enableRobot() const;
 
-  bool disableRobot() const;
+  void disableRobot() const;
 
-  bool clearError() const;
+  void clearError() const;
 
-  bool resetRobot() const;
+  void resetRobot() const;
 
-  bool speedFactor(const int) const;
+  void speedFactor(const int) const;
 
-  int user(const UserIndex &) const;
-  int user(const int) const;
+  void user(const UserIndex &) const;
+  void user(const int) const;
 
-  int tool(const ToolIndex &) const;
-  int tool(const int) const;
+  void tool(const ToolIndex &) const;
+  void tool(const int) const;
 
   RobotMode robotMode() const;
-  RobotMode robotMode(const int) const;
 
-  bool payload(const double, const double) const;
+  void payload(const double, const double) const;
 
-  bool DO(const DOIndex &&, const DOStatus &&) const;
-  bool DO(const int, const int) const;
+  void DO(const DOIndex &&, const DOStatus &&) const;
+  void DO(const int, const int) const;
 
-  bool toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
-  bool toolDOExecute(const int, const int) const;
+  void toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
+  void toolDOExecute(const int, const int) const;
 
-  bool accJ(const int);
+  void accJ(const int);
 
-  bool accL(const int);
+  void accL(const int);
 
-  bool speedJ(const int);
+  void speedJ(const int);
 
-  bool speedL(const int);
+  void speedL(const int);
 /*
-  bool arch(const ArchIndex &);
-  bool arch(const int);
+  void arch(const ArchIndex &);
+  void arch(const int);
 */
-  bool cp(const int);
+  void cp(const int);
 /*
-  bool runScript(const std::string &);
+  void runScript(const std::string &);
 
-  bool stopScript();
+  void stopScript();
 
-  bool pauseScript();
+  void pauseScript();
 
-  bool continueScript();
+  void continueScript();
 */
-  bool setCollisionLevel(const CollisionLevel &);
-  bool setCollisionLevel(const int);
+  void setCollisionLevel(const CollisionLevel &);
+  void setCollisionLevel(const int);
 
   std::vector<double> getAngle();
 
   std::vector<double> getPose();
 
-  bool emergencyStop();
+  void emergencyStop();
 /*
   int modbusCreate(const std::string &, const int, const int, const int);
 
@@ -124,6 +123,6 @@ public:
 
 private:
   static const rclcpp::Logger getLogger();
-  bool sendCommand(const std::string &) const;
+  std::string sendCommand(const std::string &) const;
 };
 }  // namespace mg400_interface
