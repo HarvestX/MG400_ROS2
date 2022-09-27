@@ -91,7 +91,7 @@ int main(int argc, char ** argv)
 
   const bool res = ck_node->db_commander->tool(0);
   show_result(res, "Tool");
-  rclcpp::sleep_for();
+  rclcpp::sleep_for(2s);
 
   const bool disable_res = ck_node->db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
