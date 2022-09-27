@@ -18,7 +18,7 @@ namespace mg400_interface
 {
 enum class UserIndex
 {
-  USER0,
+  USER0 = 0,
   USER1,
   USER2,
   USER3,
