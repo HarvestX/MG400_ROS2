@@ -407,9 +407,6 @@ bool DashboardCommander::sendCommand(const std::string & command) const
   const auto timeout = rclcpp::Duration(this->TIMEOUT);
   while (this->clock_->now() - start < timeout) {
     const std::string res = this->tcp_if_->recvResponse();
-    RCLCPP_DEBUG(
-      this->getLogger(),
-      "Recv: %s", res.c_str());
     if (res.find(command) != std::string::npos) {
       return true;
     }
