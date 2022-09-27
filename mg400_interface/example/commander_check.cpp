@@ -60,12 +60,12 @@ int main(int argc, char ** argv)
   show_result(clearerr_res, "ClearError");
   rclcpp::sleep_for(2s);
 
-  const bool resetrobo_res = db_commander->resetRobot();
-  show_result(resetrobo_res, "ResetRobot");
+  const bool reset_robot_res = db_commander->resetRobot();
+  show_result(reset_robot_res, "ResetRobot");
   rclcpp::sleep_for(2s);
 
-  const bool speedfactor_res = db_commander->speedFactor(10);
-  show_result(speedfactor_res, "SpeedFactor");
+  const bool speed_factor_res = db_commander->speedFactor(10);
+  show_result(speed_factor_res, "SpeedFactor");
   rclcpp::sleep_for(2s);
 
   const bool disable_res = db_commander->disableRobot();

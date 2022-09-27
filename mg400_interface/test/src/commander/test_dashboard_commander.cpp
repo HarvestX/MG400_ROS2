@@ -103,7 +103,7 @@ TEST_F(TestDashboardCommander, RobotMode) {
 TEST_F(TestDashboardCommander, PayLoad) {
   EXPECT_CALL(
     mock, sendCommand(
-      StrEq("PayLoad(3,0.4"))).Times(1);
+      StrEq("PayLoad(3.000,0.400)"))).Times(1);
   commander->payload(3, 0.4);
 }
 

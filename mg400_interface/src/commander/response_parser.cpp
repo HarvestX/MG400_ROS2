@@ -56,7 +56,7 @@ std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
   return ret;
 }
 
-std::vector<double> ResponseParser::parsedouble(
+std::vector<double> ResponseParser::parseDouble(
   const std::string & response)
 {
   std::vector<double> ret(6);
@@ -99,7 +99,8 @@ int ResponseParser::parseOneValue(const std::string & response)
   return atoi(c.c_str());
 }
 
-std::vector<int> ResponseParser::parsearray(const std::string & response, const int count)
+std::vector<int> ResponseParser::parseArray(
+  const std::string & response, const int count)
 {
   std::vector<int> ret(count);
   std::regex re1(R"(\{.*?\})"), re2(R"(.*?,)");
