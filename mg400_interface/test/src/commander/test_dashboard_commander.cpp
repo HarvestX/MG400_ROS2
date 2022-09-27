@@ -126,6 +126,10 @@ TEST_F(TestDashboardCommander, RobotMode) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("RobotMode()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{5},RobotMode();"));
+
   commander->robotMode();
 }
 
@@ -133,12 +137,18 @@ TEST_F(TestDashboardCommander, PayLoad) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("PayLoad(3.000,0.400)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},Payload(3.000,0.400);"));
   commander->payload(3, 0.4);
 }
 
 TEST_F(TestDashboardCommander, DO) {
   EXPECT_CALL(
     mock, sendCommand(StrEq("DO(12,1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},DO(12,1);"));
   commander->DO(
     mg400_interface::DOIndex::D12,
     mg400_interface::DOStatus::HIGH);
@@ -147,6 +157,9 @@ TEST_F(TestDashboardCommander, DO) {
 TEST_F(TestDashboardCommander, ToolDOExecute) {
   EXPECT_CALL(
     mock, sendCommand(StrEq("ToolDOExecute(2,1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},ToolDOExecute(2,1);"));
   commander->toolDOExecute(
     mg400_interface::ToolDOIndex::D2,
     mg400_interface::DOStatus::HIGH);
@@ -156,6 +169,9 @@ TEST_F(TestDashboardCommander, AccJ) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("AccJ(50)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},AccJ(50);"));
   commander->accJ(50);
 }
 
@@ -163,6 +179,9 @@ TEST_F(TestDashboardCommander, AccL) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("AccL(50)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},AccL(50);"));
   commander->accL(50);
 }
 
@@ -170,6 +189,9 @@ TEST_F(TestDashboardCommander, SpeedJ) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("SpeedJ(50)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},SpeedJ(50);"));
   commander->speedJ(50);
 }
 
@@ -177,6 +199,9 @@ TEST_F(TestDashboardCommander, SpeedL) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("SpeedL(50)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},SpeedL(50);"));
   commander->speedL(50);
 }
 /*
@@ -191,6 +216,9 @@ TEST_F(TestDashboardCommander, CP) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("CP(50)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},CP(50);"));
   commander->cp(50);
 }
 /*
@@ -226,6 +254,9 @@ TEST_F(TestDashboardCommander, SetCollisionLevel) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("SetCollisionLevel(1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},SetCollisionLevel(1);"));
   commander->setCollisionLevel(mg400_interface::CollisionLevel::LEVEL1);
 }
 

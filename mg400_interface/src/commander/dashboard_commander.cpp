@@ -239,14 +239,14 @@ void DashboardCommander::setCollisionLevel(const int level)
 
 std::vector<double> DashboardCommander::getAngle()
 {
-  const std::string res = this->sendCommand("GetAngle");
+  const std::string res = this->sendCommand("GetAngle()");
   std::vector<double> ret = ResponseParser::parseDouble(res);
   return ret;
 }
 
 std::vector<double> DashboardCommander::getPose()
 {
-  const std::string res = this->sendCommand("GetPose");
+  const std::string res = this->sendCommand("GetPose()");
   std::vector<double> ret = ResponseParser::parseDouble(res);
   return ret;
 }
