@@ -20,10 +20,7 @@ namespace mg400_node
 {
 ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 : Node("service_node", options),
-  prefix_(this->declare_parameter("prefix", "")),
-  error_msg_generator_(
-    std::make_unique<mg400_interface::ErrorMsgGenerator>(
-      "alarm_controller.json"))
+  prefix_(this->declare_parameter("prefix", ""))
 {
   this->level_ =
     static_cast<SERVICE_EXPORT_LEVEL>(
@@ -40,21 +37,10 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     "Connecting to %s ...",
     ip_address.c_str());
 
-  this->db_tcp_if_ =
-    std::make_unique<mg400_interface::DashboardTcpInterface>(ip_address);
-  this->mt_tcp_if_ =
-    std::make_unique<mg400_interface::MotionTcpInterface>(ip_address);
-  this->rt_tcp_if_ =
-    std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip_address);
-
-  this->initTcpIf();
-
-  this->db_commander_ =
-    std::make_unique<mg400_interface::DashboardCommander>(
-    this->db_tcp_if_.get());
-  this->mt_commander_ =
-    std::make_unique<mg400_interface::MotionCommander>(
-    this->mt_tcp_if_.get());
+  this->interface_ =
+    std::make_unique<mg400_interface::MG400Interface>(ip_address);
+  this->interface_->configure();
+  this->interface_->activate();
 
   // ROS Interfaces
   this->joint_state_pub_ =
@@ -181,43 +167,18 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
 
 
   // Robot Initialization
-  this->db_commander_->clearError();
+  this->interface_->dashboard_commander->clearError();
 }
 
 ServiceNode::~ServiceNode()
-{}
-
-void ServiceNode::initTcpIf()
 {
-  using namespace std::chrono_literals;
-  this->db_tcp_if_->init();
-  this->rt_tcp_if_->init();
-  this->mt_tcp_if_->init();
-
-  const auto start = this->get_clock()->now();
-  while (!this->db_tcp_if_->isConnected() ||
-    !this->rt_tcp_if_->isConnected() ||
-    !this->mt_tcp_if_->isConnected())
-  {
-    if (this->get_clock()->now() - start > rclcpp::Duration(3s)) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Could not connect DOBOT MG400.");
-      rclcpp::shutdown();
-      return;
-    }
-
-    RCLCPP_WARN(
-      this->get_logger(),
-      "Waiting for the connection...");
-    rclcpp::sleep_for(1s);
-  }
+  this->interface_->deactivate();
 }
 
 void ServiceNode::onJsTimer()
 {
   std::array<double, 6> joint_states;
-  this->rt_tcp_if_->getCurrentJointStates(joint_states);
+  this->interface_->realtime_tcp_interface->getCurrentJointStates(joint_states);
 
   this->joint_state_pub_->publish(
     mg400_interface::getJointState(
@@ -227,26 +188,29 @@ void ServiceNode::onJsTimer()
 
 void ServiceNode::onErrorTimer()
 {
-  if (this->rt_tcp_if_->getRobotMode() != mg400_interface::RobotMode::ERROR) {
+  if (this->interface_->realtime_tcp_interface->getRobotMode() !=
+    mg400_interface::RobotMode::ERROR)
+  {
     return;
   }
 
   std::stringstream ss;
-  const auto joints_error_ids = this->db_commander_->getErrorId();
+  const auto joints_error_ids =
+    this->interface_->dashboard_commander->getErrorId();
   for (size_t i = 0; i < joints_error_ids.size(); ++i) {
     if (joints_error_ids.at(i).empty()) {
       continue;
     }
     ss << "Joint" << (i + 1) << ":" << std::endl;
     for (auto error_id : joints_error_ids.at(i)) {
-      const auto message = this->error_msg_generator_->get(error_id);
+      const auto message = this->interface_->error_msg_generator->get(error_id);
       ss << "\t" << message << std::endl;
     }
   }
   RCLCPP_ERROR(
     this->get_logger(),
     ss.str().c_str());
-  this->db_commander_->clearError();
+  this->interface_->dashboard_commander->clearError();
 }
 
 void ServiceNode::clearError(
@@ -255,7 +219,7 @@ void ServiceNode::clearError(
 )
 {
   try {
-    this->db_commander_->clearError();
+    this->interface_->dashboard_commander->clearError();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());
@@ -271,7 +235,7 @@ void ServiceNode::resetRobot(
 )
 {
   try {
-    this->db_commander_->resetRobot();
+    this->interface_->dashboard_commander->resetRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());
@@ -287,7 +251,7 @@ void ServiceNode::disableRobot(
 )
 {
   try {
-    this->db_commander_->disableRobot();
+    this->interface_->dashboard_commander->disableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());
@@ -303,7 +267,7 @@ void ServiceNode::enableRobot(
 )
 {
   try {
-    this->db_commander_->enableRobot();
+    this->interface_->dashboard_commander->enableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());
@@ -319,7 +283,7 @@ void ServiceNode::toolDOExecute(
 )
 {
   try {
-    this->db_commander_->toolDOExecute(
+    this->interface_->dashboard_commander->toolDOExecute(
       request->index, request->status);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
@@ -336,7 +300,7 @@ void ServiceNode::speedFactor(
 )
 {
   try {
-    this->db_commander_->speedFactor(request->ratio);
+    this->interface_->dashboard_commander->speedFactor(request->ratio);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());
@@ -384,7 +348,7 @@ void ServiceNode::jointMovJ(
   const mg400_srv::JointMovJ::Request::SharedPtr request,
   mg400_srv::JointMovJ::Response::SharedPtr)
 {
-  this->mt_commander_->jointMovJ(
+  this->interface_->motion_commander->jointMovJ(
     request->j1, request->j2, request->j3,
     request->j4, request->j5, request->j6);
 }
@@ -393,7 +357,7 @@ void ServiceNode::moveJog(
   const mg400_srv::MoveJog::Request::SharedPtr request,
   mg400_srv::MoveJog::Response::SharedPtr)
 {
-  this->mt_commander_->moveJog(request->axis_id);
+  this->interface_->motion_commander->moveJog(request->axis_id);
 }
 
 void ServiceNode::movJ(
@@ -401,7 +365,7 @@ void ServiceNode::movJ(
   mg400_srv::MovJ::Response::SharedPtr
 )
 {
-  this->mt_commander_->movJ(
+  this->interface_->motion_commander->movJ(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
 }
@@ -410,7 +374,7 @@ void ServiceNode::movL(
   const mg400_srv::MovL::Request::SharedPtr request,
   mg400_srv::MovL::Response::SharedPtr)
 {
-  this->mt_commander_->movL(
+  this->interface_->motion_commander->movL(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
 }

@@ -92,6 +92,16 @@ bool MotionTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
+void MotionTcpInterface::disConnect()
+{
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
+  this->is_running_ = false;
+  this->thread_->join();
+  this->tcp_socket_->disConnect();
+}
+
 void MotionTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());

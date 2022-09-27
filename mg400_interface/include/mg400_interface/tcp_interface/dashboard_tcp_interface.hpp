@@ -54,6 +54,7 @@ public:
   bool isConnected();
   void sendCommand(const std::string &) override;
   std::string recvResponse(void) override;
+  void disConnect();
 
 private:
   void checkConnection();

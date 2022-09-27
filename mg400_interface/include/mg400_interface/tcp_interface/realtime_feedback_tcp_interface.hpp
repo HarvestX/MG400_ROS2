@@ -53,6 +53,7 @@ public:
   void getCurrentJointStates(std::array<double, 6> &);
   RealTimeData getRealtimeData();
   RobotMode getRobotMode();
+  void disConnect();
 
 private:
   void recvData();

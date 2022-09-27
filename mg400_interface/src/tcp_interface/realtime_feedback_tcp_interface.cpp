@@ -25,8 +25,7 @@ RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(const std::string & i
 
 RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
 {
-  this->is_running_ = false;
-  this->thread_->join();
+  this->disConnect();
 }
 
 void RealtimeFeedbackTcpInterface::init() noexcept
@@ -66,6 +65,16 @@ RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
 RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
 {
   return static_cast<RobotMode>(this->rt_data_.robot_mode);
+}
+
+void RealtimeFeedbackTcpInterface::disConnect()
+{
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
+  this->is_running_ = false;
+  this->thread_->join();
+  this->tcp_socket_->disConnect();
 }
 
 void RealtimeFeedbackTcpInterface::recvData()

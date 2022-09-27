@@ -96,6 +96,16 @@ void DashboardTcpInterface::sendCommand(const std::string & cmd)
   this->tcp_socket_->send(cmd.data(), cmd.size());
 }
 
+void DashboardTcpInterface::disConnect()
+{
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
+  this->is_running_ = false;
+  this->thread_->join();
+  this->tcp_socket_->disConnect();
+}
+
 std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
