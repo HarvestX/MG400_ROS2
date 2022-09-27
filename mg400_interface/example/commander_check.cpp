@@ -89,17 +89,9 @@ int main(int argc, char ** argv)
   show_result(enable_res, "EnableRobot");
   rclcpp::sleep_for(2s);
 
-  const bool clearerr_res = ck_node->db_commander->clearError();
-  show_result(clearerr_res, "ClearError");
-  rclcpp::sleep_for(2s);
-
-  const bool reset_robot_res = ck_node->db_commander->resetRobot();
-  show_result(reset_robot_res, "ResetRobot");
-  rclcpp::sleep_for(2s);
-
-  const bool speed_factor_res = ck_node->db_commander->speedFactor(10);
-  show_result(speed_factor_res, "SpeedFactor");
-  rclcpp::sleep_for(2s);
+  const bool res = ck_node->db_commander->tool(0);
+  show_result(res, "Tool");
+  rclcpp::sleep_for();
 
   const bool disable_res = ck_node->db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
