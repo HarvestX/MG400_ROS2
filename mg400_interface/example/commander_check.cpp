@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <string>
+#include <memory>
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 #include "mg400_interface/commander/dashboard_commander.hpp"
 
@@ -26,51 +27,85 @@ void show_result(const bool res, const std::string & command)
   }
 }
 
+class CommanderCheckNode : public rclcpp::Node
+{
+public:
+  std::unique_ptr<mg400_interface::DashboardCommander> db_commander;
+
+private:
+  const std::string ip_address;
+  std::unique_ptr<mg400_interface::DashboardTcpInterface> db_tcp_if_;
+
+public:
+  explicit CommanderCheckNode(const rclcpp::NodeOptions & options)
+  : Node("commander_check_node", options),
+    ip_address(this->declare_parameter("ip_address", "127.0.0.1"))
+  {
+    this->db_tcp_if_ =
+      std::make_unique<mg400_interface::DashboardTcpInterface>(
+      this->ip_address);
+  }
+
+  bool activate()
+  {
+    this->db_tcp_if_->init();
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Connecting to: %s", this->ip_address.c_str());
+
+    using namespace std::chrono_literals;
+    while (!this->db_tcp_if_->isConnected()) {
+      std::cout << "Waiting for the connection..." << std::endl;
+      rclcpp::sleep_for(1s);
+    }
+
+    const bool ret = this->db_tcp_if_->isConnected();
+    if (ret) {
+      this->db_commander =
+        std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if_.get());
+    }
+
+    return ret;
+  }
+
+  bool deactivate()
+  {
+    this->db_commander = nullptr;
+    return true;
+  }
+};
+
 
 int main(int argc, char ** argv)
 {
   using namespace std::chrono_literals;
+  rclcpp::init(argc, argv);
 
-  std::string ip = "127.0.0.1";
-  if (argc == 2) {
-    ip = argv[1];
-  }
+  rclcpp::NodeOptions options;
+  auto ck_node = std::make_unique<CommanderCheckNode>(options);
+  ck_node->activate();
 
-  std::cout << "Connecting to :" << ip << std::endl;
-
-
-  auto db_tcp_if =
-    std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
-
-  db_tcp_if->init();
-
-  while (!db_tcp_if->isConnected()) {
-    std::cout << "Waiting for the connection..." << std::endl;
-    rclcpp::sleep_for(1s);
-  }
-
-  auto db_commander =
-    std::make_unique<mg400_interface::DashboardCommander>(db_tcp_if.get());
-
-  const bool enable_res = db_commander->enableRobot();
+  const bool enable_res = ck_node->db_commander->enableRobot();
   show_result(enable_res, "EnableRobot");
   rclcpp::sleep_for(2s);
 
-  const bool clearerr_res = db_commander->clearError();
+  const bool clearerr_res = ck_node->db_commander->clearError();
   show_result(clearerr_res, "ClearError");
   rclcpp::sleep_for(2s);
 
-  const bool reset_robot_res = db_commander->resetRobot();
+  const bool reset_robot_res = ck_node->db_commander->resetRobot();
   show_result(reset_robot_res, "ResetRobot");
   rclcpp::sleep_for(2s);
 
-  const bool speed_factor_res = db_commander->speedFactor(10);
+  const bool speed_factor_res = ck_node->db_commander->speedFactor(10);
   show_result(speed_factor_res, "SpeedFactor");
   rclcpp::sleep_for(2s);
 
-  const bool disable_res = db_commander->disableRobot();
+  const bool disable_res = ck_node->db_commander->disableRobot();
   show_result(disable_res, "DisableRobot");
   rclcpp::sleep_for(1s);
+
+  ck_node->deactivate();
 
   return EXIT_SUCCESS;
 }
