@@ -25,8 +25,7 @@ MotionTcpInterface::MotionTcpInterface(const std::string & ip)
 
 MotionTcpInterface::~MotionTcpInterface()
 {
-  this->is_running_ = false;
-  this->thread_->join();
+  this->disConnect();
 }
 
 rclcpp::Logger MotionTcpInterface::getLogger()
@@ -95,7 +94,9 @@ bool MotionTcpInterface::isConnected()
 void MotionTcpInterface::disConnect()
 {
   this->is_running_ = false;
-  this->thread_->join();
+  if (this->thread_->joinable()) {
+    this->thread_->join();
+  }
   this->tcp_socket_->disConnect();
   RCLCPP_INFO(
     this->getLogger(),
