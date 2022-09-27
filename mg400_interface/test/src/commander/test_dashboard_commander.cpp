@@ -17,6 +17,7 @@
 
 using ::testing::_;
 using ::testing::StrEq;
+using ::testing::Return;
 
 
 class MockTcpInterface : public mg400_interface::DashboardTcpInterfaceBase
@@ -48,6 +49,10 @@ TEST_F(TestDashboardCommander, EnableRobot) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("EnableRobot()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},EnableRobot();"));
+
   commander->enableRobot();
 }
 
@@ -55,6 +60,10 @@ TEST_F(TestDashboardCommander, DisableRobot) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("DisableRobot()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},DisableRobot();"));
+
   commander->disableRobot();
 }
 
@@ -62,6 +71,10 @@ TEST_F(TestDashboardCommander, ClearError) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("ClearError()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},ClearError();"));
+
   commander->clearError();
 }
 
@@ -69,6 +82,10 @@ TEST_F(TestDashboardCommander, ResetRobot) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("ResetRobot()"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},ResetRobot();"));
+
   commander->resetRobot();
 }
 
@@ -76,6 +93,10 @@ TEST_F(TestDashboardCommander, SpeedFactor) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("SpeedFactor(78)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},SpeedFactor(78);"));
+
   commander->speedFactor(78);
 }
 
@@ -83,6 +104,10 @@ TEST_F(TestDashboardCommander, User) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("User(1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},User(1);"));
+
   commander->user(mg400_interface::UserIndex::USER1);
 }
 
@@ -90,6 +115,10 @@ TEST_F(TestDashboardCommander, Tool) {
   EXPECT_CALL(
     mock, sendCommand(
       StrEq("Tool(1)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},Tool(1);"));
+
   commander->tool(1);
 }
 
