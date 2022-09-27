@@ -32,8 +32,6 @@ ErrorMsgGenerator::ErrorMsgGenerator(
   RCLCPP_INFO(
     this->logger_, "Target file: %s",
     this->filename_.c_str());
-
-  this->loadJsonFile();
 }
 
 std::string ErrorMsgGenerator::get(const int id)

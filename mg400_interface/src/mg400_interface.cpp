@@ -34,6 +34,8 @@ bool MG400Interface::configure()
   this->error_msg_generator =
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
     "alarm_controller.json");
+
+  return this->error_msg_generator->loadJsonFile();
 }
 
 
@@ -54,8 +56,7 @@ bool MG400Interface::activate()
       RCLCPP_ERROR(
         this->getLogger(),
         "Could not connect DOBOT MG400.");
-      rclcpp::shutdown();
-      return;
+      return false;
     }
 
     RCLCPP_WARN(
@@ -70,6 +71,7 @@ bool MG400Interface::activate()
   this->motion_commander =
     std::make_unique<mg400_interface::MotionCommander>(
     this->motion_tcp_if_.get());
+  return true;
 }
 
 bool MG400Interface::deactivate()
@@ -79,9 +81,11 @@ bool MG400Interface::deactivate()
   this->dashboard_tcp_if_->disConnect();
   this->motion_tcp_if_->disConnect();
   this->realtime_tcp_interface->disConnect();
+
+  return true;
 }
 
-const rclcpp::Logger MG400Interface::getLogger()
+const rclcpp::Logger MG400Interface::getLogger() noexcept
 {
   return rclcpp::get_logger("MG400Interface");
 }

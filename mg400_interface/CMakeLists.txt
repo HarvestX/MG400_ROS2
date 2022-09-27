@@ -19,10 +19,12 @@ ament_auto_add_library(
       ./src/commander/response_parser.cpp
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
+      ./src/mg400_interface.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
       ./src/tcp_interface/motion_tcp_interface.cpp
       ./src/tcp_interface/realtime_feedback_tcp_interface.cpp
-      ./src/tcp_interface/tcp_socket_handler.cpp)
+      ./src/tcp_interface/tcp_socket_handler.cpp
+      )
 set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
 # ===================================================================
 
