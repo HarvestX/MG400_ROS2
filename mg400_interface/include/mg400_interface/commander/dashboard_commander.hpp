@@ -123,6 +123,7 @@ public:
 
 private:
   static const rclcpp::Logger getLogger();
-  std::string sendCommand(const std::string &) const;
+  std::string sendAndWaitResponse(const std::string &) const;
+  void evaluateResponse(const std::string &) const;
 };
 }  // namespace mg400_interface

@@ -20,15 +20,24 @@
 #include <string>
 #include <regex>
 
+#include "mg400_interface/command_utils.hpp"
+
 namespace mg400_interface
 {
+typedef struct
+{
+  bool result;
+  std::string ret_val;
+  std::string func_name;
+} DashboardResponse;
+
 class ResponseParser
 {
 public:
-  static std::array<std::vector<int>, 6> parseErrorMessage(const std::string &);
-  static std::vector<double> parseDouble(const std::string &);
-  static int parseOneValue(const std::string &);
-  static std::vector<int> parseArray(const std::string &, const int count);
-  static int parseOnlyErrorID(const std::string &);
+  static bool parseResponse(const std::string &, DashboardResponse &);
+  static std::array<std::vector<int>, 6> takeErrorMessage(const std::string &);
+  static std::vector<double> takePoseArray(const std::string &);
+  static std::vector<double> takeAngleArray(const std::string &);
+  static int takeInt(const std::string &);
 };
 }  // namespace mg400_interface

@@ -53,7 +53,8 @@ TEST_F(TestDashboardCommander, EnableRobot) {
     mock, recvResponse()).WillOnce(
     Return("0,{},EnableRobot();"));
 
-  commander->enableRobot();
+  ASSERT_NO_THROW(
+    commander->enableRobot());
 }
 
 TEST_F(TestDashboardCommander, DisableRobot) {
@@ -64,7 +65,8 @@ TEST_F(TestDashboardCommander, DisableRobot) {
     mock, recvResponse()).WillOnce(
     Return("0,{},DisableRobot();"));
 
-  commander->disableRobot();
+  ASSERT_NO_THROW(
+    commander->disableRobot());
 }
 
 TEST_F(TestDashboardCommander, ClearError) {
@@ -75,7 +77,7 @@ TEST_F(TestDashboardCommander, ClearError) {
     mock, recvResponse()).WillOnce(
     Return("0,{},ClearError();"));
 
-  commander->clearError();
+  ASSERT_NO_THROW(commander->clearError());
 }
 
 TEST_F(TestDashboardCommander, ResetRobot) {
@@ -86,7 +88,8 @@ TEST_F(TestDashboardCommander, ResetRobot) {
     mock, recvResponse()).WillOnce(
     Return("0,{},ResetRobot();"));
 
-  commander->resetRobot();
+  ASSERT_NO_THROW(
+    commander->resetRobot());
 }
 
 TEST_F(TestDashboardCommander, SpeedFactor) {
@@ -97,7 +100,8 @@ TEST_F(TestDashboardCommander, SpeedFactor) {
     mock, recvResponse()).WillOnce(
     Return("0,{},SpeedFactor(78);"));
 
-  commander->speedFactor(78);
+  ASSERT_NO_THROW(
+    commander->speedFactor(78));
 }
 
 TEST_F(TestDashboardCommander, User) {
@@ -108,7 +112,8 @@ TEST_F(TestDashboardCommander, User) {
     mock, recvResponse()).WillOnce(
     Return("0,{},User(1);"));
 
-  commander->user(mg400_interface::UserIndex::USER1);
+  ASSERT_NO_THROW(
+    commander->user(mg400_interface::UserIndex::USER1));
 }
 
 TEST_F(TestDashboardCommander, Tool) {
@@ -130,7 +135,7 @@ TEST_F(TestDashboardCommander, RobotMode) {
     mock, recvResponse()).WillOnce(
     Return("0,{5},RobotMode();"));
 
-  commander->robotMode();
+  ASSERT_EQ(commander->robotMode(), mg400_interface::RobotMode::ENABLE);
 }
 
 TEST_F(TestDashboardCommander, PayLoad) {
@@ -140,7 +145,8 @@ TEST_F(TestDashboardCommander, PayLoad) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},PayLoad(3.000,0.400);"));
-  commander->payload(3, 0.4);
+
+  ASSERT_NO_THROW(commander->payload(3, 0.4));
 }
 
 TEST_F(TestDashboardCommander, DO) {
@@ -149,9 +155,11 @@ TEST_F(TestDashboardCommander, DO) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},DO(12,1);"));
-  commander->DO(
-    mg400_interface::DOIndex::D12,
-    mg400_interface::DOStatus::HIGH);
+
+  ASSERT_NO_THROW(
+    commander->DO(
+      mg400_interface::DOIndex::D12,
+      mg400_interface::DOStatus::HIGH));
 }
 
 TEST_F(TestDashboardCommander, ToolDOExecute) {
@@ -160,9 +168,10 @@ TEST_F(TestDashboardCommander, ToolDOExecute) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},ToolDOExecute(2,1);"));
-  commander->toolDOExecute(
-    mg400_interface::ToolDOIndex::D2,
-    mg400_interface::DOStatus::HIGH);
+  ASSERT_NO_THROW(
+    commander->toolDOExecute(
+      mg400_interface::ToolDOIndex::D2,
+      mg400_interface::DOStatus::HIGH));
 }
 
 TEST_F(TestDashboardCommander, AccJ) {
@@ -172,7 +181,7 @@ TEST_F(TestDashboardCommander, AccJ) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},AccJ(50);"));
-  commander->accJ(50);
+  ASSERT_NO_THROW(commander->accJ(50));
 }
 
 TEST_F(TestDashboardCommander, AccL) {
@@ -182,7 +191,7 @@ TEST_F(TestDashboardCommander, AccL) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},AccL(50);"));
-  commander->accL(50);
+  ASSERT_NO_THROW(commander->accL(50));
 }
 
 TEST_F(TestDashboardCommander, SpeedJ) {
@@ -192,7 +201,7 @@ TEST_F(TestDashboardCommander, SpeedJ) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},SpeedJ(50);"));
-  commander->speedJ(50);
+  ASSERT_NO_THROW(commander->speedJ(50));
 }
 
 TEST_F(TestDashboardCommander, SpeedL) {
@@ -202,7 +211,8 @@ TEST_F(TestDashboardCommander, SpeedL) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},SpeedL(50);"));
-  commander->speedL(50);
+
+  ASSERT_NO_THROW(commander->speedL(50));
 }
 /*
 TEST_F(TestDashboardCommander, Arch) {
@@ -219,7 +229,7 @@ TEST_F(TestDashboardCommander, CP) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},CP(50);"));
-  commander->cp(50);
+  ASSERT_NO_THROW(commander->cp(50));
 }
 /*
 TEST_F(TestDashboardCommander, RunScript) {
@@ -257,7 +267,8 @@ TEST_F(TestDashboardCommander, SetCollisionLevel) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},SetCollisionLevel(1);"));
-  commander->setCollisionLevel(mg400_interface::CollisionLevel::LEVEL1);
+  ASSERT_NO_THROW(
+    commander->setCollisionLevel(mg400_interface::CollisionLevel::LEVEL1));
 }
 
 TEST_F(TestDashboardCommander, GetAngle) {
@@ -270,7 +281,11 @@ TEST_F(TestDashboardCommander, GetAngle) {
       "0,"
       "{0.000000,0.000000,45.000000,45.000000,0.000000,0.000000}"
       ",GetAngle();"));
-  commander->getAngle();
+  const auto ret = commander->getAngle();
+  ASSERT_DOUBLE_EQ(ret.at(0), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(1), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(2), 0.25 * M_PI);
+  ASSERT_DOUBLE_EQ(ret.at(3), 0.25 * M_PI);
 }
 
 TEST_F(TestDashboardCommander, GetPose) {
@@ -283,7 +298,13 @@ TEST_F(TestDashboardCommander, GetPose) {
       "0,"
       "{350.000000,0.000000,0.000000,0.000000,0.000000,0.000000}"
       ",GetPose();"));
-  commander->getPose();
+  const auto ret = commander->getPose();
+  ASSERT_DOUBLE_EQ(ret.at(0), 0.35);
+  ASSERT_DOUBLE_EQ(ret.at(1), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(2), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(3), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(4), 0.0);
+  ASSERT_DOUBLE_EQ(ret.at(5), 0.0);
 }
 
 TEST_F(TestDashboardCommander, EmergencyStop) {
@@ -293,7 +314,8 @@ TEST_F(TestDashboardCommander, EmergencyStop) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{},EmergencyStop();"));
-  commander->emergencyStop();
+  ASSERT_NO_THROW(
+    commander->emergencyStop());
 }
 /*
 TEST_F(TestDashboardCommander, ModbusCreate) {
@@ -359,7 +381,8 @@ TEST_F(TestDashboardCommander, DI) {
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
     Return("0,{0},DI(1);"));
-  commander->DI(1);
+  const int ret = commander->DI(1);
+  ASSERT_EQ(ret, 0);
 }
 
 TEST_F(TestDashboardCommander, GetErrorID) {
@@ -368,6 +391,13 @@ TEST_F(TestDashboardCommander, GetErrorID) {
       StrEq("GetErrorID()"))).Times(1);
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
-    Return("(0,{[[69,72],[1],[],[],[],[]]},GetErrorID();"));
-  commander->getErrorId();
+    Return("0,{[[69,72],[1],[],[],[],[]]},GetErrorID();"));
+  const auto ret = commander->getErrorId();
+  ASSERT_EQ(ret.at(0).at(0), 69);
+  ASSERT_EQ(ret.at(0).at(1), 72);
+  ASSERT_EQ(ret.at(1).at(0), 1);
+  ASSERT_TRUE(ret.at(2).empty());
+  ASSERT_TRUE(ret.at(3).empty());
+  ASSERT_TRUE(ret.at(4).empty());
+  ASSERT_TRUE(ret.at(5).empty());
 }

@@ -16,14 +16,62 @@
 
 namespace mg400_interface
 {
-std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
+bool ResponseParser::parseResponse(
+  const std::string & packet,
+  DashboardResponse & response)
+{
+  // Remove white space
+  std::string substr;
+  std::string buf;
+  int search_mode_counter = 0;
+  for (char s : packet) {
+    switch (search_mode_counter) {
+      case 0:
+        if (s == ',') {
+          response.result = std::stoi(buf) == 0;
+          buf.clear();
+          // go to next search mode
+          search_mode_counter++;
+          continue;
+        }
+        break;
+      case 1:
+        if (buf.back() == '}' && s == ',') {
+          response.ret_val = buf;
+          buf.clear();
+          search_mode_counter++;
+          continue;
+        }
+        break;
+      case 2:
+        if (s == ';') {
+          response.func_name = buf;
+          return true;
+        }
+        break;
+      case 3:
+      // fall through
+      default:
+        return false;
+    }
+    if (s == '\n') {
+      continue;
+    }
+    if (s == ' ') {
+      continue;
+    }
+
+    buf.push_back(s);
+  }
+  return false;
+}
+
+std::array<std::vector<int>, 6> ResponseParser::takeErrorMessage(
   const std::string & response)
 {
   std::array<std::vector<int>, 6> ret = {};
   // copy to mutable variable
   std::string s = response;
-
-  s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
 
   std::smatch m;
   if (!std::regex_search(s, m, std::regex(R"(\{\[(.*?)\]\})"))) {
@@ -56,88 +104,66 @@ std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
   return ret;
 }
 
-std::vector<double> ResponseParser::parseDouble(
+std::vector<double> ResponseParser::takePoseArray(
   const std::string & response)
 {
   std::vector<double> ret(6);
-  std::regex re1(R"(\{.*?\})"), re2(R"(.*?,)");
-  std::string s = response, s1, s2;
-  std::smatch m;
-
-  if (!std::regex_search(s, m, re1)) {
-    return std::vector<double>(0);
-  }
-  s1 = m.str();
-  s1 = s1.substr(1, s1.length() - 2);
-
-  for (int i = 0; i < 6; i++) {
-    if (!std::regex_search(s1, m, re2)) {
-      s2 = m.str();
-      ret[i] = atof(s2.c_str());
+  std::string buf;
+  size_t idx = 0;
+  for (auto s : response) {
+    if (s == '{') {
       continue;
     }
-    s2 = m.str();
-    s2 = s2.substr(0, s2.length() - 1);
-    ret[i] = atof(s2.c_str());
-    s1.erase(s1.begin(), s1.begin() + s2.length() + 1);
-  }
 
+    if (s == ',' || s == '}') {
+      // mm -> m
+      ret.at(idx) = std::stod(buf) * TO_M;
+      buf.clear();
+      idx++;
+      continue;
+    }
+
+    buf.push_back(s);
+  }
   return ret;
 }
 
-int ResponseParser::parseOneValue(const std::string & response)
+std::vector<double> ResponseParser::takeAngleArray(
+  const std::string & response)
 {
-  std::regex re(R"(\{.*?\})");
-  std::string s = response, c;
-  std::smatch m;
-
-  if (!std::regex_search(s, m, re)) {
-    return 0;
-  }
-  c = m.str();
-  c = c.substr(1, c.length() - 2);
-  return atoi(c.c_str());
-}
-
-std::vector<int> ResponseParser::parseArray(
-  const std::string & response, const int count)
-{
-  std::vector<int> ret(count);
-  std::regex re1(R"(\{.*?\})"), re2(R"(.*?,)");
-  std::string s = response, s1, s2;
-  std::smatch m;
-
-  if (!std::regex_search(s, m, re1)) {
-    return std::vector<int>(0);
-  }
-  s1 = m.str();
-  s1 = s1.substr(1, s1.length() - 2);
-
-  for (int i = 0; i < 6; i++) {
-    if (!std::regex_search(s1, m, re2)) {
-      s2 = m.str();
-      ret[i] = atoi(s2.c_str());
+  std::vector<double> ret(6);
+  std::string buf;
+  size_t idx = 0;
+  for (auto s : response) {
+    if (s == '{') {
       continue;
     }
-    s2 = m.str();
-    s2 = s2.substr(0, s2.length() - 1);
-    ret[i] = atoi(s2.c_str());
-    s1.erase(s1.begin(), s1.begin() + s2.length() + 1);
-  }
 
+    if (s == ',' || s == '}') {
+      // degree -> radian
+      ret.at(idx) = std::stod(buf) * TO_RADIAN;
+      buf.clear();
+      idx++;
+      continue;
+    }
+
+    buf.push_back(s);
+  }
   return ret;
 }
 
-int ResponseParser::parseOnlyErrorID(const std::string & response)
+int ResponseParser::takeInt(const std::string & response)
 {
-  std::regex re(R"(.*?,)");
-  std::string s = response;
-  std::smatch m;
-
-  std::regex_search(s, m, re);
-  s = m.str();
-  s = s.substr(0, s.length() - 1);
-
-  return atoi(s.c_str());
+  std::string buf;
+  for (auto s : response) {
+    if (s == '{') {
+      continue;
+    }
+    if (s == '}') {
+      break;
+    }
+    buf.push_back(s);
+  }
+  return std::stoi(buf);
 }
 }  // namespace mg400_interface
