@@ -25,6 +25,7 @@ protected:
     const std::string target = "alarm_controller.json";
     this->generator_ =
       std::make_unique<mg400_interface::ErrorMsgGenerator>(target);
+    this->generator_->loadJsonFile();
   }
   virtual void TearDown()
   {}

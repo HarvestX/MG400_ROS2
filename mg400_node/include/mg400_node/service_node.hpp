@@ -33,15 +33,7 @@
 #include <mg400_msgs/srv/mov_j.hpp>
 #include <mg400_msgs/srv/mov_l.hpp>
 
-#include <mg400_interface/tcp_interface/dashboard_tcp_interface.hpp>
-#include <mg400_interface/tcp_interface/motion_tcp_interface.hpp>
-#include <mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp>
-
-#include <mg400_interface/commander/dashboard_commander.hpp>
-#include <mg400_interface/commander/motion_commander.hpp>
-
-#include <mg400_interface/joint_handler.hpp>
-#include <mg400_interface/error_msg_generator.hpp>
+#include <mg400_interface/mg400_interface.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -63,14 +55,7 @@ private:
 
   const std::string prefix_;
 
-  std::unique_ptr<mg400_interface::ErrorMsgGenerator> error_msg_generator_;
-
-  std::unique_ptr<mg400_interface::DashboardTcpInterface> db_tcp_if_;
-  std::unique_ptr<mg400_interface::MotionTcpInterface> mt_tcp_if_;
-  std::unique_ptr<mg400_interface::RealtimeFeedbackTcpInterface> rt_tcp_if_;
-
-  std::unique_ptr<mg400_interface::DashboardCommander> db_commander_;
-  std::unique_ptr<mg400_interface::MotionCommander> mt_commander_;
+  std::unique_ptr<mg400_interface::MG400Interface> interface_;
 
   rclcpp::TimerBase::SharedPtr js_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
@@ -100,8 +85,6 @@ public:
   ~ServiceNode();
 
 private:
-  void initTcpIf();
-
   void onJsTimer();
 
   void onErrorTimer();

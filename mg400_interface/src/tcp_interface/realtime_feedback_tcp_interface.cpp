@@ -17,7 +17,8 @@
 
 namespace mg400_interface
 {
-RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(const std::string & ip)
+RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
+  const std::string & ip)
 : current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
@@ -25,8 +26,7 @@ RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(const std::string & i
 
 RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
 {
-  this->is_running_ = false;
-  this->thread_->join();
+  this->disConnect();
 }
 
 void RealtimeFeedbackTcpInterface::init() noexcept
@@ -66,6 +66,18 @@ RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
 RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
 {
   return static_cast<RobotMode>(this->rt_data_.robot_mode);
+}
+
+void RealtimeFeedbackTcpInterface::disConnect()
+{
+  this->is_running_ = false;
+  if (this->thread_->joinable()) {
+    this->thread_->join();
+  }
+  this->tcp_socket_->disConnect();
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
 }
 
 void RealtimeFeedbackTcpInterface::recvData()

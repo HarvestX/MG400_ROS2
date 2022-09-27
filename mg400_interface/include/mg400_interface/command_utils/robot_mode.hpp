@@ -30,6 +30,8 @@ enum class RobotMode
   RECORDING,
   ERROR,
   PAUSE,
-  JOG
+  JOG,
+
+  INVALID
 };
 }  // namespace mg400_interface

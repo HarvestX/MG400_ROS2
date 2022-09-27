@@ -24,8 +24,7 @@ DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
 
 DashboardTcpInterface::~DashboardTcpInterface()
 {
-  this->is_running_ = false;
-  this->thread_->join();
+  this->disConnect();
 }
 
 rclcpp::Logger DashboardTcpInterface::getLogger()
@@ -94,6 +93,18 @@ bool DashboardTcpInterface::isConnected()
 void DashboardTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
+}
+
+void DashboardTcpInterface::disConnect()
+{
+  this->is_running_ = false;
+  if (this->thread_->joinable()) {
+    this->thread_->join();
+  }
+  this->tcp_socket_->disConnect();
+  RCLCPP_INFO(
+    this->getLogger(),
+    "Close connection.");
 }
 
 std::string DashboardTcpInterface::recvResponse()

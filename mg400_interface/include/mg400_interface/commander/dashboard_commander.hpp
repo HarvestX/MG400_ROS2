@@ -43,35 +43,32 @@ public:
     const std::chrono::nanoseconds = 5s);
 
   // DOBOT MG400 Official Command ---------------------------------------------
-  bool enableRobot() const;
+  void enableRobot() const;
 
-  bool disableRobot() const;
+  void disableRobot() const;
 
-  bool clearError() const;
+  void clearError() const;
 
-  bool resetRobot() const;
+  void resetRobot() const;
 
-  bool speedFactor(const int) const;
+  void speedFactor(const int) const;
 
-  // TODO(anyone): uncomment following function and implement it
-  /**
   void user(const UserIndex &) const;
+  void user(const int) const;
 
   void tool(const ToolIndex &) const;
+  void tool(const int) const;
 
   RobotMode robotMode() const;
 
   void payload(const double, const double) const;
-  **/
 
-  bool DO(const DOIndex &&, const DOStatus &&) const;
-  bool DO(const int, const int) const;
+  void DO(const DOIndex &&, const DOStatus &&) const;
+  void DO(const int, const int) const;
 
-  bool toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
-  bool toolDOExecute(const int, const int) const;
+  void toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
+  void toolDOExecute(const int, const int) const;
 
-  // TODO(anyone): uncomment following function and implement it
-  /**
   void accJ(const int);
 
   void accL(const int);
@@ -79,54 +76,54 @@ public:
   void speedJ(const int);
 
   void speedL(const int);
-
+/*
   void arch(const ArchIndex &);
-
+  void arch(const int);
+*/
   void cp(const int);
-
+/*
   void runScript(const std::string &);
 
-  // void stopScript();
+  void stopScript();
 
-  // void pauseScript();
+  void pauseScript();
 
   void continueScript();
-
+*/
   void setCollisionLevel(const CollisionLevel &);
+  void setCollisionLevel(const int);
 
-  void getAngle();
+  std::vector<double> getAngle();
 
-  void getPose();
+  std::vector<double> getPose();
 
   void emergencyStop();
+/*
+  int modbusCreate(const std::string &, const int, const int, const int);
 
-  // void modbusCreate();
+  bool modbusClose(const std::string &);
 
-  // void modbusClose();
+  std::vector<int> getInBits(const int, const int, const int);
 
-  // void getInBits();
+  std::vector<int> getInRegs(const int, const int, const int, const std::string & = "U16");
 
-  // void getInRegs();
+  std::vector<int> getCoils(const int, const int, const int);
 
-  // void getCoils();
+  int setCoils(const int, const int, const int, const std::string &);
 
-  // void setCoils();
+  std::vector<int> getHoldRegs(const int, const int, const int, const std::string & = "U16");
 
-  // void getHoldRegs();
-
-  // void setHoldRegs();
-  **/
-
+  int setHoldRegs(const int, const int, const int, const std::string &, const std::string &);
+*/
   std::array<std::vector<int>, 6> getErrorId() const;
 
-  /**
   int DI(const int) const;
-  **/
 
   // --------------------------------------------------------------------------
 
 private:
   static const rclcpp::Logger getLogger();
-  bool sendCommand(const std::string &) const;
+  std::string sendAndWaitResponse(const std::string &) const;
+  void evaluateResponse(const std::string &) const;
 };
 }  // namespace mg400_interface

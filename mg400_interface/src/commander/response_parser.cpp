@@ -16,14 +16,62 @@
 
 namespace mg400_interface
 {
-std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
+bool ResponseParser::parseResponse(
+  const std::string & packet,
+  DashboardResponse & response)
+{
+  // Remove white space
+  std::string substr;
+  std::string buf;
+  int search_mode_counter = 0;
+  for (char s : packet) {
+    switch (search_mode_counter) {
+      case 0:
+        if (s == ',') {
+          response.result = std::stoi(buf) == 0;
+          buf.clear();
+          // go to next search mode
+          search_mode_counter++;
+          continue;
+        }
+        break;
+      case 1:
+        if (buf.back() == '}' && s == ',') {
+          response.ret_val = buf;
+          buf.clear();
+          search_mode_counter++;
+          continue;
+        }
+        break;
+      case 2:
+        if (s == ';') {
+          response.func_name = buf;
+          return true;
+        }
+        break;
+      case 3:
+      // fall through
+      default:
+        return false;
+    }
+    if (s == '\n') {
+      continue;
+    }
+    if (s == ' ') {
+      continue;
+    }
+
+    buf.push_back(s);
+  }
+  return false;
+}
+
+std::array<std::vector<int>, 6> ResponseParser::takeErrorMessage(
   const std::string & response)
 {
   std::array<std::vector<int>, 6> ret = {};
   // copy to mutable variable
   std::string s = response;
-
-  s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
 
   std::smatch m;
   if (!std::regex_search(s, m, std::regex(R"(\{\[(.*?)\]\})"))) {
@@ -54,5 +102,68 @@ std::array<std::vector<int>, 6> ResponseParser::parseErrorMessage(
     i++;
   }
   return ret;
+}
+
+std::vector<double> ResponseParser::takePoseArray(
+  const std::string & response)
+{
+  std::vector<double> ret(6);
+  std::string buf;
+  size_t idx = 0;
+  for (auto s : response) {
+    if (s == '{') {
+      continue;
+    }
+
+    if (s == ',' || s == '}') {
+      // mm -> m
+      ret.at(idx) = std::stod(buf) * TO_M;
+      buf.clear();
+      idx++;
+      continue;
+    }
+
+    buf.push_back(s);
+  }
+  return ret;
+}
+
+std::vector<double> ResponseParser::takeAngleArray(
+  const std::string & response)
+{
+  std::vector<double> ret(6);
+  std::string buf;
+  size_t idx = 0;
+  for (auto s : response) {
+    if (s == '{') {
+      continue;
+    }
+
+    if (s == ',' || s == '}') {
+      // degree -> radian
+      ret.at(idx) = std::stod(buf) * TO_RADIAN;
+      buf.clear();
+      idx++;
+      continue;
+    }
+
+    buf.push_back(s);
+  }
+  return ret;
+}
+
+int ResponseParser::takeInt(const std::string & response)
+{
+  std::string buf;
+  for (auto s : response) {
+    if (s == '{') {
+      continue;
+    }
+    if (s == '}') {
+      break;
+    }
+    buf.push_back(s);
+  }
+  return std::stoi(buf);
 }
 }  // namespace mg400_interface
