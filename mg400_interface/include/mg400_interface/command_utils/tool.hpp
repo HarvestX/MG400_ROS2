@@ -18,6 +18,7 @@ namespace mg400_interface
 {
 enum class ToolIndex
 {
+  TOOL0,
   TOOL1,
   TOOL2,
   TOOL3,

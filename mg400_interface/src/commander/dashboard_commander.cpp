@@ -64,9 +64,7 @@ int DashboardCommander::user(const int index) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "User(%d)", index);
-  this->tcp_if_->sendCommand(buf);
-  std::string res = this->tcp_if_->recvResponse();
-  return atoi(res.c_str());
+  return this->sendCommand(buf);
 }
 
 int DashboardCommander::tool(const ToolIndex & index) const
@@ -78,9 +76,7 @@ int DashboardCommander::tool(const int index) const
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "Tool(%d)", index);
-  this->tcp_if_->sendCommand(buf);
-  std::string res = this->tcp_if_->recvResponse();
-  return atoi(res.c_str());
+  return this->sendCommand(buf);
 }
 
 RobotMode DashboardCommander::robotMode() const
