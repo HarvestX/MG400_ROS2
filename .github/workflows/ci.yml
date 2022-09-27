@@ -12,6 +12,8 @@ on:
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
+    container:
+      image: osrf/ros:${{ matrix.ros_distribution }}-desktop
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -20,9 +22,6 @@ jobs:
         ros_distribution: [galactic]
     steps:
       - uses: actions/checkout@v2
-      - uses: ros-tooling/setup-ros@v0.3
-        with:
-          required-ros-distributions: ${{ matrix.ros_distribution }}
       - name: Build and Test
         uses: ros-tooling/action-ros-ci@v0.2
         with:
