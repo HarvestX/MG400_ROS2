@@ -35,17 +35,17 @@ public:
 
   bool configure()
   {
-    this->interface->configure();
+    return this->interface->configure();
   }
 
   bool activate()
   {
-    this->interface->activate();
+    return this->interface->activate();
   }
 
   bool deactivate()
   {
-    this->interface->deactivate();
+    return this->interface->deactivate();
   }
 };
 
@@ -57,7 +57,12 @@ int main(int argc, char ** argv)
 
   rclcpp::NodeOptions options;
   auto ck_node = std::make_unique<CommanderCheckNode>(options);
-  ck_node->activate();
+  if(!ck_node->configure()) {
+    return EXIT_FAILURE;
+  }
+  if(!ck_node->activate()) {
+    return EXIT_FAILURE;
+  }
 
   try {
     ck_node->interface->dashboard_commander->enableRobot();
