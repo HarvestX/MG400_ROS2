@@ -70,12 +70,10 @@ private:
   rclcpp::Service<mg400_srv::ToolDOExecute>::SharedPtr tool_do_execute_srv_;
   rclcpp::Service<mg400_srv::SpeedFactor>::SharedPtr speed_factor_srv_;
   rclcpp::Service<mg400_srv::Tool>::SharedPtr tool_srv_;
-  //TODO: Uncomment after command implementation.
-  // rclcpp::Service<mg400_srv::SpeedJ>::SharedPtr speed_j_srv_;
-  // rclcpp::Service<mg400_srv::SpeedL>::SharedPtr speed_l_srv_;
-  // rclcpp::Service<mg400_srv::AccJ>::SharedPtr acc_j_srv_;
-  // rclcpp::Service<mg400_srv::AccL>::SharedPtr acc_l_srv_;
-  // end (Uncomment after command implementation.)
+  rclcpp::Service<mg400_srv::SpeedJ>::SharedPtr speed_j_srv_;
+  rclcpp::Service<mg400_srv::SpeedL>::SharedPtr speed_l_srv_;
+  rclcpp::Service<mg400_srv::AccJ>::SharedPtr acc_j_srv_;
+  rclcpp::Service<mg400_srv::AccL>::SharedPtr acc_l_srv_;
 
   rclcpp::Service<mg400_srv::JointMovJ>::SharedPtr joint_mov_j_srv_;
   rclcpp::Service<mg400_srv::MoveJog>::SharedPtr move_jog_srv_;
@@ -113,18 +111,18 @@ private:
     const mg400_srv::Tool_Request::SharedPtr,
     mg400_srv::Tool_Response::SharedPtr);
 
-  // void speedJ(
-  //   const mg400_srv::SpeedJ::Request::SharedPtr,
-  //   mg400_srv::SpeedJ::Response::SharedPtr);
-  // void speedL(
-  //   const mg400_srv::SpeedL::Request::SharedPtr,
-  //   mg400_srv::SpeedL::Response::SharedPtr);
-  // void accJ(
-  //   const mg400_srv::AccJ::Request::SharedPtr,
-  //   mg400_srv::AccJ::Response::SharedPtr);
-  // void accL(
-  //   const mg400_srv::AccL::Request::SharedPtr,
-  //   mg400_srv::AccL::Response::SharedPtr);
+  void speedJ(
+    const mg400_srv::SpeedJ::Request::SharedPtr,
+    mg400_srv::SpeedJ::Response::SharedPtr);
+  void speedL(
+    const mg400_srv::SpeedL::Request::SharedPtr,
+    mg400_srv::SpeedL::Response::SharedPtr);
+  void accJ(
+    const mg400_srv::AccJ::Request::SharedPtr,
+    mg400_srv::AccJ::Response::SharedPtr);
+  void accL(
+    const mg400_srv::AccL::Request::SharedPtr,
+    mg400_srv::AccL::Response::SharedPtr);
 
   void jointMovJ(
     const mg400_srv::JointMovJ::Request::SharedPtr,
