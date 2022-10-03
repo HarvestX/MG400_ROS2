@@ -85,33 +85,33 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
           &ServiceNode::speedFactor, this,
           std::placeholders::_1, std::placeholders::_2));
 
-      // this->speed_j_srv_ =
-      //   this->create_service<mg400_srv::SpeedJ>(
-      //   "speed_j",
-      //   std::bind(
-      //     &ServiceNode::speedJ, this,
-      //     std::placeholders::_1, std::placeholders::_2));
+      this->speed_j_srv_ =
+        this->create_service<mg400_srv::SpeedJ>(
+        "speed_j",
+        std::bind(
+          &ServiceNode::speedJ, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-      // this->speed_l_srv_ =
-      //   this->create_service<mg400_srv::SpeedL>(
-      //   "speed_l",
-      //   std::bind(
-      //     &ServiceNode::speedL, this,
-      //     std::placeholders::_1, std::placeholders::_2));
+      this->speed_l_srv_ =
+        this->create_service<mg400_srv::SpeedL>(
+        "speed_l",
+        std::bind(
+          &ServiceNode::speedL, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-      // this->acc_j_srv_ =
-      //   this->create_service<mg400_srv::AccJ>(
-      //   "acc_j",
-      //   std::bind(
-      //     &ServiceNode::accJ, this,
-      //     std::placeholders::_1, std::placeholders::_2));
+      this->acc_j_srv_ =
+        this->create_service<mg400_srv::AccJ>(
+        "acc_j",
+        std::bind(
+          &ServiceNode::accJ, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-      // this->acc_l_srv_ =
-      //   this->create_service<mg400_srv::AccL>(
-      //   "acc_l",
-      //   std::bind(
-      //     &ServiceNode::accL, this,
-      //     std::placeholders::_1, std::placeholders::_2));
+      this->acc_l_srv_ =
+        this->create_service<mg400_srv::AccL>(
+        "acc_l",
+        std::bind(
+          &ServiceNode::accL, this,
+          std::placeholders::_1, std::placeholders::_2));
 
       this->joint_mov_j_srv_ =
         this->create_service<mg400_srv::JointMovJ>(
@@ -229,7 +229,7 @@ void ServiceNode::clearError(
     this->interface_->dashboard_commander->clearError();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -245,7 +245,7 @@ void ServiceNode::resetRobot(
     this->interface_->dashboard_commander->resetRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -261,7 +261,7 @@ void ServiceNode::disableRobot(
     this->interface_->dashboard_commander->disableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -277,7 +277,7 @@ void ServiceNode::enableRobot(
     this->interface_->dashboard_commander->enableRobot();
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -294,7 +294,7 @@ void ServiceNode::toolDOExecute(
       request->index, request->status);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -310,7 +310,7 @@ void ServiceNode::speedFactor(
     this->interface_->dashboard_commander->speedFactor(request->ratio);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
@@ -326,46 +326,73 @@ void ServiceNode::tool(
     this->interface_->dashboard_commander->tool(request->index);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->get_logger(), "%s", e.what());
+      this->get_logger(), e.what());
     response->result = false;
     return;
   }
   response->result = true;
 }
 
-//TODO: Uncomment after command implementation.
-// void ServiceNode::speedJ(
-//   const mg400_srv::SpeedJ::Request::SharedPtr request,
-//   mg400_srv::SpeedJ::Response::SharedPtr response
-// )
-// {
-//   response->result = this->db_commander_->speedJ(request->r);
-// }
+void ServiceNode::speedJ(
+  const mg400_srv::SpeedJ::Request::SharedPtr request,
+  mg400_srv::SpeedJ::Response::SharedPtr response
+)
+{
+  try {
+    this->interface_->dashboard_commander->speedJ(request->r);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->get_logger(), e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
+}
 
-// void ServiceNode::speedL(
-//   const mg400_srv::SpeedL::Request::SharedPtr request,
-//   mg400_srv::SpeedL::Response::SharedPtr response
-// )
-// {
-//   response->result = this->db_commander_->speedL(request->r);
-// }
+void ServiceNode::speedL(
+  const mg400_srv::SpeedL::Request::SharedPtr request,
+  mg400_srv::SpeedL::Response::SharedPtr response
+)
+{
+  try {
+    this->interface_->dashboard_commander->speedL(request->r);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->get_logger(), e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
+}
 
-// void ServiceNode::accJ(
-//   const mg400_srv::AccJ::Request::SharedPtr request,
-//   mg400_srv::AccJ::Response::SharedPtr response
-// )
-// {
-//   response->result = this->db_commander_->accJ(request->r);
-// }
+void ServiceNode::accJ(
+  const mg400_srv::AccJ::Request::SharedPtr request,
+  mg400_srv::AccJ::Response::SharedPtr response
+)
+{
+  try {
+    this->interface_->dashboard_commander->accJ(request->r);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->get_logger(), e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
+}
 
-// void ServiceNode::accL(
-//   const mg400_srv::AccL::Request::SharedPtr request,
-//   mg400_srv::AccL::Response::SharedPtr response
-// )
-// {
-//   response->result = this->db_commander_->accL(request->r);
-// }
-// end (Uncomment after command implementation.)
+void ServiceNode::accL(
+  const mg400_srv::AccL::Request::SharedPtr request,
+  mg400_srv::AccL::Response::SharedPtr response
+)
+{
+  try {
+    this->interface_->dashboard_commander->accL(request->r);
+
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->get_logger(), e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
+}
 
 void ServiceNode::jointMovJ(
   const mg400_srv::JointMovJ::Request::SharedPtr request,
