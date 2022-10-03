@@ -71,6 +71,13 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
           &ServiceNode::resetRobot, this,
           std::placeholders::_1, std::placeholders::_2));
 
+      this->tool_srv_ =
+        this->create_service<mg400_srv::Tool>(
+        "tool",
+        std::bind(
+          &ServiceNode::tool, this,
+          std::placeholders::_1, std::placeholders::_2));
+
       this->speed_factor_srv_ =
         this->create_service<mg400_srv::SpeedFactor>(
         "speed_factor",
@@ -301,6 +308,22 @@ void ServiceNode::speedFactor(
 {
   try {
     this->interface_->dashboard_commander->speedFactor(request->ratio);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->get_logger(), "%s", e.what());
+    response->result = false;
+    return;
+  }
+  response->result = true;
+}
+
+void ServiceNode::tool(
+  const mg400_srv::Tool_Request::SharedPtr request,
+  mg400_srv::Tool_Response::SharedPtr response
+)
+{
+  try {
+    this->interface_->dashboard_commander->tool(request->index);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->get_logger(), "%s", e.what());

@@ -15,22 +15,40 @@
 
 from ament_index_python import get_package_share_path
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
     """Generate launch description."""
     this_pkg_name = 'mg400_bringup'
-    nodes = [
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                str(get_package_share_path(this_pkg_name) /
-                    'launch' / 'mg400.launch.py')
-            ),
-            launch_arguments=[
-                ('ip_address', '127.0.0.1'),
-            ]
+    joy_arg = DeclareLaunchArgument(
+        'joy',
+        default_value='false',
+        description='Determines if joy.launch is called.')
+    service_level_arg = DeclareLaunchArgument(
+        'service_level',
+        default_value='1',
+        description='Determine the command level that can be called from the service.')
+    joy = LaunchConfiguration('joy')
+    service_level = LaunchConfiguration('service_level')
+    main_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            str(get_package_share_path(this_pkg_name) /
+                'launch' / 'mg400.launch.py')
         ),
-    ]
-    return LaunchDescription(nodes)
+        launch_arguments=[
+            ('ip_address', '127.0.0.1'),
+            ('joy', joy),
+            ('service_level', service_level)])
+
+    ld = LaunchDescription()
+
+    ld.add_action(joy_arg)
+    ld.add_action(service_level_arg)
+
+    ld.add_action(main_node)
+
+    return ld
