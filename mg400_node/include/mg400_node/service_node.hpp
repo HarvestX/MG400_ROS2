@@ -58,6 +58,8 @@ private:
 
   std::unique_ptr<mg400_interface::MG400Interface> interface_;
 
+  rclcpp::CallbackGroup::SharedPtr joint_cb_group_;
+  rclcpp::CallbackGroup::SharedPtr service_cb_group_;
   rclcpp::TimerBase::SharedPtr js_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
 

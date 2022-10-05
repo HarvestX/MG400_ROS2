@@ -43,15 +43,17 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
   this->interface_->activate();
 
   // ROS Interfaces
+  joint_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  service_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   this->joint_state_pub_ =
     this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states",
     rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
-    10ms, std::bind(&ServiceNode::onJsTimer, this));
+    10ms, std::bind(&ServiceNode::onJsTimer, this), joint_cb_group_);
   this->error_timer_ = this->create_wall_timer(
-    500ms, std::bind(&ServiceNode::onErrorTimer, this));
+    500ms, std::bind(&ServiceNode::onErrorTimer, this), joint_cb_group_);
 
   // Service Initialization
   switch (this->level_) {
@@ -69,7 +71,9 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
         "reset_robot",
         std::bind(
           &ServiceNode::resetRobot, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
 
       this->tool_srv_ =
         this->create_service<mg400_srv::Tool>(
@@ -125,7 +129,9 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
         "mov_l",
         std::bind(
           &ServiceNode::movL, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
     // fall through
     case SERVICE_EXPORT_LEVEL::BASIC:
       this->clear_error_srv_ =
@@ -133,21 +139,27 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
         "clear_error",
         std::bind(
           &ServiceNode::clearError, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
 
       this->disable_robot_srv_ =
         this->create_service<mg400_srv::DisableRobot>(
         "disable_robot",
         std::bind(
           &ServiceNode::disableRobot, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
 
       this->enable_robot_srv_ =
         this->create_service<mg400_srv::EnableRobot>(
         "enable_robot",
         std::bind(
           &ServiceNode::enableRobot, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
 
       this->move_jog_srv_ =
         this->create_service<mg400_srv::MoveJog>(
@@ -161,7 +173,9 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
         "mov_j",
         std::bind(
           &ServiceNode::movJ, this,
-          std::placeholders::_1, std::placeholders::_2));
+          std::placeholders::_1, std::placeholders::_2),
+        rmw_qos_profile_default,
+        service_cb_group_);
       break;
     default:
       RCLCPP_ERROR(
@@ -419,7 +433,7 @@ void ServiceNode::movJ(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
   using namespace std::chrono_literals;
-  rclcpp::sleep_for(30ms);
+  //rclcpp::sleep_for(30ms);
   while (this->interface_->realtime_tcp_interface->getRobotMode() !=
     mg400_interface::RobotMode::ENABLE)
   {
