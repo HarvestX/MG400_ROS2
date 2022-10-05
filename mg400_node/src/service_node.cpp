@@ -420,7 +420,9 @@ void ServiceNode::movJ(
     request->rx, request->ry, request->rz);
   using namespace std::chrono_literals;
   rclcpp::sleep_for(30ms);
-  while (this->rt_tcp_if_->getRobotMode() != mg400_interface::RobotMode::ENABLE) {
+  while (this->interface_->realtime_tcp_interface->getRobotMode() !=
+    mg400_interface::RobotMode::ENABLE)
+  {
     RCLCPP_INFO(
       this->get_logger(), "Waiting for motion completed."
     );
