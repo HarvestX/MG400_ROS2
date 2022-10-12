@@ -47,6 +47,10 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
     this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states",
     rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  this->robot_mode_pub_ =
+    this->create_publisher<mg400_msgs::msg::RobotMode>(
+    "robot_mode",
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
     10ms, std::bind(&ServiceNode::onJsTimer, this));
@@ -185,12 +189,21 @@ ServiceNode::~ServiceNode()
 void ServiceNode::onJsTimer()
 {
   std::array<double, 6> joint_states;
+  auto message = mg400_msgs::msg::RobotMode();
   this->interface_->realtime_tcp_interface->getCurrentJointStates(joint_states);
+  message.robot_mode = static_cast<int>(this->interface_->realtime_tcp_interface->getRobotMode());
 
   this->joint_state_pub_->publish(
     mg400_interface::getJointState(
       joint_states[0], joint_states[1], joint_states[2], joint_states[3],
       this->prefix_));
+
+  this->robot_mode_pub_->publish(
+    message);
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Publishing: RobotMode is %d",
+    message.robot_mode);
 }
 
 void ServiceNode::onErrorTimer()
@@ -418,6 +431,16 @@ void ServiceNode::movJ(
   this->interface_->motion_commander->movJ(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
+  using namespace std::chrono_literals;
+  rclcpp::sleep_for(30ms);
+  while (this->interface_->realtime_tcp_interface->getRobotMode() !=
+    mg400_interface::RobotMode::ENABLE)
+  {
+    RCLCPP_INFO(
+      this->get_logger(), "Waiting for motion completed."
+    );
+    rclcpp::sleep_for(10ms);
+  }
 }
 
 void ServiceNode::movL(

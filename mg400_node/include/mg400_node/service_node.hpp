@@ -37,6 +37,7 @@
 #include <mg400_interface/mg400_interface.hpp>
 
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 
@@ -62,7 +63,7 @@ private:
   rclcpp::TimerBase::SharedPtr error_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
-
+  rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
   rclcpp::Service<mg400_srv::ClearError>::SharedPtr clear_error_srv_;
   rclcpp::Service<mg400_srv::ResetRobot>::SharedPtr reset_robot_srv_;
   rclcpp::Service<mg400_srv::DisableRobot>::SharedPtr disable_robot_srv_;
