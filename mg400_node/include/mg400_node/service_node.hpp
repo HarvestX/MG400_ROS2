@@ -60,6 +60,7 @@ private:
   std::unique_ptr<mg400_interface::MG400Interface> interface_;
 
   rclcpp::TimerBase::SharedPtr js_timer_;
+  rclcpp::TimerBase::SharedPtr rm_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
@@ -87,6 +88,8 @@ public:
 
 private:
   void onJsTimer();
+
+  void onRmTimer();
 
   void onErrorTimer();
 

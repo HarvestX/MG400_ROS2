@@ -1,1 +1,1 @@
-int32 robot_mode
+uint8 robot_mode

@@ -54,6 +54,8 @@ ServiceNode::ServiceNode(const rclcpp::NodeOptions & options)
   using namespace std::chrono_literals;
   this->js_timer_ = this->create_wall_timer(
     10ms, std::bind(&ServiceNode::onJsTimer, this));
+  this->rm_timer_ = this->create_wall_timer(
+    100ms, std::bind(&ServiceNode::onRmTimer, this));
   this->error_timer_ = this->create_wall_timer(
     500ms, std::bind(&ServiceNode::onErrorTimer, this));
 
@@ -189,14 +191,18 @@ ServiceNode::~ServiceNode()
 void ServiceNode::onJsTimer()
 {
   std::array<double, 6> joint_states;
-  auto message = mg400_msgs::msg::RobotMode();
   this->interface_->realtime_tcp_interface->getCurrentJointStates(joint_states);
-  message.robot_mode = static_cast<int>(this->interface_->realtime_tcp_interface->getRobotMode());
 
   this->joint_state_pub_->publish(
     mg400_interface::getJointState(
       joint_states[0], joint_states[1], joint_states[2], joint_states[3],
       this->prefix_));
+}
+
+void ServiceNode::onRmTimer()
+{
+  auto message = mg400_msgs::msg::RobotMode();
+  message.robot_mode = static_cast<int>(this->interface_->realtime_tcp_interface->getRobotMode());
 
   this->robot_mode_pub_->publish(
     message);
