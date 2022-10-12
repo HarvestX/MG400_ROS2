@@ -202,14 +202,11 @@ void ServiceNode::onJsTimer()
 void ServiceNode::onRmTimer()
 {
   auto message = mg400_msgs::msg::RobotMode();
-  message.robot_mode = static_cast<int>(this->interface_->realtime_tcp_interface->getRobotMode());
+  message.robot_mode =
+    static_cast<uint8_t>(this->interface_->realtime_tcp_interface->getRobotMode());
 
   this->robot_mode_pub_->publish(
     message);
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Publishing: RobotMode is %d",
-    message.robot_mode);
 }
 
 void ServiceNode::onErrorTimer()
@@ -437,16 +434,6 @@ void ServiceNode::movJ(
   this->interface_->motion_commander->movJ(
     request->x, request->y, request->z,
     request->rx, request->ry, request->rz);
-  using namespace std::chrono_literals;
-  rclcpp::sleep_for(30ms);
-  while (this->interface_->realtime_tcp_interface->getRobotMode() !=
-    mg400_interface::RobotMode::ENABLE)
-  {
-    RCLCPP_INFO(
-      this->get_logger(), "Waiting for motion completed."
-    );
-    rclcpp::sleep_for(10ms);
-  }
 }
 
 void ServiceNode::movL(
