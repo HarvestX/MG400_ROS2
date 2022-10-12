@@ -26,11 +26,15 @@ set(srv_files
     "srv/SpeedJ.srv"
     "srv/SpeedL.srv"
     "srv/Tool.srv"
-    "srv/ToolDOExecute.srv")
+    "srv/ToolDOExecute.srv"
+)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${srv_files}
-  DEPENDENCIES builtin_interfaces std_msgs)
+set(msg_files "msg/RobotMode.msg")
+
+rosidl_generate_interfaces(
+  ${PROJECT_NAME} ${srv_files} ${msg_files} DEPENDENCIES builtin_interfaces
+  std_msgs
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
