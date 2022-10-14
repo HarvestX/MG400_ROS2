@@ -433,7 +433,7 @@ void ServiceNode::movJ(
 {
   this->interface_->motion_commander->movJ(
     request->x, request->y, request->z,
-    request->rx, request->ry, request->rz);
+    request->r, 0.0, 0.0);
 }
 
 void ServiceNode::movL(
