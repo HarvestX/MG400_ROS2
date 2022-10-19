@@ -51,5 +51,63 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
   return msg;
 }
 
+geometry_msgs::msg::Pose getEndPoint(
+  const sensor_msgs::msg::JointState & joint_state)
+{
+  geometry_msgs::msg::Pose msg;
+  Eigen::MatrixXd pos(3, 1);
+  Eigen::MatrixXd p(3, 1);
 
+  Eigen::MatrixXd LINK1(3, 1);
+  Eigen::MatrixXd LINK2(3, 1);
+  Eigen::MatrixXd LINK3(3, 1);
+  Eigen::MatrixXd LINK4(3, 1);
+
+  LINK1 << 0.043, 0.0, 0.0;
+  LINK2 << 0.0, 0.0, 0.175;
+  LINK3 << 0.175, 0.0, 0.0;
+  LINK4 << 0.066, 0.0, -0.057;
+
+  pos = LINK1 +
+    rotY(LINK2, joint_state.position[1]) +
+    rotY(LINK3, joint_state.position[6]) +
+    LINK4;
+  p = rotZ(pos, joint_state.position[0]);
+
+  msg.position.x = static_cast<double>(p(0, 0));
+  msg.position.y = static_cast<double>(p(1, 0));
+  msg.position.z = static_cast<double>(p(2, 0));
+
+  return msg;
+}
+
+Eigen::MatrixXd rotY(
+  const Eigen::MatrixXd & vec, const double & angle)
+{
+  Eigen::Matrix3d rot_mat;
+  const double co = cos(angle);
+  const double si = sin(angle);
+
+  rot_mat <<
+    co, 0.0, si,
+    0.0, 1.0, 0.0,
+    -si, 0.0, co;
+
+  return rot_mat * vec;
+}
+
+Eigen::MatrixXd rotZ(
+  const Eigen::MatrixXd & vec, const double & angle)
+{
+  Eigen::Matrix3d rot_mat;
+  const double co = cos(angle);
+  const double si = sin(angle);
+
+  rot_mat <<
+    co, -si, 0.0,
+    si, co, 0.0,
+    0.0, 0.0, 1.0;
+
+  return rot_mat * vec;
+}
 }  // namespace mg400_interface
