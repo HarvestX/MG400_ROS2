@@ -14,12 +14,13 @@
 
 #pragma once
 
+#include <eigen3/Eigen/Core>
+
 #include <memory>
 #include <string>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <Eigen/Core>
 
 #include "mg400_interface/command_utils.hpp"
 
@@ -54,9 +55,9 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
 geometry_msgs::msg::Pose getEndPoint(
   const sensor_msgs::msg::JointState &);
 
-Eigen::MatrixXd rot_y(
+Eigen::MatrixXd rotY(
   const Eigen::MatrixXd &, const double &);
 
-Eigen::MatrixXd rot_z(
+Eigen::MatrixXd rotZ(
   const Eigen::MatrixXd &, const double &);
 }  // namespace mg400_interface

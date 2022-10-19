@@ -17,6 +17,7 @@
     "urdf",
     "xacro",
     "vcstool",
-    "coveragepy"
+    "coveragepy",
+    "eigen"
   ]
 }

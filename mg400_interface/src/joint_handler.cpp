@@ -63,22 +63,16 @@ geometry_msgs::msg::Pose getEndPoint(
   Eigen::MatrixXd LINK3(3, 1);
   Eigen::MatrixXd LINK4(3, 1);
 
-  LINK1(0, 0) = 43;
-  LINK1(1, 0) = 0;
-  LINK1(2, 0) = 0;
-  LINK2(0, 0) = 0;
-  LINK2(1, 0) = 0;
-  LINK2(2, 0) = 175;
-  LINK3(0, 0) = 175;
-  LINK3(1, 0) = 0;
-  LINK3(2, 0) = 0;
-  LINK4(0, 0) = 66;
-  LINK4(1, 0) = 0;
-  LINK4(2, 0) = -57;
+  LINK1 << 0.043, 0.0, 0.0;
+  LINK2 << 0.0, 0.0, 0.175;
+  LINK3 << 0.175, 0.0, 0.0;
+  LINK4 << 0.066, 0.0, -0.057;
 
-  pos = LINK1 + rot_y(LINK2, joint_state.position[1]) + \
-    rot_y(LINK3, joint_state.position[6]) + LINK4;
-  p = rot_z(pos, joint_state.position[0]);
+  pos = LINK1 +
+    rotY(LINK2, joint_state.position[1]) +
+    rotY(LINK3, joint_state.position[6]) +
+    LINK4;
+  p = rotZ(pos, joint_state.position[0]);
 
   msg.position.x = static_cast<double>(p(0, 0));
   msg.position.y = static_cast<double>(p(1, 0));
@@ -87,39 +81,33 @@ geometry_msgs::msg::Pose getEndPoint(
   return msg;
 }
 
-Eigen::MatrixXd rot_y(
+Eigen::MatrixXd rotY(
   const Eigen::MatrixXd & vec, const double & angle)
 {
-  Eigen::Matrix3d rot_mtrx;
+  Eigen::Matrix3d rot_mat;
+  const double co = cos(angle);
+  const double si = sin(angle);
 
-  rot_mtrx(0, 0) = cos(angle);
-  rot_mtrx(0, 1) = 0;
-  rot_mtrx(0, 2) = sin(angle);
-  rot_mtrx(1, 0) = 0;
-  rot_mtrx(1, 1) = 1;
-  rot_mtrx(1, 2) = 0;
-  rot_mtrx(2, 0) = -sin(angle);
-  rot_mtrx(2, 1) = 0;
-  rot_mtrx(2, 2) = cos(angle);
+  rot_mat <<
+    co, 0.0, si,
+    0.0, 1.0, 0.0,
+    -si, 0.0, co;
 
-  return rot_mtrx * vec;
+  return rot_mat * vec;
 }
 
-Eigen::MatrixXd rot_z(
+Eigen::MatrixXd rotZ(
   const Eigen::MatrixXd & vec, const double & angle)
 {
-  Eigen::Matrix3d rot_mtrx;
+  Eigen::Matrix3d rot_mat;
+  const double co = cos(angle);
+  const double si = sin(angle);
 
-  rot_mtrx(0, 0) = cos(angle);
-  rot_mtrx(0, 1) = -sin(angle);
-  rot_mtrx(0, 2) = 0;
-  rot_mtrx(1, 0) = sin(angle);
-  rot_mtrx(1, 1) = cos(angle);
-  rot_mtrx(1, 2) = 0;
-  rot_mtrx(2, 0) = 0;
-  rot_mtrx(2, 1) = 0;
-  rot_mtrx(2, 2) = 1;
+  rot_mat <<
+    co, -si, 0.0,
+    si, co, 0.0,
+    0.0, 0.0, 1.0;
 
-  return rot_mtrx * vec;
+  return rot_mat * vec;
 }
 }  // namespace mg400_interface

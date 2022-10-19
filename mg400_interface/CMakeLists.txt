@@ -50,21 +50,22 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   find_package(ament_cmake_gmock REQUIRED)
 
-  set(TARGET test_error_msg_generator)
-  ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
+  set(TEST_TARGETS
+    test_error_msg_generator
+    test_joint_handler)
+  foreach(TARGET ${TEST_TARGETS})
+    ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
+    target_link_libraries(${TARGET} ${PROJECT_NAME})
+  endforeach()
 
-  set(TARGET test_response_parser)
-  ament_add_gtest(${TARGET} test/src/commander/${TARGET}.cpp)
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
-
-  set(TARGET test_motion_commander)
-  ament_add_gmock(${TARGET} test/src/commander/${TARGET}.cpp)
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
-
-  set(TARGET test_dashboard_commander)
-  ament_add_gmock(${TARGET} test/src/commander/${TARGET}.cpp)
-  target_link_libraries(${TARGET} ${PROJECT_NAME})
+  set(TEST_TARGETS
+    test_response_parser
+    test_motion_commander
+    test_dashboard_commander)
+  foreach(TARGET ${TEST_TARGETS})
+    ament_add_gmock(${TARGET} test/src/commander/${TARGET}.cpp)
+    target_link_libraries(${TARGET} ${PROJECT_NAME})
+  endforeach()
 endif()
 
 ament_auto_package(
