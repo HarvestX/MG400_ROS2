@@ -2,16 +2,20 @@ name: ci
 
 on:
   push:
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
     branches:
-      - main
-      - ci-check
+      - "main"
+  pull_request:
+    types: [opened, synchronize, labeled]
 
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
+    if: |
+      ((github.event.action == 'labeled') &&
+        (github.event.label.name == 'TESTING')) ||
+      ((github.event.action == 'synchronize') &&
+        contains(github.event.pull_request.labels.*.name, 'TESTING')) ||
+      (github.ref == 'refs/heads/main')
     container:
       image: osrf/ros:${{ matrix.ros_distribution }}-desktop
     timeout-minutes: 20
