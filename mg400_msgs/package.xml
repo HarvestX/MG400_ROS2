@@ -7,7 +7,7 @@
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
   <license>Apache License 2.0</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
 
   <depend>builtin_interfaces</depend>
