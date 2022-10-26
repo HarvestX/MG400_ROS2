@@ -152,7 +152,6 @@ void ActionNode::execute(
   rclcpp::Rate loop_rate(1);
   const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
-  auto & pose = feedback->current_pose;
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
 
   for (int i = 1; rclcpp::ok(); i++) {
@@ -169,6 +168,13 @@ void ActionNode::execute(
     RCLCPP_INFO(this->get_logger(), "Publish feedback");
 
     loop_rate.sleep();
+  }
+
+  //Check if goal is done
+  if (rclcpp::ok()) {
+    result->result = true;
+    goal_handle->succeed(result);
+    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
   }
 
 }
