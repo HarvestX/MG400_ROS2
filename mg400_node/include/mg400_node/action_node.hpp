@@ -65,6 +65,8 @@ private:
   double current_robot_position_[3];
   uint8_t current_robot_mode_;
 
+  double goal_position_[3];
+
   std::unique_ptr<mg400_interface::MG400Interface> interface_;
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;

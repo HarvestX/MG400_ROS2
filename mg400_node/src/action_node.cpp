@@ -38,7 +38,7 @@ ActionNode::ActionNode(const rclcpp::NodeOptions & options)
   // ROS Interfaces
   this->joint_state_sub_ =
     this->create_subscription<sensor_msgs::msg::JointState>(
-    "joint_state",
+    "joint_states",
     10, std::bind(&ActionNode::onJsTimer, this, std::placeholders::_1));
   this->robot_mode_sub_ =
     this->create_subscription<mg400_msgs::msg::RobotMode>(
@@ -73,9 +73,9 @@ void ActionNode::onJsTimer(const sensor_msgs::msg::JointState & msg)
   this->current_robot_position_[1] = position.position.y;
   this->current_robot_position_[2] = position.position.z;
 
-  auto req = std::make_shared<mg400_msgs::srv::MovJ::Request>();
-  if (position.position.x - req->x < 1e-10 && position.position.y - req->y < 1e-10 &&
-    position.position.z - req->z < 1e-10)
+  if (fabs(position.position.x - this->goal_position_[0]) < 1e-3 &&
+    fabs(position.position.y - this->goal_position_[1]) < 1e-3 &&
+    fabs(position.position.z - this->goal_position_[2]) < 1e-3)
   {
     if (this->current_robot_state_ == ROBOT_STATE::ENABLE ||
       this->current_robot_state_ == ROBOT_STATE::OK)
@@ -125,6 +125,10 @@ rclcpp_action::GoalResponse ActionNode::handle_goal(
     this->get_logger(),
     "Received goal request with (x,y,z,r) = (%f,%f,%f,%f)",
     goal->x, goal->y, goal->z, goal->r);
+  this->goal_position_[0] = goal->x;
+  this->goal_position_[1] = goal->y;
+  this->goal_position_[2] = goal->z;
+
   callMovJ(goal->x, goal->y, goal->z, goal->r);
   (void)uuid;
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -177,16 +181,13 @@ void ActionNode::execute(
       feedback->current_pose.pose.position.x,
       feedback->current_pose.pose.position.y,
       feedback->current_pose.pose.position.z);
-
     loop_rate.sleep();
   }
 
   //Check if goal is done
-  if (rclcpp::ok()) {
-    result->result = true;
-    goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-  }
+  result->result = true;
+  goal_handle->succeed(result);
+  RCLCPP_INFO(this->get_logger(), "Goal succeeded");
 
 }
 
@@ -198,5 +199,7 @@ void ActionNode::callMovJ(
   req->y = y;
   req->z = z;
   req->r = r;
+
+  this->mov_j_client_->async_send_request(req);
 }
 }
