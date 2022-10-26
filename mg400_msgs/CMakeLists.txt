@@ -37,7 +37,7 @@ rosidl_generate_interfaces(
     ${msg_files}
     ${srv_files}
     ${action_files}
-  DEPENDENCIES builtin_interfaces std_msgs)
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
