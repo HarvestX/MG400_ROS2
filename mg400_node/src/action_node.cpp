@@ -58,8 +58,7 @@ ActionNode::ActionNode(const rclcpp::NodeOptions & options)
 
 
   // Robot Initialization
-  current_robot_state_ = ROBOT_STATE::OK;
-  this->interface_->dashboard_commander->clearError();
+  current_robot_state_ = ROBOT_STATE::ERROR;
 }
 
 ActionNode::~ActionNode()
@@ -70,6 +69,10 @@ ActionNode::~ActionNode()
 void ActionNode::onJsTimer(const sensor_msgs::msg::JointState & msg)
 {
   geometry_msgs::msg::Pose position = mg400_interface::getEndPoint(msg);
+  this->current_robot_position_[0] = position.position.x;
+  this->current_robot_position_[1] = position.position.y;
+  this->current_robot_position_[2] = position.position.z;
+
   auto req = std::make_shared<mg400_msgs::srv::MovJ::Request>();
   if (position.position.x - req->x < 1e-10 && position.position.y - req->y < 1e-10 &&
     position.position.z - req->z < 1e-10)
@@ -94,7 +97,8 @@ void ActionNode::onJsTimer(const sensor_msgs::msg::JointState & msg)
 
 void ActionNode::onRmTimer(const mg400_msgs::msg::RobotMode & msg)
 {
-  if (msg.robot_mode == 5) {
+  this->current_robot_mode_ = msg.robot_mode;
+  if (this->current_robot_mode_ == 5) {
     if (this->current_robot_state_ == ROBOT_STATE::GOAL ||
       this->current_robot_state_ == ROBOT_STATE::OK)
     {
@@ -154,18 +158,25 @@ void ActionNode::execute(
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
 
-  for (int i = 1; rclcpp::ok(); i++) {
-    if (goal_handle->is_canceling()) {
+  while (this->current_robot_state_ != ROBOT_STATE::OK) {
+    if (goal_handle->is_canceling() || this->current_robot_mode_ == 9) {
       result->result = false;
       goal_handle->canceled(result);
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
       return;
     }
-    // Update pose
-
     // Publish feedback
+    feedback->current_pose.pose.position.x = this->current_robot_position_[0];
+    feedback->current_pose.pose.position.y = this->current_robot_position_[1];
+    feedback->current_pose.pose.position.z = this->current_robot_position_[2];
+
     goal_handle->publish_feedback(feedback);
-    RCLCPP_INFO(this->get_logger(), "Publish feedback");
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Publish feedback : x =%f, y=%lf, z=%lf",
+      feedback->current_pose.pose.position.x,
+      feedback->current_pose.pose.position.y,
+      feedback->current_pose.pose.position.z);
 
     loop_rate.sleep();
   }

@@ -53,15 +53,6 @@ class ActionNode : public rclcpp::Node
 private:
   const std::string prefix_;
 
-  std::unique_ptr<mg400_interface::MG400Interface> interface_;
-
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
-  rclcpp::Subscription<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_sub_;
-
-  rclcpp::Client<mg400_msgs::srv::MovJ>::SharedPtr mov_j_client_;
-
-  rclcpp_action::Server<mg400_action::MovJ>::SharedPtr mov_j_action_;
-
   enum class ROBOT_STATE
   {
     ERROR = 1,
@@ -71,6 +62,17 @@ private:
   };
 
   ROBOT_STATE current_robot_state_;
+  double current_robot_position_[3];
+  uint8_t current_robot_mode_;
+
+  std::unique_ptr<mg400_interface::MG400Interface> interface_;
+
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
+  rclcpp::Subscription<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_sub_;
+
+  rclcpp::Client<mg400_msgs::srv::MovJ>::SharedPtr mov_j_client_;
+
+  rclcpp_action::Server<mg400_action::MovJ>::SharedPtr mov_j_action_;
 
 public:
   explicit ActionNode(const rclcpp::NodeOptions &);
