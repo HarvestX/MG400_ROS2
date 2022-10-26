@@ -11,6 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
+  <depend>rclcpp_action</depend>
   <depend>sensor_msgs</depend>
   <depend>mg400_msgs</depend>
   <depend>mg400_interface</depend>
