@@ -30,7 +30,7 @@ git clone git@github.com:HarvestX/MG400_ROS2.git
 
 ```bash
 source /opt/ros/galactic/setup.bash
-cd ~/galactic_ws/src/MG400_ROS2
+cd ~/ws_galactic/src/MG400_ROS2
 ./setup.bash
 exec -l $SHELL
 ```
@@ -41,7 +41,7 @@ Open new terminal and type followings.
 
 ```bash
 source /opt/ros/galactic/setup.bash
-cd ~/galactic_ws
+cd ~/ws_galactic
 colcon build
 ```
 
