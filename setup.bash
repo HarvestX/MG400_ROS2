@@ -6,18 +6,20 @@ THIS_REPOSITORY_NAME="mg400"
 
 # Install ROS2 dependency
 ## From git repos
-colcon_ws=${THIS_PROJECT_ROOT}/../../
-cd ${colcon_ws}/src
-vcs import --recursive <${THIS_PROJECT_ROOT}/${THIS_REPOSITORY_NAME}.repos
-unset colcon_ws
+colcon_ws=$(realpath ${THIS_PROJECT_ROOT}/../../)
+
+vcs import \
+  --recursive \
+  --input ${THIS_PROJECT_ROOT}/${THIS_REPOSITORY_NAME}.repos \
+  ${colcon_ws}/src
+vcs pull ${colcon_ws}/src
 
 ## From apt repositories
 rosdep update
 rosdep install -r -y -i \
-  --from-paths ${THIS_PROJECT_ROOT} \
-  --rosdistro $ROS_DISTRO \
-  --skip-keys p9n_interface
+  --from-paths ${colcon_ws}/src \
+  --rosdistro $ROS_DISTRO
 
+unset colcon_ws
 unset THIS_FILE
 unset THIS_PROJECT_ROOT
-

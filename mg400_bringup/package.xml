@@ -7,11 +7,13 @@
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
   <license>Apache License 2.0</license>
 
-  <depend>rviz2</depend>
-  <depend>robot_state_publisher</depend>
-
-  <exec_depend>xacro</exec_depend>
   <exec_depend>joy</exec_depend>
+  <exec_depend>mg400_description</exec_depend>
+  <exec_depend>mg400_joy</exec_depend>
+  <exec_depend>mg400_node</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
