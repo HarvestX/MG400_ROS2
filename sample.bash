@@ -15,7 +15,6 @@ ros2 action send_goal /mg400/mov_j mg400_msgs/action/MovJ \
 ros2 action send_goal /mg400/mov_j mg400_msgs/action/MovJ \
   "{x: 0.34, y: 0.0, z: 0.0, r: 0.0}"
 
-sleep 5
 
 # Turn off
 ros2 service call /mg400/disable_robot mg400_msgs/srv/DisableRobot

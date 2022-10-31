@@ -73,9 +73,9 @@ void ActionNode::onJsTimer(const sensor_msgs::msg::JointState & msg)
   this->current_robot_position_[1] = position.position.y;
   this->current_robot_position_[2] = position.position.z;
 
-  if (fabs(position.position.x - this->goal_position_[0]) < 1e-3 &&
-    fabs(position.position.y - this->goal_position_[1]) < 1e-3 &&
-    fabs(position.position.z - this->goal_position_[2]) < 1e-3)
+  if (fabs(position.position.x - this->goal_position_[0]) < 1e-2 &&
+    fabs(position.position.y - this->goal_position_[1]) < 1e-2 &&
+    fabs(position.position.z - this->goal_position_[2]) < 1e-2)
   {
     if (this->current_robot_state_ == ROBOT_STATE::ENABLE ||
       this->current_robot_state_ == ROBOT_STATE::OK)
@@ -157,7 +157,7 @@ void ActionNode::execute(
   RCLCPP_INFO(
     this->get_logger(),
     "Executing goal");
-  rclcpp::Rate loop_rate(1);
+  rclcpp::Rate loop_rate(10);
   const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
