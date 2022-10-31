@@ -18,18 +18,6 @@
 #include <string>
 #include <vector>
 
-#include <mg400_msgs/srv/acc_j.hpp>
-#include <mg400_msgs/srv/acc_l.hpp>
-#include <mg400_msgs/srv/clear_error.hpp>
-#include <mg400_msgs/srv/disable_robot.hpp>
-#include <mg400_msgs/srv/enable_robot.hpp>
-#include <mg400_msgs/srv/reset_robot.hpp>
-#include <mg400_msgs/srv/speed_factor.hpp>
-#include <mg400_msgs/srv/speed_j.hpp>
-#include <mg400_msgs/srv/speed_l.hpp>
-#include <mg400_msgs/srv/tool.hpp>
-#include <mg400_msgs/srv/tool_do_execute.hpp>
-
 #include <mg400_msgs/srv/joint_mov_j.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 #include <mg400_msgs/srv/mov_j.hpp>
