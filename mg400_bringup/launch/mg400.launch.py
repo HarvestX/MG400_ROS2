@@ -41,15 +41,11 @@ def generate_launch_description():
     service_level_arg = DeclareLaunchArgument(
         'service_level',
         default_value='1',
-        description='Determine the command level that can be called from the service.')
-    action_level_arg = DeclareLaunchArgument(
-        'action_level',
-        default_value='2',
-        description='Determine the command level that can be called from the action.')
+        description='Determine the command level that '
+        'can be called from the service.')
     ip_address = LaunchConfiguration('ip_address')
     joy = LaunchConfiguration('joy')
     service_level = LaunchConfiguration('service_level')
-    action_level = LaunchConfiguration('action_level')
 
     rviz_node = Node(
         package='rviz2',
@@ -71,10 +67,7 @@ def generate_launch_description():
         executable='action_node_exec',
         namespace=namespace,
         name='mg400_action_node',
-        on_exit=Shutdown(),
-        parameters=[
-            {'ip_address': ip_address,
-             'action_level': action_level}])
+        on_exit=Shutdown(),)
     joy_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             str(
@@ -101,7 +94,6 @@ def generate_launch_description():
     ld.add_action(ip_address_arg)
     ld.add_action(joy_arg)
     ld.add_action(service_level_arg)
-    ld.add_action(action_level_arg)
     ld.add_action(rviz_node)
     ld.add_action(service_node)
     ld.add_action(action_node)
