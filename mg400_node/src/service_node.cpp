@@ -432,8 +432,8 @@ void ServiceNode::movJ(
 )
 {
   this->interface_->motion_commander->movJ(
-    request->x, request->y, request->z,
-    request->r, 0.0, 0.0);
+    request->pose.x, request->pose.y, request->pose.z,
+    request->pose.r, 0.0, 0.0);
 }
 
 void ServiceNode::movL(
@@ -441,7 +441,7 @@ void ServiceNode::movL(
   mg400_srv::MovL::Response::SharedPtr)
 {
   this->interface_->motion_commander->movL(
-    request->x, request->y, request->z,
-    request->rx, request->ry, request->rz);
+    request->pose.x, request->pose.y, request->pose.z,
+    request->pose.r, 0.0, 0.0);
 }
 }  // namespace mg400_node

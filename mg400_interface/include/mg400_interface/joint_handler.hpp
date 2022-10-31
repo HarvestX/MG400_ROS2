@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <sensor_msgs/msg/joint_state.hpp>
-#include <geometry_msgs/msg/pose.hpp>
+#include <mg400_msgs/msg/end_pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/command_utils.hpp"
@@ -52,7 +52,7 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
   const double &, const double &, const double &, const double &,
   const std::string &);
 
-geometry_msgs::msg::Pose getEndPoint(
+mg400_msgs::msg::EndPose getEndPose(
   const sensor_msgs::msg::JointState &);
 
 Eigen::MatrixXd rotY(
