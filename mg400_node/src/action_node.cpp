@@ -23,184 +23,145 @@ ActionNode::ActionNode(const rclcpp::NodeOptions & options)
 : Node("action_node", options),
   prefix_(this->declare_parameter("prefix", ""))
 {
-  const std::string ip_address =
-    this->declare_parameter<std::string>("ip_address", "192.168.1.6");
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Connecting to %s ...",
-    ip_address.c_str());
-
-  this->interface_ =
-    std::make_unique<mg400_interface::MG400Interface>(ip_address);
-  this->interface_->configure();
-  this->interface_->activate();
-
-  // ROS Interfaces
-  this->joint_state_sub_ =
-    this->create_subscription<sensor_msgs::msg::JointState>(
-    "joint_states",
-    10, std::bind(&ActionNode::onJsTimer, this, std::placeholders::_1));
-  this->robot_mode_sub_ =
-    this->create_subscription<mg400_msgs::msg::RobotMode>(
-    "robot_mode",
-    100, std::bind(&ActionNode::onRmTimer, this, std::placeholders::_1));
+  // ROS Interfaces ---------------------------------------------
+  using namespace std::placeholders;  // NOLINT
   this->mov_j_client_ =
     this->create_client<mg400_msgs::srv::MovJ>("mov_j");
   this->mov_j_action_ =
     rclcpp_action::create_server<mg400_msgs::action::MovJ>(
-    this,
-    "mov_j",
-    std::bind(&ActionNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
-    std::bind(&ActionNode::handle_cancel, this, std::placeholders::_1),
-    std::bind(&ActionNode::handle_accepted, this, std::placeholders::_1));
-
-  // END Ros Interfaces
-
-
-  // Robot Initialization
-  current_robot_state_ = ROBOT_STATE::ERROR;
+    this, "mov_j",
+    std::bind(&ActionNode::handle_goal, this, _1, _2),
+    std::bind(&ActionNode::handle_cancel, this, _1),
+    std::bind(&ActionNode::handle_accepted, this, _1));
+  // End ROS Interfaces------------------------------------------
 }
 
 ActionNode::~ActionNode()
 {
-  this->interface_->deactivate();
 }
 
-void ActionNode::onJsTimer(const sensor_msgs::msg::JointState & msg)
+void ActionNode::activateSub()
 {
-  geometry_msgs::msg::Pose position = mg400_interface::getEndPoint(msg);
-  this->current_robot_position_[0] = position.position.x;
-  this->current_robot_position_[1] = position.position.y;
-  this->current_robot_position_[2] = position.position.z;
-
-  if (fabs(position.position.x - this->goal_position_[0]) < 1e-2 &&
-    fabs(position.position.y - this->goal_position_[1]) < 1e-2 &&
-    fabs(position.position.z - this->goal_position_[2]) < 1e-2)
-  {
-    if (this->current_robot_state_ == ROBOT_STATE::ENABLE ||
-      this->current_robot_state_ == ROBOT_STATE::OK)
-    {
-      this->current_robot_state_ = ROBOT_STATE::OK;
-    } else {
-      this->current_robot_state_ = ROBOT_STATE::GOAL;
-    }
-  } else {
-    if (this->current_robot_state_ == ROBOT_STATE::ERROR ||
-      this->current_robot_state_ == ROBOT_STATE::GOAL)
-    {
-      this->current_robot_state_ = ROBOT_STATE::ERROR;
-    } else {
-      this->current_robot_state_ = ROBOT_STATE::ENABLE;
-    }
+  using namespace std::placeholders;  // NOLINT
+  if (!this->js_sub_) {
+    this->js_sub_ =
+      this->create_subscription<sensor_msgs::msg::JointState>(
+      "joint_states", rclcpp::SensorDataQoS().keep_last(1),
+      std::bind(&ActionNode::onJs, this, _1));
+  }
+  if (!this->rm_sub_) {
+    this->rm_sub_ =
+      this->create_subscription<mg400_msgs::msg::RobotMode>(
+      "robot_mode", rclcpp::SensorDataQoS().keep_last(1),
+      std::bind(&ActionNode::onRm, this, _1));
   }
 }
 
-void ActionNode::onRmTimer(const mg400_msgs::msg::RobotMode & msg)
+void ActionNode::deactivateSub()
 {
-  this->current_robot_mode_ = msg.robot_mode;
-  if (this->current_robot_mode_ == 5) {
-    if (this->current_robot_state_ == ROBOT_STATE::GOAL ||
-      this->current_robot_state_ == ROBOT_STATE::OK)
-    {
-      this->current_robot_state_ = ROBOT_STATE::OK;
-    } else {
-      this->current_robot_state_ = ROBOT_STATE::ENABLE;
-    }
-  } else {
-    if (this->current_robot_state_ == ROBOT_STATE::ERROR ||
-      this->current_robot_state_ == ROBOT_STATE::ENABLE)
-    {
-      this->current_robot_state_ = ROBOT_STATE::ERROR;
-    } else {
-      this->current_robot_state_ = ROBOT_STATE::GOAL;
-    }
+  if (this->js_sub_) {
+    this->js_sub_.reset();
   }
+  if (this->rm_sub_) {
+    this->rm_sub_.reset();
+  }
+}
+
+void ActionNode::onJs(const sensor_msgs::msg::JointState & msg)
+{
+  this->current_end_pose_ = mg400_interface::getEndPose(msg);
+}
+
+void ActionNode::onRm(const mg400_msgs::msg::RobotMode & msg)
+{
+  this->current_robot_mode_ = msg;
 }
 
 rclcpp_action::GoalResponse ActionNode::handle_goal(
-  const rclcpp_action::GoalUUID & uuid,
+  const rclcpp_action::GoalUUID &,
   std::shared_ptr<const mg400_msgs::action::MovJ::Goal> goal)
 {
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Received goal request with (x,y,z,r) = (%f,%f,%f,%f)",
-    goal->x, goal->y, goal->z, goal->r);
-  this->goal_position_[0] = goal->x;
-  this->goal_position_[1] = goal->y;
-  this->goal_position_[2] = goal->z;
-
-  callMovJ(goal->x, goal->y, goal->z, goal->r);
-  (void)uuid;
+  using namespace std::chrono_literals;  // NOLINT
+  if (!this->mov_j_client_->wait_for_service(3s)) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client is not available",
+      this->mov_j_client_->get_service_name());
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+  auto req = std::make_unique<mg400_msgs::srv::MovJ::Request>();
+  req->pose = goal->pose;
+  this->mov_j_client_->async_send_request(std::move(req));
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
 rclcpp_action::CancelResponse ActionNode::handle_cancel(
-  const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>> goal_handle)
+  const std::shared_ptr<GoalHandle>)
 {
   RCLCPP_INFO(
     this->get_logger(),
     "Received request to cancel goal");
-  (void)goal_handle;
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
 void ActionNode::handle_accepted(
-  const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>> goal_handle)
+  const std::shared_ptr<GoalHandle> goal_handle)
 {
-  std::thread{std::bind(&ActionNode::execute, this, std::placeholders::_1),
-    goal_handle}.detach();
+  using namespace std::placeholders;  // NOLINT
+  std::thread{std::bind(&ActionNode::execute, this, _1), goal_handle}.detach();
 }
 
-void ActionNode::execute(
-  const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>> goal_handle)
+void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
 {
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Executing goal");
   rclcpp::Rate loop_rate(10);
   const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
+  this->activateSub();
 
-  while (this->current_robot_state_ != ROBOT_STATE::OK) {
-    if (goal_handle->is_canceling() || this->current_robot_mode_ == 9) {
+  while (
+    this->current_robot_mode_.robot_mode == RobotMode::RUNNING ||
+    !this->isGoalReached(goal->pose))
+  {
+    if (goal_handle->is_canceling() ||
+      this->current_robot_mode_.robot_mode == RobotMode::ERROR)
+    {
       result->result = false;
       goal_handle->canceled(result);
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
+      this->deactivateSub();
       return;
     }
+
     // Publish feedback
-    feedback->current_pose.pose.position.x = this->current_robot_position_[0];
-    feedback->current_pose.pose.position.y = this->current_robot_position_[1];
-    feedback->current_pose.pose.position.z = this->current_robot_position_[2];
+    feedback->current_pose.header.frame_id =
+      this->prefix_ + "mg400_origin_link";
+    feedback->current_pose.header.stamp =
+      this->get_clock()->now();
+    feedback->current_pose.pose = this->current_end_pose_;
 
     goal_handle->publish_feedback(feedback);
-    RCLCPP_INFO(
-      this->get_logger(),
-      "Publish feedback : x =%f, y=%lf, z=%lf",
-      feedback->current_pose.pose.position.x,
-      feedback->current_pose.pose.position.y,
-      feedback->current_pose.pose.position.z);
     loop_rate.sleep();
   }
 
-  //Check if goal is done
+  // Check if goal is done
   result->result = true;
   goal_handle->succeed(result);
+  this->deactivateSub();
   RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-
 }
 
-//ToDo: Add handling when service submission fails
-void ActionNode::callMovJ(
-  const double x, const double y, const double z, const double r)
+bool ActionNode::isGoalReached(
+  const mg400_msgs::msg::EndPose & goal,
+  const double tolerance)
 {
-  auto req = std::make_shared<mg400_msgs::srv::MovJ::Request>();
-  req->x = x;
-  req->y = y;
-  req->z = z;
-  req->r = r;
+  auto is_in_tolerance = [tolerance](
+    const double val) -> bool {
+      return std::abs(val) < tolerance;
+    };
 
-  this->mov_j_client_->async_send_request(req);
+  return is_in_tolerance(this->current_end_pose_.x - goal.x) &&
+         is_in_tolerance(this->current_end_pose_.y - goal.y) &&
+         is_in_tolerance(this->current_end_pose_.z - goal.z);
 }
 }

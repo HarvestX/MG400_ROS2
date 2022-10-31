@@ -35,55 +35,49 @@
 
 namespace mg400_node
 {
-namespace mg400_action = mg400_msgs::action;
+using ActionT = mg400_msgs::action::MovJ;
+using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+
 class ActionNode : public rclcpp::Node
 {
+public:
+  using RobotMode = mg400_msgs::msg::RobotMode;
+
 private:
   const std::string prefix_;
 
-  enum class ROBOT_STATE
-  {
-    ERROR = 1,
-    ENABLE,
-    GOAL,
-    OK
-  };
+  mg400_msgs::msg::RobotMode current_robot_mode_;
+  mg400_msgs::msg::EndPose current_end_pose_;
 
-  ROBOT_STATE current_robot_state_;
-  double current_robot_position_[3];
-  uint8_t current_robot_mode_;
-
-  double goal_position_[3];
-
-  std::unique_ptr<mg400_interface::MG400Interface> interface_;
-
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
-  rclcpp::Subscription<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
+    js_sub_;
+  rclcpp::Subscription<mg400_msgs::msg::RobotMode>::SharedPtr
+    rm_sub_;
 
   rclcpp::Client<mg400_msgs::srv::MovJ>::SharedPtr mov_j_client_;
 
-  rclcpp_action::Server<mg400_action::MovJ>::SharedPtr mov_j_action_;
+  rclcpp_action::Server<ActionT>::SharedPtr mov_j_action_;
 
 public:
   explicit ActionNode(const rclcpp::NodeOptions &);
   ~ActionNode();
 
 private:
-  void onJsTimer(const sensor_msgs::msg::JointState & msg);
-  void onRmTimer(const mg400_msgs::msg::RobotMode & msg);
+  void activateSub();
+  void deactivateSub();
+  void onJs(const sensor_msgs::msg::JointState & msg);
+  void onRm(const mg400_msgs::msg::RobotMode & msg);
 
   rclcpp_action::GoalResponse handle_goal(
-    const rclcpp_action::GoalUUID &,
-    std::shared_ptr<const mg400_msgs::action::MovJ::Goal>);
+    const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr);
   rclcpp_action::CancelResponse handle_cancel(
-    const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>>);
-  void handle_accepted(
-    const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>>);
-  void execute(
-    const std::shared_ptr<rclcpp_action::ServerGoalHandle<mg400_msgs::action::MovJ>>);
+    const std::shared_ptr<GoalHandle>);
+  void handle_accepted(const std::shared_ptr<GoalHandle>);
+  void execute(const std::shared_ptr<GoalHandle>);
 
-  void callMovJ(
-    const double, const double, const double, const double);
+  bool isGoalReached(
+    const mg400_msgs::msg::EndPose &,
+    const double = 5e-3);
 };
 }  // namespace mg400_node
 
