@@ -53,7 +53,7 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
   const std::string &);
 
 mg400_msgs::msg::EndPose getEndPose(
-  const sensor_msgs::msg::JointState &);
+  const sensor_msgs::msg::JointState &, const bool = true);
 
 Eigen::MatrixXd rotY(
   const Eigen::MatrixXd &, const double &);

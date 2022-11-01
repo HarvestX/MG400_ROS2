@@ -77,7 +77,9 @@ private:
 
   bool isGoalReached(
     const mg400_msgs::msg::EndPose &,
-    const double = 5e-3);
+    const double = 5e-3,  // 5 mm
+    const double = 1.74e-2  // 1 rad
+  );
 };
 }  // namespace mg400_node
 

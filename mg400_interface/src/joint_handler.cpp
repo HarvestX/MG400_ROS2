@@ -52,7 +52,8 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
 }
 
 mg400_msgs::msg::EndPose getEndPose(
-  const sensor_msgs::msg::JointState & joint_state)
+  const sensor_msgs::msg::JointState & joint_state,
+  const bool is_ref)
 {
   mg400_msgs::msg::EndPose msg;
   Eigen::MatrixXd pos(3, 1);
@@ -77,6 +78,13 @@ mg400_msgs::msg::EndPose getEndPose(
   msg.x = static_cast<double>(p(0, 0));
   msg.y = static_cast<double>(p(1, 0));
   msg.z = static_cast<double>(p(2, 0));
+  if (is_ref) {
+    msg.r =
+      joint_state.position[0] +
+      joint_state.position[7];
+  } else {
+    msg.r = joint_state.position[7];
+  }
 
   return msg;
 }

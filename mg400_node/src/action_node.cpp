@@ -153,15 +153,18 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
 bool ActionNode::isGoalReached(
   const mg400_msgs::msg::EndPose & goal,
-  const double tolerance)
+  const double tolerance_mm,
+  const double tolerance_rad
+)
 {
-  auto is_in_tolerance = [tolerance](
-    const double val) -> bool {
+  auto is_in_tolerance = [](
+    const double val, const double tolerance) -> bool {
       return std::abs(val) < tolerance;
     };
 
-  return is_in_tolerance(this->current_end_pose_.x - goal.x) &&
-         is_in_tolerance(this->current_end_pose_.y - goal.y) &&
-         is_in_tolerance(this->current_end_pose_.z - goal.z);
+  return is_in_tolerance(this->current_end_pose_.x - goal.x, tolerance_mm) &&
+         is_in_tolerance(this->current_end_pose_.y - goal.y, tolerance_mm) &&
+         is_in_tolerance(this->current_end_pose_.z - goal.z, tolerance_mm) &&
+         is_in_tolerance(this->current_end_pose_.r - goal.r, tolerance_rad);
 }
 }
