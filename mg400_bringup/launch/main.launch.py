@@ -1,4 +1,4 @@
-"""Launch robot controller."""
+"""Launch main system."""
 # Copyright 2022 HarvestX Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,23 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ament_index_python.packages import get_package_share_path
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.actions import Shutdown
+from launch.actions import IncludeLaunchDescription
+from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
-from launch_ros.actions import ComposableNodeContainer
 from launch_ros.actions import Node
-from launch_ros.descriptions import ComposableNode
 
 from mg400_bringup.config_loader import loader as cl
 
 
 def generate_launch_description():
     """Launch rviz display."""
+    this_package_path = get_package_share_path('mg400_bringup')
     ns_arg = DeclareLaunchArgument(
-        'namespace', default_value=TextSubstitution(text=''))
+        'namespace', default_value=TextSubstitution(text='mg400'))
     ns = LaunchConfiguration('namespace')
+    joy_arg = DeclareLaunchArgument(
+        'joy',
+        default_value='false',
+        description='Determines if joy.launch is called.')
+    joy = LaunchConfiguration('joy')
     ip_address_arg = DeclareLaunchArgument(
         'ip_address', default_value=TextSubstitution(text='192.168.1.6'))
     ip_address = LaunchConfiguration('ip_address')
@@ -40,42 +47,46 @@ def generate_launch_description():
         'can be called from the service.')
     service_level = LaunchConfiguration('service_level')
 
-    mg400_container = ComposableNodeContainer(
-        name='mg400_container',
-        namespace=ns,
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='mg400_node',
-                plugin='mg400_node::ServiceNode',
-                name='mg400_service_node',
-                namespace=ns,
-                parameters=[{
-                    'ip_address': ip_address,
-                    'service_level': service_level,
-                }]),
-            ComposableNode(
-                package='mg400_node',
-                plugin='mg400_node::ActionNode',
-                name='mg400_action_node',
-                namespace=ns,)],
-        on_exit=Shutdown())
-    rsp_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        namespace=ns,
+    mg400_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            str(this_package_path
+                / 'launch'
+                / 'mg400.launch.py')),
+        launch_arguments=[
+            ('namespace', ns),
+            ('ip_address', ip_address),
+            ('service_level', service_level),
+        ])
+
+    joy_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            str(this_package_path
+                / 'launch'
+                / 'joy.launch.py')),
+        condition=IfCondition(joy),
+        launch_arguments=[
+            ('namespace', ns)
+        ])
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
         output='log',
-        parameters=[
-            cl.load_robot_description('mg400.urdf.xacro')])
+        arguments=[
+            '-d', cl.load_rviz2('mg400.rviz'),
+            '--ros-args', '--log-level', 'error'
+        ])
 
     ld = LaunchDescription()
 
     ld.add_action(ns_arg)
+    ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
     ld.add_action(service_level_arg)
 
-    ld.add_action(mg400_container)
-    ld.add_action(rsp_node)
+    ld.add_action(mg400_node)
+    ld.add_action(joy_node)
+    ld.add_action(rviz_node)
 
     return ld

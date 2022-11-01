@@ -82,7 +82,7 @@ ros2 launch mg400_bringup display.launch
 This command will start service server to operate MG400 via ROS2 service.
 
 ```bash
-ros2 launch mg400_bringup mg400.launch
+ros2 launch mg400_bringup main.launch
 ```
 
 Available services are listed [here](./mg400_node/README.md).
@@ -93,7 +93,7 @@ Launch main system with other terminal.
 Allow enough space around the robot as it moves.
 
 ```bash
-. sample.bash
+./sample.bash
 ```
 
 ## Running Utilities
