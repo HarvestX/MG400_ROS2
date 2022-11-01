@@ -33,6 +33,11 @@ ActionNode::ActionNode(const rclcpp::NodeOptions & options)
     std::bind(&ActionNode::handle_goal, this, _1, _2),
     std::bind(&ActionNode::handle_cancel, this, _1),
     std::bind(&ActionNode::handle_accepted, this, _1));
+
+  this->rm_sub_ =
+    this->create_subscription<mg400_msgs::msg::RobotMode>(
+    "robot_mode", rclcpp::SensorDataQoS().keep_last(1),
+    std::bind(&ActionNode::onRm, this, _1));
   // End ROS Interfaces------------------------------------------
 }
 
@@ -49,21 +54,12 @@ void ActionNode::activateSub()
       "joint_states", rclcpp::SensorDataQoS().keep_last(1),
       std::bind(&ActionNode::onJs, this, _1));
   }
-  if (!this->rm_sub_) {
-    this->rm_sub_ =
-      this->create_subscription<mg400_msgs::msg::RobotMode>(
-      "robot_mode", rclcpp::SensorDataQoS().keep_last(1),
-      std::bind(&ActionNode::onRm, this, _1));
-  }
 }
 
 void ActionNode::deactivateSub()
 {
   if (this->js_sub_) {
     this->js_sub_.reset();
-  }
-  if (this->rm_sub_) {
-    this->rm_sub_.reset();
   }
 }
 
@@ -79,7 +75,7 @@ void ActionNode::onRm(const mg400_msgs::msg::RobotMode & msg)
 
 rclcpp_action::GoalResponse ActionNode::handle_goal(
   const rclcpp_action::GoalUUID &,
-  std::shared_ptr<const mg400_msgs::action::MovJ::Goal> goal)
+  ActionT::Goal::ConstSharedPtr)
 {
   using namespace std::chrono_literals;  // NOLINT
   if (!this->mov_j_client_->wait_for_service(3s)) {
@@ -89,9 +85,12 @@ rclcpp_action::GoalResponse ActionNode::handle_goal(
       this->mov_j_client_->get_service_name());
     return rclcpp_action::GoalResponse::REJECT;
   }
-  auto req = std::make_unique<mg400_msgs::srv::MovJ::Request>();
-  req->pose = goal->pose;
-  this->mov_j_client_->async_send_request(std::move(req));
+  if (this->current_robot_mode_.robot_mode != RobotMode::ENABLE) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Robot not enabled.");
+    return rclcpp_action::GoalResponse::REJECT;
+  }
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
@@ -113,11 +112,15 @@ void ActionNode::handle_accepted(
 
 void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
 {
-  rclcpp::Rate loop_rate(10);
+  rclcpp::Rate control_freq(10);
   const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
   this->activateSub();
+
+  auto req = std::make_unique<mg400_msgs::srv::MovJ::Request>();
+  req->pose = goal->pose;
+  this->mov_j_client_->async_send_request(std::move(req));
 
   while (
     this->current_robot_mode_.robot_mode == RobotMode::RUNNING ||
@@ -141,7 +144,7 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
     feedback->current_pose.pose = this->current_end_pose_;
 
     goal_handle->publish_feedback(feedback);
-    loop_rate.sleep();
+    control_freq.sleep();
   }
 
   // Check if goal is done
