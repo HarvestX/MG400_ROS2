@@ -38,7 +38,7 @@ def generate_launch_description():
     main_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             str(get_package_share_path(this_pkg_name) /
-                'launch' / 'mg400.launch.py')
+                'launch' / 'main.launch.py')
         ),
         launch_arguments=[
             ('ip_address', '127.0.0.1'),

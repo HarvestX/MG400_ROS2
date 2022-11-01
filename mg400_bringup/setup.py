@@ -11,7 +11,6 @@ setup(
     version='0.0.0',
     packages=[
         package_name,
-        '{}.config_loader'.format(package_name)
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',
