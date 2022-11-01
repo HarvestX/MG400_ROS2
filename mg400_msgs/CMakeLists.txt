@@ -10,27 +10,29 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 set(msg_files
-  "msg/RobotMode.msg")
+    "msg/RobotMode.msg"
+    "msg/EndPose.msg"
+    "msg/EndPoseStamped.msg")
 
 set(srv_files
-  "srv/AccJ.srv"
-  "srv/AccL.srv"
-  "srv/ClearError.srv"
-  "srv/DisableRobot.srv"
-  "srv/EnableRobot.srv"
-  "srv/JointMovJ.srv"
-  "srv/MoveJog.srv"
-  "srv/MovJ.srv"
-  "srv/MovL.srv"
-  "srv/ResetRobot.srv"
-  "srv/SpeedFactor.srv"
-  "srv/SpeedJ.srv"
-  "srv/SpeedL.srv"
-  "srv/Tool.srv"
-  "srv/ToolDOExecute.srv")
+    "srv/AccJ.srv"
+    "srv/AccL.srv"
+    "srv/ClearError.srv"
+    "srv/DisableRobot.srv"
+    "srv/EnableRobot.srv"
+    "srv/JointMovJ.srv"
+    "srv/MoveJog.srv"
+    "srv/MovJ.srv"
+    "srv/MovL.srv"
+    "srv/ResetRobot.srv"
+    "srv/SpeedFactor.srv"
+    "srv/SpeedJ.srv"
+    "srv/SpeedL.srv"
+    "srv/Tool.srv"
+    "srv/ToolDOExecute.srv"
+)
 
-set(action_files
-  "action/MovJ.action")
+set(action_files "action/MovJ.action")
 
 rosidl_generate_interfaces(
   ${PROJECT_NAME}

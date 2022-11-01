@@ -31,8 +31,8 @@ TEST_F(TestJointHandler, getEndPoint)
   sensor_msgs::msg::JointState js;
   js.position = {0.0, 0.0, 0.0, 0.0};
 
-  const auto actual = mg400_interface::getEndPoint(js);
-  EXPECT_DOUBLE_EQ(0.284, actual.position.x);
-  EXPECT_DOUBLE_EQ(0.0, actual.position.y);
-  EXPECT_DOUBLE_EQ(0.118, actual.position.z);
+  const auto actual = mg400_interface::getEndPose(js);
+  EXPECT_DOUBLE_EQ(0.284, actual.x);
+  EXPECT_DOUBLE_EQ(0.0, actual.y);
+  EXPECT_DOUBLE_EQ(0.118, actual.z);
 }

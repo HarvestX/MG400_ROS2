@@ -10,10 +10,11 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>ament_index_cpp</depend>
+  <depend>eigen</depend>
+  <depend>mg400_msgs</depend>
+  <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
-  <depend>nlohmann-json-dev</depend>
-  <depend>eigen</depend>
   <depend>tf2_eigen</depend>
 
   <test_depend>ament_lint_auto</test_depend>

@@ -31,7 +31,8 @@ def generate_launch_description():
     service_level_arg = DeclareLaunchArgument(
         'service_level',
         default_value='1',
-        description='Determine the command level that can be called from the service.')
+        description='Determine the command level that '
+        'can be called from the service.')
     joy = LaunchConfiguration('joy')
     service_level = LaunchConfiguration('service_level')
     main_node = IncludeLaunchDescription(
@@ -42,7 +43,8 @@ def generate_launch_description():
         launch_arguments=[
             ('ip_address', '127.0.0.1'),
             ('joy', joy),
-            ('service_level', service_level)])
+            ('service_level', service_level),
+        ])
 
     ld = LaunchDescription()
 

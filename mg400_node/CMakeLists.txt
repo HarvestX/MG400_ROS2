@@ -45,6 +45,14 @@ rclcpp_components_register_node(
 # ===================================================================
 
 # ===================================================================
+ament_auto_add_library(action_node SHARED src/action_node.cpp)
+rclcpp_components_register_node(
+  action_node
+    PLUGIN "mg400_node::ActionNode"
+    EXECUTABLE action_node_exec)
+# ===================================================================
+
+# ===================================================================
 ament_auto_add_library(joint_handler_node SHARED src/joint_handler_node.cpp)
 rclcpp_components_register_node(
   joint_handler_node
