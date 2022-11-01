@@ -15,7 +15,6 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.actions import Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
 from launch_ros.actions import ComposableNodeContainer
@@ -54,13 +53,14 @@ def generate_launch_description():
                 parameters=[{
                     'ip_address': ip_address,
                     'service_level': service_level,
-                }]),
+                }],
+                ),
             ComposableNode(
                 package='mg400_node',
                 plugin='mg400_node::ActionNode',
                 name='mg400_action_node',
-                namespace=ns,)],
-        on_exit=Shutdown())
+                namespace=ns,), ],
+        )
     rsp_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
