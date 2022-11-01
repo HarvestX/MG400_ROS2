@@ -13,11 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+from typing import Dict
+
+from ament_index_python import get_package_share_path
 from launch import LaunchDescription
 from launch.actions import Shutdown
+from launch.substitutions import Command
+from launch.substitutions import FindExecutable
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
 
-from mg400_bringup.config_loader import loader as cl
+
+def _load_robot_description(filepath: Path) -> Dict:
+    """Load robot description."""
+    if 'xacro' in filepath.suffix:
+        robot_description_content = Command(
+            [
+                PathJoinSubstitution([FindExecutable(name='xacro')]),
+                ' ',
+                str(filepath)
+            ],
+        )
+    else:
+        try:
+            with open(str(filepath), 'r') as file:
+                robot_description_content = file
+        except EnvironmentError:
+            exit(1)
+    return {'robot_description': robot_description_content}
 
 
 def generate_launch_description():
@@ -27,8 +51,9 @@ def generate_launch_description():
         executable='robot_state_publisher',
         output='log',
         parameters=[
-            cl.load_robot_description('mg400.urdf.xacro')
-        ])
+            _load_robot_description(
+                get_package_share_path('mg400_description') /
+                'urdf' / 'mg400.urdf.xacro')])
     jsp_node = Node(
         package='mg400_node',
         executable='joint_state_publisher_gui',
@@ -39,7 +64,11 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         output='log',
-        arguments=['-d', cl.load_rviz2('display.rviz')])
+        arguments=[
+            '-d', str(get_package_share_path('mg400_bringup') /
+                      'rviz' / 'display.rviz'),
+            '--ros-args', '--log-level', 'error'
+        ])
 
     ld = LaunchDescription()
     ld.add_action(rsp_node)

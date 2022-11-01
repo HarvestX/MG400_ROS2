@@ -18,10 +18,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
 from launch_ros.actions import ComposableNodeContainer
-from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
-
-from mg400_bringup.config_loader import loader as cl
 
 
 def generate_launch_description():
@@ -54,20 +51,13 @@ def generate_launch_description():
                     'ip_address': ip_address,
                     'service_level': service_level,
                 }],
-                ),
+            ),
             ComposableNode(
                 package='mg400_node',
                 plugin='mg400_node::ActionNode',
                 name='mg400_action_node',
                 namespace=ns,), ],
-        )
-    rsp_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        namespace=ns,
-        output='log',
-        parameters=[
-            cl.load_robot_description('mg400.urdf.xacro')])
+    )
 
     ld = LaunchDescription()
 
@@ -76,6 +66,5 @@ def generate_launch_description():
     ld.add_action(service_level_arg)
 
     ld.add_action(mg400_container)
-    ld.add_action(rsp_node)
 
     return ld
