@@ -45,9 +45,10 @@ public:
 
 private:
   const std::string prefix_;
+  std::mutex js_mutex_;
 
-  mg400_msgs::msg::RobotMode current_robot_mode_;
-  mg400_msgs::msg::EndPose current_end_pose_;
+  mg400_msgs::msg::RobotMode::ConstSharedPtr current_robot_mode_;
+  sensor_msgs::msg::JointState::ConstSharedPtr current_joint_state_;
 
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
     js_sub_;
@@ -65,8 +66,10 @@ public:
 private:
   void activateSub();
   void deactivateSub();
-  void onJs(const sensor_msgs::msg::JointState & msg);
-  void onRm(const mg400_msgs::msg::RobotMode & msg);
+  void onJs(const sensor_msgs::msg::JointState::ConstSharedPtr);
+  void onRm(const mg400_msgs::msg::RobotMode::ConstSharedPtr);
+
+  bool updateEndPose(mg400_msgs::msg::EndPoseStamped &);
 
   rclcpp_action::GoalResponse handle_goal(
     const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr);
@@ -76,6 +79,7 @@ private:
   void execute(const std::shared_ptr<GoalHandle>);
 
   bool isGoalReached(
+    const mg400_msgs::msg::EndPose &,
     const mg400_msgs::msg::EndPose &,
     const double = 5e-3,  // 5 mm
     const double = 1.74e-2  // 1 rad
