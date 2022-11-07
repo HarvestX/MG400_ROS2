@@ -61,16 +61,39 @@ void ActionNode::deactivateSub()
   if (this->js_sub_) {
     this->js_sub_.reset();
   }
+  if (this->current_joint_state_) {
+    this->current_joint_state_.reset();
+  }
 }
 
-void ActionNode::onJs(const sensor_msgs::msg::JointState & msg)
+void ActionNode::onJs(
+  const sensor_msgs::msg::JointState::ConstSharedPtr msg)
 {
-  this->current_end_pose_ = mg400_interface::getEndPose(msg);
+  this->js_mutex_.lock();
+  this->current_joint_state_ = msg;
+  this->js_mutex_.unlock();
 }
 
-void ActionNode::onRm(const mg400_msgs::msg::RobotMode & msg)
+void ActionNode::onRm(
+  const mg400_msgs::msg::RobotMode::ConstSharedPtr msg)
 {
   this->current_robot_mode_ = msg;
+}
+
+bool ActionNode::updateEndPose(
+  mg400_msgs::msg::EndPoseStamped & pose_stamped)
+{
+  this->js_mutex_.lock();
+  const bool ret = mg400_interface::getEndPose(
+    this->current_joint_state_, pose_stamped.pose);
+  this->js_mutex_.unlock();
+  if (ret) {
+    pose_stamped.header.frame_id =
+      this->prefix_ + "mg400_origin_link";
+    pose_stamped.header.stamp =
+      this->get_clock()->now();
+  }
+  return ret;
 }
 
 rclcpp_action::GoalResponse ActionNode::handle_goal(
@@ -85,10 +108,8 @@ rclcpp_action::GoalResponse ActionNode::handle_goal(
       this->mov_j_client_->get_service_name());
     return rclcpp_action::GoalResponse::REJECT;
   }
-  if (this->current_robot_mode_.robot_mode != RobotMode::ENABLE) {
-    RCLCPP_ERROR(
-      this->get_logger(),
-      "Robot not enabled.");
+  if (this->current_robot_mode_->robot_mode != RobotMode::ENABLE) {
+    RCLCPP_ERROR(this->get_logger(), "Robot not enabled.");
     return rclcpp_action::GoalResponse::REJECT;
   }
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -116,35 +137,26 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
-  this->activateSub();
 
   auto req = std::make_unique<mg400_msgs::srv::MovJ::Request>();
   req->pose = goal->pose;
   this->mov_j_client_->async_send_request(std::move(req));
 
-  while (
-    this->current_robot_mode_.robot_mode == RobotMode::RUNNING ||
-    !this->isGoalReached(goal->pose))
-  {
-    if (goal_handle->is_canceling() ||
-      this->current_robot_mode_.robot_mode == RobotMode::ERROR)
-    {
-      result->result = false;
-      goal_handle->canceled(result);
+  // Wait for first end_pose update
+  this->activateSub();
+  while (!this->updateEndPose(feedback->current_pose)) {}
+
+  while (!this->isGoalReached(feedback->current_pose.pose, goal->pose)) {
+    if (this->current_robot_mode_->robot_mode == RobotMode::ERROR) {
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
+      result->result = false;
+      goal_handle->abort(result);
       this->deactivateSub();
       return;
     }
-
-    // Publish feedback
-    feedback->current_pose.header.frame_id =
-      this->prefix_ + "mg400_origin_link";
-    feedback->current_pose.header.stamp =
-      this->get_clock()->now();
-    feedback->current_pose.pose = this->current_end_pose_;
-
     goal_handle->publish_feedback(feedback);
     control_freq.sleep();
+    this->updateEndPose(feedback->current_pose);
   }
 
   // Check if goal is done
@@ -155,6 +167,7 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
 }
 
 bool ActionNode::isGoalReached(
+  const mg400_msgs::msg::EndPose & pose,
   const mg400_msgs::msg::EndPose & goal,
   const double tolerance_mm,
   const double tolerance_rad
@@ -165,9 +178,9 @@ bool ActionNode::isGoalReached(
       return std::abs(val) < tolerance;
     };
 
-  return is_in_tolerance(this->current_end_pose_.x - goal.x, tolerance_mm) &&
-         is_in_tolerance(this->current_end_pose_.y - goal.y, tolerance_mm) &&
-         is_in_tolerance(this->current_end_pose_.z - goal.z, tolerance_mm) &&
-         is_in_tolerance(this->current_end_pose_.r - goal.r, tolerance_rad);
+  return is_in_tolerance(pose.x - goal.x, tolerance_mm) &&
+         is_in_tolerance(pose.y - goal.y, tolerance_mm) &&
+         is_in_tolerance(pose.z - goal.z, tolerance_mm) &&
+         is_in_tolerance(pose.r - goal.r, tolerance_rad);
 }
 }

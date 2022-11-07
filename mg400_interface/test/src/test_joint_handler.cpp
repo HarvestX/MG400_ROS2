@@ -28,11 +28,14 @@ protected:
 
 TEST_F(TestJointHandler, getEndPoint)
 {
-  sensor_msgs::msg::JointState js;
-  js.position = {0.0, 0.0, 0.0, 0.0};
+  sensor_msgs::msg::JointState::SharedPtr js;
+  js->position = {0.0, 0.0, 0.0, 0.0};
 
-  const auto actual = mg400_interface::getEndPose(js);
+  mg400_msgs::msg::EndPose actual;
+  const auto ret = mg400_interface::getEndPose(js, actual);
+  EXPECT_TRUE(ret);
   EXPECT_DOUBLE_EQ(0.284, actual.x);
   EXPECT_DOUBLE_EQ(0.0, actual.y);
   EXPECT_DOUBLE_EQ(0.118, actual.z);
+  EXPECT_DOUBLE_EQ(0.0, actual.r);
 }
