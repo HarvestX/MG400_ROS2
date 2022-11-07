@@ -73,20 +73,20 @@ bool getEndPose(
   LINK4 << 0.066, 0.0, -0.057;
 
   pos = LINK1 +
-    rotY(LINK2, joint_state->position[1]) +
-    rotY(LINK3, joint_state->position[6]) +
+    rotY(LINK2, joint_state->position.at(1)) +
+    rotY(LINK3, joint_state->position.at(6)) +
     LINK4;
-  p = rotZ(pos, joint_state->position[0]);
+  p = rotZ(pos, joint_state->position.at(0));
 
   pose.x = static_cast<double>(p(0, 0));
   pose.y = static_cast<double>(p(1, 0));
   pose.z = static_cast<double>(p(2, 0));
   if (is_ref) {
     pose.r =
-      joint_state->position[0] +
-      joint_state->position[7];
+      joint_state->position.at(0) +
+      joint_state->position.at(7);
   } else {
-    pose.r = joint_state->position[7];
+    pose.r = joint_state->position.at(7);
   }
 
   return true;
