@@ -24,9 +24,16 @@ ActionNode::ActionNode(const rclcpp::NodeOptions & options)
   prefix_(this->declare_parameter("prefix", ""))
 {
   // ROS Interfaces ---------------------------------------------
+  this->callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive, false);
+  this->callback_group_executor_.add_callback_group(
+    this->callback_group_,
+    this->get_node_base_interface());
+
   using namespace std::placeholders;  // NOLINT
   this->mov_j_client_ =
-    this->create_client<mg400_msgs::srv::MovJ>("mov_j");
+    this->create_client<mg400_msgs::srv::MovJ>(
+    "mov_j", rmw_qos_profile_default, this->callback_group_);
   this->mov_j_action_ =
     rclcpp_action::create_server<mg400_msgs::action::MovJ>(
     this, "mov_j",
@@ -96,6 +103,31 @@ bool ActionNode::updateEndPose(
   return ret;
 }
 
+bool ActionNode::callMovJ(const mg400_msgs::msg::EndPose & pose)
+{
+  if (!this->mov_j_client_->wait_for_service(1s)) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" is not ready", this->mov_j_client_->get_service_name());
+    return false;
+  }
+
+  auto req = std::make_shared<mg400_msgs::srv::MovJ::Request>();
+  req->pose = pose;
+  auto future_result = this->mov_j_client_->async_send_request(req);
+
+  if (this->callback_group_executor_.spin_until_future_complete(
+      future_result) != rclcpp::FutureReturnCode::SUCCESS)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" service client: async_send_request failed",
+      this->mov_j_client_->get_service_name());
+    return false;
+  }
+
+  return true;
+}
+
 rclcpp_action::GoalResponse ActionNode::handle_goal(
   const rclcpp_action::GoalUUID &,
   ActionT::Goal::ConstSharedPtr)
@@ -138,9 +170,23 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
 
-  auto req = std::make_unique<mg400_msgs::srv::MovJ::Request>();
-  req->pose = goal->pose;
-  this->mov_j_client_->async_send_request(std::move(req));
+  if (!this->callMovJ(goal->pose)) {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" service client: failed",
+      this->mov_j_client_->get_service_name());
+    result->result = false;
+    goal_handle->abort(result);
+    return;
+  }
+
+  const auto timeout = rclcpp::Duration(5s);
+  const auto start = this->get_clock()->now();
+
+  auto abort = [this, result, goal_handle]() -> void {
+      result->result = false;
+      goal_handle->abort(result);
+      this->deactivateSub();
+    };
 
   // Wait for first end_pose update
   this->activateSub();
@@ -149,11 +195,18 @@ void ActionNode::execute(const std::shared_ptr<GoalHandle> goal_handle)
   while (!this->isGoalReached(feedback->current_pose.pose, goal->pose)) {
     if (this->current_robot_mode_->robot_mode == RobotMode::ERROR) {
       RCLCPP_INFO(this->get_logger(), "Goal canceled");
-      result->result = false;
-      goal_handle->abort(result);
-      this->deactivateSub();
+      abort();
       return;
     }
+
+    if (this->get_clock()->now() - start > timeout) {
+      RCLCPP_ERROR(
+        this->get_logger(), "\"%s\" execution timeout",
+        this->mov_j_client_->get_service_name());
+      abort();
+      return;
+    }
+
     goal_handle->publish_feedback(feedback);
     control_freq.sleep();
     this->updateEndPose(feedback->current_pose);

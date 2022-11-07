@@ -38,6 +38,8 @@ namespace mg400_node
 using ActionT = mg400_msgs::action::MovJ;
 using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
 
+using namespace std::chrono_literals;  // NOLINT
+
 class ActionNode : public rclcpp::Node
 {
 public:
@@ -56,8 +58,10 @@ private:
     rm_sub_;
 
   rclcpp::Client<mg400_msgs::srv::MovJ>::SharedPtr mov_j_client_;
-
   rclcpp_action::Server<ActionT>::SharedPtr mov_j_action_;
+
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+  rclcpp::executors::SingleThreadedExecutor callback_group_executor_;
 
 public:
   explicit ActionNode(const rclcpp::NodeOptions &);
@@ -70,6 +74,7 @@ private:
   void onRm(const mg400_msgs::msg::RobotMode::ConstSharedPtr);
 
   bool updateEndPose(mg400_msgs::msg::EndPoseStamped &);
+  bool callMovJ(const mg400_msgs::msg::EndPose &);
 
   rclcpp_action::GoalResponse handle_goal(
     const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr);
@@ -84,6 +89,7 @@ private:
     const double = 5e-3,  // 5 mm
     const double = 1.74e-2  // 1 rad
   );
+
 };
 }  // namespace mg400_node
 
