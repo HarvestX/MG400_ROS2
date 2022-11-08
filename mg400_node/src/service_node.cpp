@@ -217,22 +217,25 @@ void ServiceNode::onErrorTimer()
     return;
   }
 
-  std::stringstream ss;
-  const auto joints_error_ids =
-    this->interface_->dashboard_commander->getErrorId();
-  for (size_t i = 0; i < joints_error_ids.size(); ++i) {
-    if (joints_error_ids.at(i).empty()) {
-      continue;
+  try {
+    std::stringstream ss;
+    const auto joints_error_ids =
+      this->interface_->dashboard_commander->getErrorId();
+    for (size_t i = 0; i < joints_error_ids.size(); ++i) {
+      if (joints_error_ids.at(i).empty()) {
+        continue;
+      }
+      ss << "Joint" << (i + 1) << ":" << std::endl;
+      for (auto error_id : joints_error_ids.at(i)) {
+        const auto message = this->interface_->error_msg_generator->get(error_id);
+        ss << "\t" << message << std::endl;
+      }
     }
-    ss << "Joint" << (i + 1) << ":" << std::endl;
-    for (auto error_id : joints_error_ids.at(i)) {
-      const auto message = this->interface_->error_msg_generator->get(error_id);
-      ss << "\t" << message << std::endl;
-    }
+    RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
+  } catch (const std::runtime_error & ex) {
+    RCLCPP_ERROR(this->get_logger(), ex.what());
   }
-  RCLCPP_ERROR(
-    this->get_logger(),
-    ss.str().c_str());
+
   this->interface_->dashboard_commander->clearError();
 }
 
