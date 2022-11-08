@@ -234,6 +234,8 @@ void ServiceNode::onErrorTimer()
     RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
   } catch (const std::runtime_error & ex) {
     RCLCPP_ERROR(this->get_logger(), ex.what());
+  } catch (const std::out_of_range & ex) {
+    RCLCPP_ERROR(this->get_logger(), "Unknown error %s", ex.what());
   }
 
   this->interface_->dashboard_commander->clearError();
