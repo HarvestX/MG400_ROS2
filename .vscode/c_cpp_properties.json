@@ -14,7 +14,9 @@
         "${workspaceFolder}/../PlayStation-Interface-ROS2/../p9n_interface/include/**",
         "${workspaceFolder}/mg400_control/include/**",
         "${workspaceFolder}/mg400_interface/include/**",
-        "${workspaceFolder}/mg400_node/include/**"
+        "${workspaceFolder}/mg400_node/include/**",
+        "${workspaceFolder}/mg400_plugin_base/include/**",
+        "${workspaceFolder}/mg400_plugin/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "clang-x64",
