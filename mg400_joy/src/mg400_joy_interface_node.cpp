@@ -13,11 +13,11 @@
 // limitations under the License.
 
 
-#include "mg400_joy/joy_interface_node.hpp"
+#include "mg400_joy/mg400_joy_interface_node.hpp"
 
 namespace mg400_joy
 {
-JoyInterfaceNode::JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
+MG400JoyInterfaceNode::MG400JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
 : Node("mg400_joy", node_options)
 {
   const std::string hw_name =
@@ -64,13 +64,13 @@ JoyInterfaceNode::JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
 
   this->joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
     "joy", rclcpp::SensorDataQoS().keep_last(1),
-    std::bind(&JoyInterfaceNode::onJoy, this, std::placeholders::_1));
+    std::bind(&MG400JoyInterfaceNode::onJoy, this, std::placeholders::_1));
 
   this->current_robot_mode_ = std::make_shared<const RobotMode>();
 }
 
 
-void JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
+void MG400JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
 {
   this->p9n_if_->setJoyMsg(joy_msg);
 
@@ -117,7 +117,7 @@ void JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr joy_msg
   }
 }
 
-bool JoyInterfaceNode::isEnabled()
+bool MG400JoyInterfaceNode::isEnabled()
 {
   if (this->current_robot_mode_->robot_mode != RobotMode::ENABLE) {
     RCLCPP_WARN(this->get_logger(), "Please enable robot. Press Start.");
@@ -127,7 +127,7 @@ bool JoyInterfaceNode::isEnabled()
   return true;
 }
 
-void JoyInterfaceNode::callResetRobot()
+void MG400JoyInterfaceNode::callResetRobot()
 {
   auto req = std::make_shared<mg400_msgs::srv::ResetRobot::Request>();
   if (!this->mg400_reset_robot_clnt_->wait_for_service(1s)) {
@@ -158,7 +158,7 @@ void JoyInterfaceNode::callResetRobot()
   }
 }
 
-void JoyInterfaceNode::callEnableRobot()
+void MG400JoyInterfaceNode::callEnableRobot()
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
     RCLCPP_WARN(
@@ -197,7 +197,7 @@ void JoyInterfaceNode::callEnableRobot()
   }
 }
 
-void JoyInterfaceNode::callDisableRobot()
+void MG400JoyInterfaceNode::callDisableRobot()
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
     RCLCPP_WARN(
@@ -236,7 +236,7 @@ void JoyInterfaceNode::callDisableRobot()
   }
 }
 
-void JoyInterfaceNode::callMoveJog(const std::string & axis_id)
+void MG400JoyInterfaceNode::callMoveJog(const std::string & axis_id)
 {
   if (!this->mg400_move_jog_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
@@ -272,7 +272,7 @@ void JoyInterfaceNode::callMoveJog(const std::string & axis_id)
   }
 }
 
-std::string JoyInterfaceNode::tiltedStick2JogAxis() const
+std::string MG400JoyInterfaceNode::tiltedStick2JogAxis() const
 {
   std::array<float, 4> tilted_values = {
     std::fabs(this->p9n_if_->tiltedStickLX()),

@@ -42,8 +42,8 @@ def generate_launch_description():
                 ),
             ComposableNode(
                     package='mg400_joy',
-                    plugin='mg400_joy::JoyInterfaceNode',
-                    name='joy_interface_node',
+                    plugin='mg400_joy::MG400JoyInterfaceNode',
+                    name='mg400_joy_interface_node',
                     namespace='mg400',
                     parameters=[{
                         'hw_type': LaunchConfiguration('hw_type'),
