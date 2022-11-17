@@ -46,6 +46,7 @@ private:
 public:
   MG400Node() = delete;
   explicit MG400Node(const rclcpp::NodeOptions &);
+  ~MG400Node();
 
 };
 }  // namespace mg400_node

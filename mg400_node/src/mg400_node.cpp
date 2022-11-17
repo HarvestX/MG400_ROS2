@@ -65,7 +65,13 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
           this->shared_from_this());
       }
     });
+}
 
+MG400Node::~MG400Node()
+{
+  if (this->interface_) {
+    this->interface_->deactivate();
+  }
 }
 
 }  // namespace mg400_node
