@@ -14,16 +14,21 @@
 
 #pragma once
 
+#include <functional>
+#include <future>
 #include <string>
 #include <memory>
+#include <type_traits>
 #include <std_msgs/msg/bool.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 
-#include <mg400_msgs/srv/reset_robot.hpp>
-#include <mg400_msgs/srv/move_jog.hpp>
-#include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
+#include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/move_jog.hpp>
+#include <mg400_msgs/srv/reset_robot.hpp>
 
 #include <mg400_interface/commander/motion_commander.hpp>
 
@@ -32,9 +37,11 @@
 
 namespace mg400_joy
 {
+using namespace std::chrono_literals; // NOLINT
 class JoyInterfaceNode : public rclcpp::Node
 {
 private:
+  using RobotMode = mg400_msgs::msg::RobotMode;
   const double TILT_THRESHOLD_ = 5e-2;
 
   p9n_interface::HW_TYPE hw_type_;
@@ -42,6 +49,9 @@ private:
   std::unique_ptr<p9n_interface::PlayStationInterface> p9n_if_;
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
+
+  rclcpp::Subscription<RobotMode>::SharedPtr rm_sub_;
+  RobotMode::ConstSharedPtr current_robot_mode_;
 
   rclcpp::Client<mg400_msgs::srv::ResetRobot>::SharedPtr
     mg400_reset_robot_clnt_;
@@ -52,35 +62,27 @@ private:
   rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedPtr
     mg400_move_jog_clnt_;
 
-  enum class ROBOT_STATE
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+  rclcpp::executors::SingleThreadedExecutor callback_group_executor_;
+
+  enum class JogMode : int64_t
   {
-    DISABLED,
-    ENABLED_JOINT,
-    MOVING_JOINT,
-    ENABLED_LINEAR,
-    MOVING_LINEAR
+    JOINT = 0,
+    LINEAR,
   };
-
-  ROBOT_STATE current_robot_state_;
-
-  enum class SERVICE_STATE
-  {
-    IN_PROGRESS,
-    DONE
-  };
-
-  SERVICE_STATE current_service_state_;
+  JogMode current_jog_mode_;
 
 public:
   explicit JoyInterfaceNode(const rclcpp::NodeOptions &);
-  void onJoy(sensor_msgs::msg::Joy::ConstSharedPtr);
 
 private:
+  void onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr);
+  bool isEnabled();
+
   void callResetRobot();
   void callEnableRobot();
   void callDisableRobot();
   void callMoveJog(const std::string &);
-  bool isStickTilted() const;
   std::string tiltedStick2JogAxis() const;
 };
 }  // namespace mg400_joy
