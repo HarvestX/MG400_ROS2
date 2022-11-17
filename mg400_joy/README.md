@@ -24,12 +24,12 @@ R1 button makes the arguments linear direction (certacian) and toggle control ea
 ### MoveJog (Joint Control)
 | Target          | Commands                     | Description                         |
 | --------------- | ---------------------------- | ----------------------------------- |
-| Left Stick ←    | `MoveJog(j1-)`               | jogging while stick tilted          |
-| Left Stick →    | `MoveJog(j1+)`               | jogging while stick tilted          |
-| Left Stick ↑    | `MoveJog(j2+)`               | jogging while stick tilted          |
-| Left Stick ↓    | `MoveJog(j2-)`               | jogging while stick tilted          |
-| Right Stick ←   | `MoveJog(j4-)`               | jogging while stick tilted          |
-| Right Stick →   | `MoveJog(j4+)`               | jogging while stick tilted          |
+| Left Stick ←    | `MoveJog(j1+)`               | jogging while stick tilted          |
+| Left Stick →    | `MoveJog(j1-)`               | jogging while stick tilted          |
+| Left Stick ↑    | `MoveJog(j2-)`               | jogging while stick tilted          |
+| Left Stick ↓    | `MoveJog(j2+)`               | jogging while stick tilted          |
+| Right Stick ←   | `MoveJog(j4+)`               | jogging while stick tilted          |
+| Right Stick →   | `MoveJog(j4-)`               | jogging while stick tilted          |
 | Right Stick ↑   | `MoveJog(j3+)`               | jogging while stick tilted          |
 | Right Stick ↓   | `MoveJog(j3-)`               | jogging while stick tilted          |
 | (Release Stick) | `MoveJog()`                  | stop jogging                        |
@@ -40,12 +40,12 @@ See the figure below.
 ### MoveJog (Linear Control)
 | Target          | Commands                     | Description                         |
 | --------------- | ---------------------------- | ----------------------------------- |
-| Left Stick ←    | `MoveJog(X-)`                | jogging while stick tilted          |
-| Left Stick →    | `MoveJog(X+)`                | jogging while stick tilted          |
-| Left Stick ↑    | `MoveJog(Y+)`                | jogging while stick tilted          |
-| Left Stick ↓    | `MoveJog(Y-)`                | jogging while stick tilted          |
-| Right Stick ←   | `MoveJog(j4-)`               | (same as joint control)             |
-| Right Stick →   | `MoveJog(j4+)`               | (same as joint control)             |
+| Left Stick ←    | `MoveJog(X+)`                | jogging while stick tilted          |
+| Left Stick →    | `MoveJog(X-)`                | jogging while stick tilted          |
+| Left Stick ↑    | `MoveJog(Y-)`                | jogging while stick tilted          |
+| Left Stick ↓    | `MoveJog(Y+)`                | jogging while stick tilted          |
+| Right Stick ←   | `MoveJog(j4+)`               | (same as joint control)             |
+| Right Stick →   | `MoveJog(j4-)`               | (same as joint control)             |
 | Right Stick ↑   | `MoveJog(Z+)`                | jogging while stick tilted          |
 | Right Stick ↓   | `MoveJog(Z-)`                | jogging while stick tilted          |
 | (Release Stick) | `MoveJog()`                  | stop jogging                        |

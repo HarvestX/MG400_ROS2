@@ -38,7 +38,7 @@
 namespace mg400_joy
 {
 using namespace std::chrono_literals; // NOLINT
-class JoyInterfaceNode : public rclcpp::Node
+class MG400JoyInterfaceNode : public rclcpp::Node
 {
 private:
   using RobotMode = mg400_msgs::msg::RobotMode;
@@ -73,7 +73,7 @@ private:
   JogMode current_jog_mode_;
 
 public:
-  explicit JoyInterfaceNode(const rclcpp::NodeOptions &);
+  explicit MG400JoyInterfaceNode(const rclcpp::NodeOptions &);
 
 private:
   void onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr);
@@ -88,4 +88,4 @@ private:
 }  // namespace mg400_joy
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(mg400_joy::JoyInterfaceNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(mg400_joy::MG400JoyInterfaceNode)
