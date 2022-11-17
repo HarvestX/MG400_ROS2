@@ -76,7 +76,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
         ros_distribution: [galactic]
-        linter: [mypy, flake8]
+        linter: [flake8]
     steps:
       - name: Work around permission issue
         run: git config --global --add safe.directory /__w/MG400_ROS2/MG400_ROS2
