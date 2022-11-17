@@ -36,6 +36,9 @@ public:
 
 class DashboardTcpInterface : public DashboardTcpInterfaceBase
 {
+public:
+  using UniquePtr = std::unique_ptr<DashboardTcpInterface>;
+
 private:
   const uint16_t PORT_ = 29999;
 

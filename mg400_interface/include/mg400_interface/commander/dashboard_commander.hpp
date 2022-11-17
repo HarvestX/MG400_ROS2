@@ -27,10 +27,13 @@
 namespace mg400_interface
 {
 
-using namespace std::chrono_literals;
+using namespace std::chrono_literals;  // NOLINT
 
 class DashboardCommander
 {
+public:
+  using SharedPtr = std::shared_ptr<DashboardCommander>;
+
 private:
   DashboardTcpInterfaceBase * tcp_if_;
   rclcpp::Clock::SharedPtr clock_;

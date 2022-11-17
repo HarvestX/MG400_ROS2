@@ -24,6 +24,9 @@ namespace mg400_interface
 {
 class MotionCommander
 {
+public:
+  using SharedPtr = std::shared_ptr<MotionCommander>;
+
 private:
   MotionTcpInterfaceBase * tcp_if_;
 
