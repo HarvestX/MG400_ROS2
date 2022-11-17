@@ -19,15 +19,13 @@ namespace mg400_plugin
 {
 
 void ClearError::configure(
-  const std::string & service_name,
-  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
-  rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services)
+  const rclcpp::Node::SharedPtr node
+)
 {
   using namespace std::placeholders;  // NOLINT
-  this->srv_ = rclcpp::create_service<ServiceT>(
-    node_base, node_services, service_name,
-    std::bind(&ClearError::onServiceCall, this, _1, _2),
-    rmw_qos_profile_services_default, nullptr);
+  this->srv_ = node->create_service<ServiceT>(
+    "clear_error",
+    std::bind(&ClearError::onServiceCall, this, _1, _2));
 }
 
 void ClearError::onServiceCall(

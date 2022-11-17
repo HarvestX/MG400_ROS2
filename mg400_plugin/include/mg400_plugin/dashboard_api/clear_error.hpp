@@ -28,10 +28,7 @@ public:
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
 
-  void configure(
-    const std::string &,
-    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
-    rclcpp::node_interfaces::NodeServicesInterface::SharedPtr) override;
+  void configure(const rclcpp::Node::SharedPtr) override;
 
 private:
   void onServiceCall(

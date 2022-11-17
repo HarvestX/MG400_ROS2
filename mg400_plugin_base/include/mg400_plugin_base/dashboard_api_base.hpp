@@ -26,9 +26,6 @@ public:
   DashboardApiBase() {}
   virtual ~DashboardApiBase() {}
 
-  virtual void configure(
-    const std::string &,
-    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
-    rclcpp::node_interfaces::NodeServicesInterface::SharedPtr) = 0;
+  virtual void configure(const rclcpp::Node::SharedPtr) = 0;
 };
 }  // namespace mg400_plugin_base

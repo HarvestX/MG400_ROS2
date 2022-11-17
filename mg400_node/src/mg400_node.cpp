@@ -20,25 +20,20 @@ namespace mg400_node
 MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 : rclcpp::Node("mg400_node", options)
 {
-  pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase> class_loader(
-    "mg400_plugin_base", "mg400_plugin_base::DashboardApiBase");
 
-  auto classes = class_loader.getDeclaredClasses();
+  using namespace std::chrono_literals;  // NOLINT
+  this->init_timer_ = this->create_wall_timer(
+    0s,
+    [&]() {
+      pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>
+      class_loader(
+        "mg400_plugin_base",
+        "mg400_plugin_base::DashboardApiBase");
 
-  auto shared_instance =
-    class_loader.createSharedInstance("mg400_plugin::ClearError");
-
-  const auto callback_group =
-    this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive, false);
-  shared_instance->configure(
-    rclcpp::extend_name_with_sub_namespace(
-      "clear_error", this->get_sub_namespace()),
-    this->get_node_base_interface(),
-    this->get_node_services_interface());
-
-  this->executor_.add_callback_group(
-    callback_group, this->get_node_base_interface());
+      auto shared_instance = class_loader.createSharedInstance(
+        "mg400_plugin::ClearError");
+      shared_instance->configure(this->shared_from_this());
+    });
 
 }
 

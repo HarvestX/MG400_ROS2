@@ -24,8 +24,7 @@ namespace mg400_node
 class MG400Node : public rclcpp::Node
 {
 private:
-  rclcpp::executors::SingleThreadedExecutor executor_;
-  rclcpp::TimerBase::SharedPtr spin_timer;
+  rclcpp::TimerBase::SharedPtr init_timer_;
 
 public:
   MG400Node() = delete;
