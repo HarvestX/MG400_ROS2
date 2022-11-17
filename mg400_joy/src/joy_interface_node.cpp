@@ -38,222 +38,238 @@ JoyInterfaceNode::JoyInterfaceNode(const rclcpp::NodeOptions & node_options)
   this->p9n_if_ =
     std::make_unique<p9n_interface::PlayStationInterface>(this->hw_type_);
 
+  this->callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive, false);
+  this->callback_group_executor_.add_callback_group(
+    this->callback_group_, this->get_node_base_interface());
+
   this->mg400_reset_robot_clnt_ =
-    this->create_client<mg400_msgs::srv::ResetRobot>("reset_robot");
+    this->create_client<mg400_msgs::srv::ResetRobot>(
+    "reset_robot", rmw_qos_profile_default, this->callback_group_);
   this->mg400_move_jog_clnt_ =
-    this->create_client<mg400_msgs::srv::MoveJog>("move_jog");
+    this->create_client<mg400_msgs::srv::MoveJog>(
+    "move_jog", rmw_qos_profile_default, this->callback_group_);
   this->mg400_enable_robot_clnt_ =
-    this->create_client<mg400_msgs::srv::EnableRobot>("enable_robot");
+    this->create_client<mg400_msgs::srv::EnableRobot>(
+    "enable_robot", rmw_qos_profile_default, this->callback_group_);
   this->mg400_disable_robot_clnt_ =
-    this->create_client<mg400_msgs::srv::DisableRobot>("disable_robot");
+    this->create_client<mg400_msgs::srv::DisableRobot>(
+    "disable_robot", rmw_qos_profile_default, this->callback_group_);
+
+  this->rm_sub_ = this->create_subscription<RobotMode>(
+    "robot_mode", rclcpp::SensorDataQoS().keep_last(1),
+    [&](const mg400_msgs::msg::RobotMode::ConstSharedPtr msg) {
+      this->current_robot_mode_ = msg;
+    });
 
   this->joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
     "joy", rclcpp::SensorDataQoS().keep_last(1),
     std::bind(&JoyInterfaceNode::onJoy, this, std::placeholders::_1));
 
-  this->current_robot_state_ = ROBOT_STATE::DISABLED;
-  this->current_service_state_ = SERVICE_STATE::DONE;
+  this->current_robot_mode_ = std::make_shared<const RobotMode>();
 }
 
-void JoyInterfaceNode::onJoy(sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
+
+void JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr joy_msg)
 {
-  if (this->current_service_state_ == SERVICE_STATE::IN_PROGRESS) {
+  this->p9n_if_->setJoyMsg(joy_msg);
+
+  if (this->p9n_if_->pressedStart()) {
+    if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
+      this->callDisableRobot();
+    } else if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
+      this->callEnableRobot();
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Please restart robot");
+    }
+    rclcpp::sleep_for(1s);
     return;
   }
 
-  this->p9n_if_->setJoyMsg(joy_msg);
-
   if (this->p9n_if_->pressedPS()) {
     this->callResetRobot();
-    using namespace std::chrono_literals;
-    rclcpp::sleep_for(500ms);
-  }
-
-  if (this->p9n_if_->pressedStart()) {
-    if (
-      this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-      this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR)
-    {
-      this->callDisableRobot();
-    } else if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
-      this->callEnableRobot();
-    }
-    using namespace std::chrono_literals;
-    rclcpp::sleep_for(500ms);
+    rclcpp::sleep_for(1s);
+    return;
   }
 
   if (this->p9n_if_->pressedR1()) {
-    if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT) {
-      this->current_robot_state_ = ROBOT_STATE::ENABLED_LINEAR;
-    } else if (this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR) {
-      this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
+    // Swap jog mode
+    if (this->current_jog_mode_ == JogMode::JOINT) {
+      this->current_jog_mode_ = JogMode::LINEAR;
+      RCLCPP_INFO(this->get_logger(), "JogMode: Linear");
+    } else {
+      this->current_jog_mode_ = JogMode::JOINT;
+      RCLCPP_INFO(this->get_logger(), "JogMode: Joint");
     }
-    using namespace std::chrono_literals;
-    rclcpp::sleep_for(500ms);
+    rclcpp::sleep_for(1s);
+    return;
   }
 
-  if (this->isStickTilted()) {
+  static bool jog_active = false;
+  if (this->p9n_if_->isTiltedStickL() || this->p9n_if_->isTiltedStickR()) {
     auto axis_id = this->tiltedStick2JogAxis();
     this->callMoveJog(axis_id);
-    if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT) {
-      this->current_robot_state_ = ROBOT_STATE::MOVING_JOINT;
-    } else if (this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR) {
-      this->current_robot_state_ = ROBOT_STATE::MOVING_LINEAR;
-    }
-  } else if (this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT) {
-    // Stop action
+    jog_active = true;
+  } else if (jog_active) {
+    // Stop jog
     this->callMoveJog("");
-    this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
-  } else if (this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR) {
-    // Stop action
-    this->callMoveJog("");
-    this->current_robot_state_ = ROBOT_STATE::ENABLED_LINEAR;
+    jog_active = false;
   }
+}
+
+bool JoyInterfaceNode::isEnabled()
+{
+  if (this->current_robot_mode_->robot_mode != RobotMode::ENABLE) {
+    RCLCPP_WARN(this->get_logger(), "Please enable robot. Press Start.");
+    rclcpp::sleep_for(1s);
+    return false;
+  }
+  return true;
 }
 
 void JoyInterfaceNode::callResetRobot()
 {
   auto req = std::make_shared<mg400_msgs::srv::ResetRobot::Request>();
-  using namespace std::chrono_literals;
-  while (!this->mg400_reset_robot_clnt_->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Interrupted while waiting for service. Exiting.");
-      return;
-    }
+  if (!this->mg400_reset_robot_clnt_->wait_for_service(1s)) {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" is not ready",
+      this->mg400_reset_robot_clnt_->get_service_name());
+    return;
   }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<mg400_msgs::srv::ResetRobot>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future) {
-      auto response = future.get();
-      this->current_service_state_ = SERVICE_STATE::DONE;
-    };
-  auto future_result =
-    this->mg400_reset_robot_clnt_->async_send_request(req, req_callback);
-  this->current_service_state_ = SERVICE_STATE::IN_PROGRESS;
+  auto future_result = this->mg400_reset_robot_clnt_->async_send_request(req);
 
-  // For compiler warning
-  (void)future_result;
+  if (this->callback_group_executor_.spin_until_future_complete(future_result) !=
+    rclcpp::FutureReturnCode::SUCCESS)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: async_send_request failed",
+      this->mg400_reset_robot_clnt_->get_service_name());
+    return;
+  }
+
+  const auto wrapped_result = future_result.get();
+  if (!wrapped_result->result) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: failed",
+      this->mg400_reset_robot_clnt_->get_service_name());
+  }
 }
 
 void JoyInterfaceNode::callEnableRobot()
 {
-  if (this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-    this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR)
-  {
-    RCLCPP_INFO(this->get_logger(), "Robot already enabled");
+  if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "robot already enabled");
+    return;
+  }
+
+  if (!this->mg400_enable_robot_clnt_->wait_for_service(1s)) {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" is not ready",
+      this->mg400_enable_robot_clnt_->get_service_name());
     return;
   }
 
   auto req = std::make_shared<mg400_msgs::srv::EnableRobot::Request>();
-  using namespace std::chrono_literals;
-  while (!this->mg400_enable_robot_clnt_->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Interrupted while waiting for service. Exiting.");
-      return;
-    }
+
+  auto future_result = this->mg400_enable_robot_clnt_->async_send_request(req);
+
+  if (this->callback_group_executor_.spin_until_future_complete(future_result) !=
+    rclcpp::FutureReturnCode::SUCCESS)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: async_send_request failed",
+      this->mg400_enable_robot_clnt_->get_service_name());
+    return;
   }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future) {
-      auto response = future.get();
-      if (response->result) {
-        this->current_robot_state_ = ROBOT_STATE::ENABLED_JOINT;
-      }
-      this->current_service_state_ = SERVICE_STATE::DONE;
-    };
-  auto future_result =
-    this->mg400_enable_robot_clnt_->async_send_request(req, req_callback);
-  this->current_service_state_ = SERVICE_STATE::IN_PROGRESS;
-
-  // For compiler warning
-  (void) future_result;
+  const auto wrapped_result = future_result.get();
+  if (!wrapped_result->result) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: failed",
+      this->mg400_enable_robot_clnt_->get_service_name());
+  }
 }
 
 void JoyInterfaceNode::callDisableRobot()
 {
-  if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
-    RCLCPP_INFO(this->get_logger(), "Robot already diabled");
+  if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "robot already disabled");
+    return;
+  }
+
+  if (!this->mg400_disable_robot_clnt_->wait_for_service(1s)) {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" is not ready",
+      this->mg400_disable_robot_clnt_->get_service_name());
     return;
   }
 
   auto req = std::make_shared<mg400_msgs::srv::DisableRobot::Request>();
-  using namespace std::chrono_literals;
-  while (!this->mg400_disable_robot_clnt_->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Interrupted while waiting for service. Exiting.");
-      return;
-    }
+
+  auto future_result = this->mg400_disable_robot_clnt_->async_send_request(req);
+
+  if (this->callback_group_executor_.spin_until_future_complete(future_result) !=
+    rclcpp::FutureReturnCode::SUCCESS)
+  {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: async_send_request failed",
+      this->mg400_disable_robot_clnt_->get_service_name());
+    return;
   }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture future) {
-      auto response = future.get();
-      if (response->result) {
-        this->current_robot_state_ = ROBOT_STATE::DISABLED;
-      }
-      this->current_service_state_ = SERVICE_STATE::DONE;
-    };
-  auto future_result =
-    this->mg400_disable_robot_clnt_->async_send_request(req, req_callback);
-  this->current_service_state_ = SERVICE_STATE::IN_PROGRESS;
-
-  // For compiler warning
-  (void)future_result;
+  const auto wrapped_result = future_result.get();
+  if (!wrapped_result->result) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: failed",
+      this->mg400_disable_robot_clnt_->get_service_name());
+  }
 }
 
 void JoyInterfaceNode::callMoveJog(const std::string & axis_id)
 {
-  if (this->current_robot_state_ == ROBOT_STATE::DISABLED) {
-    RCLCPP_INFO(this->get_logger(), "Please enable robot. Press Start.");
+  if (!this->mg400_move_jog_clnt_->wait_for_service(1s)) {
+    RCLCPP_ERROR(
+      this->get_logger(), "\"%s\" is not ready",
+      this->mg400_move_jog_clnt_->get_service_name());
+    return;
+  }
+  const auto & robot_mode = this->current_robot_mode_->robot_mode;
+  if (robot_mode != RobotMode::ENABLE &&
+    robot_mode != RobotMode::JOG &&
+    robot_mode != RobotMode::RUNNING)
+  {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Current state is not jog acceptable");
+    rclcpp::sleep_for(1s);
     return;
   }
 
   auto req = std::make_shared<mg400_msgs::srv::MoveJog::Request>();
   req->axis_id = axis_id;
-  using namespace std::chrono_literals;
-  while (!this->mg400_move_jog_clnt_->wait_for_service(1s)) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(
-        this->get_logger(),
-        "Interrupted while waiting for service. Exiting.");
-      return;
-    }
-  }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<mg400_msgs::srv::MoveJog>::SharedFuture;
-  auto req_callback = [this](ServiceResponseFuture) {
-      this->current_service_state_ = SERVICE_STATE::DONE;
-    };
-  auto future_result =
-    this->mg400_move_jog_clnt_->async_send_request(req, req_callback);
-  this->current_service_state_ = SERVICE_STATE::IN_PROGRESS;
+  auto future_result = this->mg400_move_jog_clnt_->async_send_request(req);
 
-  // For compiler warning
-  (void)future_result;
-}
-
-bool JoyInterfaceNode::isStickTilted() const
-{
-  bool res = false;
-  if (
-    std::fabs(this->p9n_if_->tiltedStickLX()) > this->TILT_THRESHOLD_ ||
-    std::fabs(this->p9n_if_->tiltedStickLY()) > this->TILT_THRESHOLD_ ||
-    std::fabs(this->p9n_if_->tiltedStickRX()) > this->TILT_THRESHOLD_ ||
-    std::fabs(this->p9n_if_->tiltedStickRY()) > this->TILT_THRESHOLD_)
+  if (this->callback_group_executor_.spin_until_future_complete(future_result) !=
+    rclcpp::FutureReturnCode::SUCCESS)
   {
-    res = true;
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "\"%s\" service client: async_send_request failed",
+      this->mg400_move_jog_clnt_->get_service_name());
+    return;
   }
-  return res;
 }
 
 std::string JoyInterfaceNode::tiltedStick2JogAxis() const
@@ -269,76 +285,58 @@ std::string JoyInterfaceNode::tiltedStick2JogAxis() const
     tilted_values.begin(),
     std::max_element(tilted_values.begin(), tilted_values.end()));
 
-  mg400_interface::JogMode mode = mg400_interface::JogMode::STOP;
+  using IfJogMode = mg400_interface::JogMode;
+  IfJogMode mode = mg400_interface::JogMode::STOP;
   switch (max_idx) {
     case 0:
       {
-        if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
-        {
-          mode = mg400_interface::JogMode::J1_NEGATIVE;
+        if (this->current_jog_mode_ == JogMode::JOINT) {
+          mode = IfJogMode::J1_POSITIVE;
           if (this->p9n_if_->tiltedStickLX() < 0.0) {
-            mode = mg400_interface::JogMode::J1_POSITIVE;
+            mode = IfJogMode::J1_NEGATIVE;
           }
-        } else if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
-        {
-          mode = mg400_interface::JogMode::X_NEGATIVE;
+        } else if (this->current_jog_mode_ == JogMode::LINEAR) {
+          mode = IfJogMode::X_POSITIVE;
           if (this->p9n_if_->tiltedStickLX() < 0.0) {
-            mode = mg400_interface::JogMode::X_POSITIVE;
+            mode = IfJogMode::X_NEGATIVE;
           }
         }
         break;
-
       }
     case 1:
       {
-        if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
-        {
-          mode = mg400_interface::JogMode::J2_NEGATIVE;
+        if (this->current_jog_mode_ == JogMode::JOINT) {
+          mode = IfJogMode::J2_POSITIVE;
           if (this->p9n_if_->tiltedStickLY() < 0.0) {
-            mode = mg400_interface::JogMode::J2_POSITIVE;
+            mode = IfJogMode::J2_NEGATIVE;
           }
-        } else if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
-        {
-          mode = mg400_interface::JogMode::Y_POSITIVE;
+        } else if (this->current_jog_mode_ == JogMode::LINEAR) {
+          mode = IfJogMode::Y_NEGATIVE;
           if (this->p9n_if_->tiltedStickLY() < 0.0) {
-            mode = mg400_interface::JogMode::Y_NEGATIVE;
+            mode = IfJogMode::Y_POSITIVE;
           }
         }
         break;
       }
     case 2:
       {
-        mode = mg400_interface::JogMode::J4_NEGATIVE;
+        mode = IfJogMode::J4_POSITIVE;
         if (this->p9n_if_->tiltedStickRX() < 0.0) {
-          mode = mg400_interface::JogMode::J4_POSITIVE;
+          mode = IfJogMode::J4_NEGATIVE;
         }
         break;
       }
     case 3:
       {
-        if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_JOINT ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_JOINT)
-        {
-          mode = mg400_interface::JogMode::J3_NEGATIVE;
+        if (this->current_jog_mode_ == JogMode::JOINT) {
+          mode = IfJogMode::J3_NEGATIVE;
           if (this->p9n_if_->tiltedStickRY() < 0.0) {
-            mode = mg400_interface::JogMode::J3_POSITIVE;
+            mode = IfJogMode::J3_POSITIVE;
           }
-        } else if (
-          this->current_robot_state_ == ROBOT_STATE::ENABLED_LINEAR ||
-          this->current_robot_state_ == ROBOT_STATE::MOVING_LINEAR)
-        {
-          mode = mg400_interface::JogMode::Z_POSITIVE;
+        } else if (this->current_jog_mode_ == JogMode::LINEAR) {
+          mode = IfJogMode::Z_POSITIVE;
           if (this->p9n_if_->tiltedStickRY() < 0.0) {
-            mode = mg400_interface::JogMode::Z_NEGATIVE;
+            mode = IfJogMode::Z_NEGATIVE;
           }
         }
         break;
