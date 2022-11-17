@@ -15,27 +15,25 @@
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
-#include <mg400_plugin_base/dashboard_api_base.hpp>
-#include <mg400_msgs/srv/clear_error.hpp>
 
-namespace mg400_plugin
+#include <mg400_plugin_base/dashboard_api_base.hpp>
+#include <pluginlib/class_loader.hpp>
+
+namespace mg400_node
 {
-class ClearError final
-  : public mg400_plugin_base::DashboardApiBase<mg400_msgs::srv::ClearError>
+class MG400Node : public rclcpp::Node
 {
 private:
-  rclcpp::Service<mg400_msgs::srv::ClearError>::SharedPtr srv_;
+  rclcpp::executors::SingleThreadedExecutor executor_;
+  rclcpp::TimerBase::SharedPtr spin_timer;
 
 public:
-  ClearError() {}
+  MG400Node() = delete;
+  explicit MG400Node(const rclcpp::NodeOptions &);
 
-private:
-  void configure(
-    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
-    rclcpp::node_interfaces::NodeServicesInterface::SharedPtr);
-
-  void onServiceCall(
-    const mg400_msgs::srv::ClearError::Request::SharedPtr,
-    mg400_msgs::srv::ClearError::Response::SharedPtr);
 };
-}  // namespace mg400_plugin
+}  // namespace mg400_node
+
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)

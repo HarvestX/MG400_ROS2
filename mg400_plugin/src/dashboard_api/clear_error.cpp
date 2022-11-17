@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_plugin/clear_error.hpp"
+#include "mg400_plugin/dashboard_api/clear_error.hpp"
 
 
 namespace mg400_plugin
 {
 
 void ClearError::configure(
+  const std::string & service_name,
   rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
   rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services)
 {
-
+  using namespace std::placeholders;  // NOLINT
   this->srv_ = rclcpp::create_service<ServiceT>(
-    node_base,
-    node_services,
-    "clear_error",
-    std::bind(
-      &ClearError::onServiceCall, this,
-      std::placeholders::_1, std::placeholders::_2),
+    node_base, node_services, service_name,
+    std::bind(&ClearError::onServiceCall, this, _1, _2),
     rmw_qos_profile_services_default, nullptr);
 }
 
 void ClearError::onServiceCall(
-  const ServiceT::Request::SharedPtr,
-  ServiceT::Response::SharedPtr
-)
+  const ServiceT::Request::SharedPtr req,
+  ServiceT::Response::SharedPtr res)
 {
 
 }
 }  // namespace mg400_plugin
+
+#include "pluginlib/class_list_macros.hpp"
+PLUGINLIB_EXPORT_CLASS(
+  mg400_plugin::ClearError,
+  mg400_plugin_base::DashboardApiBase)

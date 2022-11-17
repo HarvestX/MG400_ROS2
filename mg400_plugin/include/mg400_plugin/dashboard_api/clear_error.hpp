@@ -14,21 +14,27 @@
 
 #pragma once
 
-#include <string>
-
 #include <rclcpp/rclcpp.hpp>
+#include <mg400_plugin_base/dashboard_api_base.hpp>
+#include <mg400_msgs/srv/clear_error.hpp>
 
-namespace mg400_plugin_base
+namespace mg400_plugin
 {
-class DashboardApiBase
+class ClearError final : public mg400_plugin_base::DashboardApiBase
 {
 public:
-  DashboardApiBase() {}
-  virtual ~DashboardApiBase() {}
+  using ServiceT = mg400_msgs::srv::ClearError;
 
-  virtual void configure(
+private:
+  rclcpp::Service<ServiceT>::SharedPtr srv_;
+
+  void configure(
     const std::string &,
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
-    rclcpp::node_interfaces::NodeServicesInterface::SharedPtr) = 0;
+    rclcpp::node_interfaces::NodeServicesInterface::SharedPtr) override;
+
+private:
+  void onServiceCall(
+    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
-}  // namespace mg400_plugin_base
+}  // namespace mg400_plugin

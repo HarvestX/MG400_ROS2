@@ -15,6 +15,9 @@
   <depend>sensor_msgs</depend>
   <depend>mg400_msgs</depend>
   <depend>mg400_interface</depend>
+  <depend>mg400_plugin_base</depend>
+
+  <exec_depend>mg400_plugin</exec_depend>
 
   <build_depend>qtbase5-dev</build_depend>
   <build_depend>qt5-qmake</build_depend>
