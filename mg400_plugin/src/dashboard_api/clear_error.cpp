@@ -23,7 +23,9 @@ void ClearError::configure(
   const rclcpp::Node::SharedPtr node
 )
 {
-  this->commander_ = commander;
+  if (!this->confiture_base(commander, node)) {
+    return;
+  }
 
   using namespace std::placeholders;  // NOLINT
   this->srv_ = node->create_service<ServiceT>(
@@ -32,9 +34,19 @@ void ClearError::configure(
 }
 
 void ClearError::onServiceCall(
-  const ServiceT::Request::SharedPtr req,
+  const ServiceT::Request::SharedPtr,
   ServiceT::Response::SharedPtr res)
 {
+  try {
+    this->commander_->clearError();
+  } catch (const std::runtime_error & ex) {
+    RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+    res->result = false;
+  } catch (...) {
+    RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+    res->result = false;
+  }
+  res->result = true;
 }
 }  // namespace mg400_plugin
 

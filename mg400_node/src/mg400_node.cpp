@@ -52,6 +52,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->init_timer_ = this->create_wall_timer(
     0s,
     [&]() {
+      this->init_timer_->cancel();
+
       const auto plugins =
       this->get_parameter("plugins").as_string_array();
 

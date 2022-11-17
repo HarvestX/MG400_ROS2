@@ -29,10 +29,28 @@ public:
 
 protected:
   mg400_interface::DashboardCommander::SharedPtr commander_;
+  rclcpp::Node::SharedPtr base_node_;
 
 public:
   DashboardApiBase() {}
   virtual ~DashboardApiBase() {}
+
+  bool confiture_base(
+    const mg400_interface::DashboardCommander::SharedPtr commander,
+    const rclcpp::Node::SharedPtr node
+  )
+  {
+    if (this->base_node_) {
+      RCLCPP_WARN(
+        this->base_node_->get_logger(),
+        "Plugin already configured.");
+      return false;
+    }
+
+    this->commander_ = commander;
+    this->base_node_ = node;
+    return true;
+  }
 
   virtual void configure(
     const mg400_interface::DashboardCommander::SharedPtr,
