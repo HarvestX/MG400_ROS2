@@ -26,6 +26,9 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   RCLCPP_INFO(
     this->get_logger(), "Connecting to %s ...", ip_address.c_str());
 
+  this->declare_parameter<std::vector<std::string>>(
+    "plugins", this->default_plugins_);
+
   this->interface_ =
     std::make_unique<mg400_interface::MG400Interface>(ip_address);
 
@@ -49,9 +52,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->init_timer_ = this->create_wall_timer(
     0s,
     [&]() {
-      std::vector<std::string> plugins = {
-        "mg400_plugin::ClearError"
-      };
+      const auto plugins =
+      this->get_parameter("plugins").as_string_array();
 
       for (const auto & plugin : plugins) {
         this->dashboard_api_plugin_map_.insert(

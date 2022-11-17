@@ -16,6 +16,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -27,6 +28,10 @@ namespace mg400_node
 class MG400Node : public rclcpp::Node
 {
 private:
+  std::vector<std::string> default_plugins_ = {
+    "mg400_plugin::ClearError"
+  };
+
   std::unique_ptr<
     pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>> class_loader_;
 
