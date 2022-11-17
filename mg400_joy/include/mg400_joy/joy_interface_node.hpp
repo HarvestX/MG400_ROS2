@@ -37,7 +37,7 @@
 
 namespace mg400_joy
 {
-  using namespace std::chrono_literals; // NOLINT
+using namespace std::chrono_literals; // NOLINT
 class JoyInterfaceNode : public rclcpp::Node
 {
 private:
