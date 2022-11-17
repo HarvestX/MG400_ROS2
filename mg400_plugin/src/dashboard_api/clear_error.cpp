@@ -19,9 +19,12 @@ namespace mg400_plugin
 {
 
 void ClearError::configure(
+  const mg400_interface::DashboardCommander::SharedPtr commander,
   const rclcpp::Node::SharedPtr node
 )
 {
+  this->commander_ = commander;
+
   using namespace std::placeholders;  // NOLINT
   this->srv_ = node->create_service<ServiceT>(
     "clear_error",
@@ -32,7 +35,6 @@ void ClearError::onServiceCall(
   const ServiceT::Request::SharedPtr req,
   ServiceT::Response::SharedPtr res)
 {
-
 }
 }  // namespace mg400_plugin
 

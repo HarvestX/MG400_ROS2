@@ -21,18 +21,47 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 : rclcpp::Node("mg400_node", options)
 {
 
+  const std::string ip_address =
+    this->declare_parameter<std::string>("ip_address", "192.168.1.6");
+  RCLCPP_INFO(
+    this->get_logger(), "Connecting to %s ...", ip_address.c_str());
+
+  this->interface_ =
+    std::make_unique<mg400_interface::MG400Interface>(ip_address);
+
+  if (!this->interface_->configure()) {
+    rclcpp::shutdown();
+    return;
+  }
+
+  if (!this->interface_->activate()) {
+    rclcpp::shutdown();
+    return;
+  }
+
+  this->class_loader_ =
+    std::make_unique<
+    pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>>(
+    "mg400_plugin_base", "mg400_plugin_base::DashboardApiBase");
+
+
   using namespace std::chrono_literals;  // NOLINT
   this->init_timer_ = this->create_wall_timer(
     0s,
     [&]() {
-      pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>
-      class_loader(
-        "mg400_plugin_base",
-        "mg400_plugin_base::DashboardApiBase");
+      std::vector<std::string> plugins = {
+        "mg400_plugin::ClearError"
+      };
 
-      auto shared_instance = class_loader.createSharedInstance(
-        "mg400_plugin::ClearError");
-      shared_instance->configure(this->shared_from_this());
+      for (const auto & plugin : plugins) {
+        this->dashboard_api_plugin_map_.insert(
+          std::make_pair(
+            plugin, this->class_loader_->createSharedInstance(plugin)));
+
+        this->dashboard_api_plugin_map_.at(plugin)->configure(
+          this->interface_->dashboard_commander,
+          this->shared_from_this());
+      }
     });
 
 }

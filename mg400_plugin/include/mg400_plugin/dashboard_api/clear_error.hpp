@@ -28,7 +28,9 @@ public:
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
 
-  void configure(const rclcpp::Node::SharedPtr) override;
+  void configure(
+    const mg400_interface::DashboardCommander::SharedPtr,
+    const rclcpp::Node::SharedPtr) override;
 
 private:
   void onServiceCall(

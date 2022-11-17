@@ -14,18 +14,28 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <rclcpp/rclcpp.hpp>
+#include <mg400_interface/mg400_interface.hpp>
 
 namespace mg400_plugin_base
 {
 class DashboardApiBase
 {
 public:
+  using SharedPtr = std::shared_ptr<DashboardApiBase>;
+
+protected:
+  mg400_interface::DashboardCommander::SharedPtr commander_;
+
+public:
   DashboardApiBase() {}
   virtual ~DashboardApiBase() {}
 
-  virtual void configure(const rclcpp::Node::SharedPtr) = 0;
+  virtual void configure(
+    const mg400_interface::DashboardCommander::SharedPtr,
+    const rclcpp::Node::SharedPtr) = 0;
 };
 }  // namespace mg400_plugin_base

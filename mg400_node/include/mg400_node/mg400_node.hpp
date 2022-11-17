@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <mg400_plugin_base/dashboard_api_base.hpp>
@@ -24,7 +27,16 @@ namespace mg400_node
 class MG400Node : public rclcpp::Node
 {
 private:
+  std::unique_ptr<
+    pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>> class_loader_;
+
   rclcpp::TimerBase::SharedPtr init_timer_;
+  mg400_interface::MG400Interface::UniquePtr interface_;
+
+  std::unordered_map<
+    std::string,
+    mg400_plugin_base::DashboardApiBase::SharedPtr>
+  dashboard_api_plugin_map_;
 
 public:
   MG400Node() = delete;
