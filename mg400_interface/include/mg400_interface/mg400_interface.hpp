@@ -35,6 +35,8 @@ namespace mg400_interface
 class MG400Interface
 {
 public:
+  using UniquePtr = std::unique_ptr<MG400Interface>;
+
   DashboardCommander::SharedPtr dashboard_commander;
   MotionCommander::SharedPtr motion_commander;
   RealtimeFeedbackTcpInterface::UniquePtr realtime_tcp_interface;
