@@ -18,8 +18,9 @@
 namespace mg400_interface
 {
 RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
-  const std::string & ip)
-: current_joints_{}, rt_data_{}, is_running_(false)
+  const std::string & ip, const std::string & prefix)
+: frame_id_prefix(prefix),
+  current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }

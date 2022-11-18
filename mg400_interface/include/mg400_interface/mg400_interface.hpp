@@ -53,7 +53,7 @@ public:
   MG400Interface() = delete;
   explicit MG400Interface(const std::string &);
 
-  bool configure();
+  bool configure(const std::string & = "");
 
   bool activate();
   bool deactivate();

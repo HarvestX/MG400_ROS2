@@ -1,0 +1,7 @@
+<library path="mg400_plugin_motion_api">
+  <class
+      type="mg400_plugin::MovJ"
+      base_class_type="mg400_plugin_base::MotionApiPluginBase">
+    <description>Execute MovJ command.</description>
+  </class>
+</library>

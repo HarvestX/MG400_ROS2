@@ -31,10 +31,12 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
 
+
   this->interface_ =
     std::make_unique<mg400_interface::MG400Interface>(ip_address);
 
-  if (!this->interface_->configure()) {
+  this->declare_parameter<std::string>("prefix", "");
+  if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
     rclcpp::shutdown();
     return;
   }

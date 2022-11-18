@@ -14,8 +14,13 @@
 
 #pragma once
 
-#include <mg400_plugin_base/api_plugin_base.hpp>
+#include <memory>
+
 #include <mg400_msgs/action/mov_j.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_plugin_base/api_plugin_base.hpp>
+
+#include <rclcpp_action/rclcpp_action.hpp>
 
 namespace mg400_plugin
 {
@@ -23,6 +28,10 @@ class MovJ final : public mg400_plugin_base::MotionApiPluginBase
 {
 public:
   using ActionT = mg400_msgs::action::MovJ;
+  using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+
+private:
+  rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
 public:
   void configure(
@@ -32,5 +41,11 @@ public:
   override;
 
 private:
+  rclcpp_action::GoalResponse handle_goal(
+    const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr);
+  rclcpp_action::CancelResponse handle_cancel(
+    const std::shared_ptr<GoalHandle>);
+  void handle_accepted(const std::shared_ptr<GoalHandle>);
+  void execute(const std::shared_ptr<GoalHandle>);
 };
 }  // namespace mg400_plugin

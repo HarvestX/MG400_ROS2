@@ -22,14 +22,15 @@ MG400Interface::MG400Interface(const std::string & ip_address)
 {
 }
 
-bool MG400Interface::configure()
+bool MG400Interface::configure(const std::string & frame_id_prefix)
 {
   this->dashboard_tcp_if_ =
     std::make_unique<mg400_interface::DashboardTcpInterface>(this->IP);
   this->motion_tcp_if_ =
     std::make_unique<mg400_interface::MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface =
-    std::make_shared<mg400_interface::RealtimeFeedbackTcpInterface>(this->IP);
+    std::make_shared<mg400_interface::RealtimeFeedbackTcpInterface>(
+      this->IP, frame_id_prefix);
 
   this->error_msg_generator =
     std::make_unique<mg400_interface::ErrorMsgGenerator>(

@@ -33,6 +33,7 @@ class RealtimeFeedbackTcpInterface
 {
 public:
   using SharedPtr = std::shared_ptr<RealtimeFeedbackTcpInterface>;
+  const std::string frame_id_prefix;
 
 private:
   const uint16_t PORT_ = 30004;
@@ -46,7 +47,8 @@ private:
 
 public:
   RealtimeFeedbackTcpInterface() = delete;
-  explicit RealtimeFeedbackTcpInterface(const std::string &);
+  explicit RealtimeFeedbackTcpInterface(
+    const std::string &, const std::string & = "");
   ~RealtimeFeedbackTcpInterface();
   void init() noexcept;
 

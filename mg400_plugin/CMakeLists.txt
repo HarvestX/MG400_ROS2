@@ -10,13 +10,21 @@ add_compile_options(-std=c++17)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-file(GLOB DASHBOARD_API_SRCS ./src/dashboard_api/*.cpp)
-ament_auto_add_library(
-  mg400_dashboard_api_plugin
-  SHARED
-    ${DASHBOARD_API_SRCS})
-pluginlib_export_plugin_description_file(
-  mg400_plugin_base dashboard_api_plugins.xml)
+
+set(TARGETS
+  dashboard_api
+  motion_api)
+
+foreach(TARGET ${TARGETS})
+  file(GLOB MY_SRCS ./src/${TARGET}/*.cpp)
+  ament_auto_add_library(
+    ${PROJECT_NAME}_${TARGET}
+    SHARED
+      ${MY_SRCS})
+  pluginlib_export_plugin_description_file(
+    mg400_plugin_base ${TARGET}_plugins.xml)
+endforeach()
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

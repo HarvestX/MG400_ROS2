@@ -1,4 +1,4 @@
-<library path="mg400_dashboard_api_plugin">
+<library path="mg400_plugin_dashboard_api">
   <class
       type="mg400_plugin::ClearError"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
