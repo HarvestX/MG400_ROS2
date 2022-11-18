@@ -53,19 +53,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     0s,
     [&]() {
       this->init_timer_->cancel();
-
-      const auto plugins =
-      this->get_parameter("plugins").as_string_array();
-
-      for (const auto & plugin : plugins) {
-        this->dashboard_api_plugin_map_.insert(
-          std::make_pair(
-            plugin, this->class_loader_->createSharedInstance(plugin)));
-
-        this->dashboard_api_plugin_map_.at(plugin)->configure(
-          this->interface_->dashboard_commander,
-          this->shared_from_this());
-      }
+      this->init();
     });
 }
 
@@ -74,6 +62,28 @@ MG400Node::~MG400Node()
   if (this->interface_) {
     this->interface_->deactivate();
   }
+}
+
+void MG400Node::init()
+{
+  const auto plugins = this->get_parameter("plugins").as_string_array();
+
+  std::stringstream ss;
+  for (const auto & plugin : plugins) {
+    ss << "  " << plugin.c_str() << ": " <<
+      this->class_loader_->getClassDescription(plugin).c_str() <<
+      std::endl;
+
+    this->dashboard_api_plugin_map_.insert(
+      std::make_pair(
+        plugin, this->class_loader_->createSharedInstance(plugin)));
+
+    this->dashboard_api_plugin_map_.at(plugin)->configure(
+      this->interface_->dashboard_commander, this->shared_from_this());
+  }
+  RCLCPP_INFO(
+    this->get_logger(),
+    "Loading plugins...\n%s", ss.str().c_str());
 }
 
 }  // namespace mg400_node

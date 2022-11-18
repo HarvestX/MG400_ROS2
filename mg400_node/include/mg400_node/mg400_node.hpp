@@ -48,6 +48,8 @@ public:
   explicit MG400Node(const rclcpp::NodeOptions &);
   ~MG400Node();
 
+  void init();
+
 };
 }  // namespace mg400_node
 
