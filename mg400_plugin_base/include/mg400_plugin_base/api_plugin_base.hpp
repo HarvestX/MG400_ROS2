@@ -33,6 +33,8 @@ public:
 protected:
   typename CommanderT::SharedPtr commander_;
   rclcpp::Node::SharedPtr base_node_;
+  mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
+    realtime_tcp_interface_;
 
 public:
   ApiPluginBase() {}
@@ -40,7 +42,9 @@ public:
 
   bool confiture_base(
     const typename CommanderT::SharedPtr commander,
-    const rclcpp::Node::SharedPtr node)
+    const rclcpp::Node::SharedPtr node,
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
+    rt_if = nullptr)
   {
     if (this->base_node_) {
       RCLCPP_WARN(
@@ -51,12 +55,18 @@ public:
 
     this->commander_ = commander;
     this->base_node_ = node;
+
+    if (rt_if) {
+      this->realtime_tcp_interface_ = rt_if;
+    }
+
     return true;
   }
 
   virtual void configure(
     const typename CommanderT::SharedPtr,
-    const rclcpp::Node::SharedPtr) = 0;
+    const rclcpp::Node::SharedPtr,
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) = 0;
 };
 
 class DashboardApiPluginBase

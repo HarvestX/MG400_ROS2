@@ -61,10 +61,13 @@ public:
 
   void configure(
     typename PluginT::CommanderT::SharedPtr commander,
-    const rclcpp::Node::SharedPtr node)
+    const rclcpp::Node::SharedPtr node,
+    mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
+    rt_if = nullptr
+  )
   {
     for (const auto & it : this->plugin_map_) {
-      it.second->configure(commander, node->shared_from_this());
+      it.second->configure(commander, node->shared_from_this(), rt_if);
     }
   }
 
@@ -81,7 +84,6 @@ public:
     }
     RCLCPP_INFO(logging_interface->get_logger(), ss.str().c_str());
   }
-
 };
 
 class DashboardApiLoader

@@ -12,30 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <rclcpp/rclcpp.hpp>
-#include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/clear_error.hpp>
+#include "mg400_plugin/motion_api/mov_j.hpp"
 
 namespace mg400_plugin
 {
-class ClearError final
-  : public mg400_plugin_base::DashboardApiPluginBase
+
+void MovJ::configure(
+  const mg400_interface::MotionCommander::SharedPtr motion_commander,
+  const rclcpp::Node::SharedPtr node,
+  const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr)
 {
-public:
-  using ServiceT = mg400_msgs::srv::ClearError;
 
-private:
-  rclcpp::Service<ServiceT>::SharedPtr srv_;
+}
 
-  void configure(
-    const mg400_interface::DashboardCommander::SharedPtr,
-    const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
-
-private:
-  void onServiceCall(
-    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
-};
 }  // namespace mg400_plugin

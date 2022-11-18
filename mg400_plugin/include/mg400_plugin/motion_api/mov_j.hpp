@@ -14,28 +14,23 @@
 
 #pragma once
 
-#include <rclcpp/rclcpp.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/action/mov_j.hpp>
 
 namespace mg400_plugin
 {
-class ClearError final
-  : public mg400_plugin_base::DashboardApiPluginBase
+class MovJ final : public mg400_plugin_base::MotionApiPluginBase
 {
 public:
-  using ServiceT = mg400_msgs::srv::ClearError;
+  using ActionT = mg400_msgs::action::MovJ;
 
-private:
-  rclcpp::Service<ServiceT>::SharedPtr srv_;
-
+public:
   void configure(
-    const mg400_interface::DashboardCommander::SharedPtr,
+    const mg400_interface::MotionCommander::SharedPtr,
     const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr)
+  override;
 
 private:
-  void onServiceCall(
-    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
 }  // namespace mg400_plugin

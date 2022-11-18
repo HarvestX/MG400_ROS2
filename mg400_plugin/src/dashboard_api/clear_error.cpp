@@ -20,10 +20,11 @@ namespace mg400_plugin
 
 void ClearError::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
-  const rclcpp::Node::SharedPtr node
+  const rclcpp::Node::SharedPtr node,
+  const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr rt_if
 )
 {
-  if (!this->confiture_base(commander, node)) {
+  if (!this->confiture_base(commander, node, rt_if)) {
     return;
   }
 
