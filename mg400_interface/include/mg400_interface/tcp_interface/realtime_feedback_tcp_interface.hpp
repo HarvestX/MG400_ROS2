@@ -32,7 +32,7 @@ namespace mg400_interface
 class RealtimeFeedbackTcpInterface
 {
 public:
-  using UniquePtr = std::unique_ptr<RealtimeFeedbackTcpInterface>;
+  using SharedPtr = std::shared_ptr<RealtimeFeedbackTcpInterface>;
 
 private:
   const uint16_t PORT_ = 30004;

@@ -39,7 +39,7 @@ public:
 
   DashboardCommander::SharedPtr dashboard_commander;
   MotionCommander::SharedPtr motion_commander;
-  RealtimeFeedbackTcpInterface::UniquePtr realtime_tcp_interface;
+  RealtimeFeedbackTcpInterface::SharedPtr realtime_tcp_interface;
 
   std::unique_ptr<ErrorMsgGenerator> error_msg_generator;
 

@@ -29,7 +29,7 @@ bool MG400Interface::configure()
   this->motion_tcp_if_ =
     std::make_unique<mg400_interface::MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface =
-    std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(this->IP);
+    std::make_shared<mg400_interface::RealtimeFeedbackTcpInterface>(this->IP);
 
   this->error_msg_generator =
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
