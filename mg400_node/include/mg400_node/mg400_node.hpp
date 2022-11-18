@@ -35,9 +35,13 @@ private:
     "mg400_plugin::ClearError"
   };
 
+  std::vector<std::string> default_motion_api_plugins_ = {
+    "mg400_plugin::MovJ"
+  };
+
 
   mg400_plugin_base::DashboardApiLoader::SharedPtr
-    dashboard_api_loader_;
+  dashboard_api_loader_;
 
   mg400_plugin_base::MotionApiLoader::SharedPtr
     motion_api_loader_;

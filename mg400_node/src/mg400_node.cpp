@@ -28,6 +28,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
   this->declare_parameter<std::vector<std::string>>(
     "dashboard_api_plugins", this->default_dashboard_api_plugins_);
+  this->declare_parameter<std::vector<std::string>>(
+    "motion_api_plugins", this->default_motion_api_plugins_);
 
   this->interface_ =
     std::make_unique<mg400_interface::MG400Interface>(ip_address);
@@ -49,6 +51,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
   this->motion_api_loader_ =
     std::make_shared<mg400_plugin_base::MotionApiLoader>();
+  this->motion_api_loader_->loadPlugins(
+    this->get_parameter("motion_api_plugins").as_string_array());
 
 
   using namespace std::chrono_literals;   // NOLINT
@@ -58,6 +62,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
       this->init_timer_->cancel();
       this->init();
       this->dashboard_api_loader_->showPluginInfo(
+        this->get_node_logging_interface());
+      this->motion_api_loader_->showPluginInfo(
         this->get_node_logging_interface());
     });
 }
@@ -74,6 +80,11 @@ void MG400Node::init()
   this->dashboard_api_loader_->configure(
     this->interface_->dashboard_commander,
     this->shared_from_this());
+
+  this->motion_api_loader_->configure(
+    this->interface_->motion_commander,
+    this->shared_from_this(),
+    this->interface_->realtime_tcp_interface);
 }
 
 }  // namespace mg400_node
