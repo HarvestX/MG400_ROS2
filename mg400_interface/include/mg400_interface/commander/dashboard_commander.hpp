@@ -62,7 +62,7 @@ public:
   void tool(const ToolIndex &) const;
   void tool(const int) const;
 
-  RobotMode robotMode() const;
+  uint64_t robotMode() const;
 
   void payload(const double, const double) const;
 

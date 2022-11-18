@@ -37,7 +37,7 @@ public:
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
     const si_m, const si_m, const si_m,
-    const si_rad, const si_rad, const si_rad);
+    const si_rad, const si_rad = 0.0, const si_rad = 0.0);
 
   void movL(
     const si_m, const si_m, const si_m,

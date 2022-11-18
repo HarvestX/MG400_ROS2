@@ -18,7 +18,7 @@
 #include <string>
 #include <memory>
 
-
+#include <mg400_msgs/msg/end_pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
@@ -38,7 +38,7 @@ private:
   const uint16_t PORT_ = 30004;
 
   std::mutex mutex_;
-  std::array<double, 6> current_joints_;
+  std::array<double, 4> current_joints_;
   RealTimeData rt_data_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
@@ -53,9 +53,12 @@ public:
   static rclcpp::Logger getLogger();
   bool isConnected();
 
-  void getCurrentJointStates(std::array<double, 6> &);
+  void getCurrentJointStates(std::array<double, 4> &);
+  void getCurrentEndPose(
+    mg400_msgs::msg::EndPose &, const bool && = true);
   RealTimeData getRealtimeData();
-  RobotMode getRobotMode();
+  uint64_t getRobotMode();
+  bool isRobotMode(const uint64_t &) const;
   void disConnect();
 
 private:

@@ -83,7 +83,7 @@ void DashboardCommander::tool(const int index) const
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-RobotMode DashboardCommander::robotMode() const
+uint64_t DashboardCommander::robotMode() const
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -91,7 +91,7 @@ RobotMode DashboardCommander::robotMode() const
   if (!response.result) {
     throw std::runtime_error("Dobot not return 0");
   }
-  return static_cast<RobotMode>(ResponseParser::takeInt(response.ret_val));
+  return static_cast<uint64_t>(ResponseParser::takeInt(response.ret_val));
 }
 
 void DashboardCommander::payload(

@@ -32,7 +32,7 @@ TEST_F(TestJointHandler, getEndPoint)
   js->position = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
   mg400_msgs::msg::EndPose actual;
-  const auto ret = mg400_interface::getEndPose(js, actual);
+  const auto ret = mg400_interface::JointHandler::getEndPose(js, actual);
   ASSERT_TRUE(ret);
   EXPECT_DOUBLE_EQ(0.284, actual.x);
   EXPECT_DOUBLE_EQ(0.0, actual.y);

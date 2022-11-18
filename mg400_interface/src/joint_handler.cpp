@@ -18,8 +18,9 @@
 namespace mg400_interface
 {
 
-std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
-  const double & j1, const double & j2, const double & j3, const double & j4,
+sensor_msgs::msg::JointState::UniquePtr
+JointHandler::getJointState(
+  const std::array<double, 4> & joint_states,
   const std::string & prefix)
 {
   auto msg = std::make_unique<sensor_msgs::msg::JointState>();
@@ -38,27 +39,32 @@ std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
   };
 
   msg->position = {
-    j1,       // j1
-    j2,       // j2_1
-    j2,       // j2_2
-    j3 - j2,  // j3_1
-    -j2,      // j3_2
-    -j3,      // j4_1
-    j3,       // j4_2
-    j4        // j5
+    joint_states[0],                    // j1
+    joint_states[1],                    // j2_1
+    joint_states[1],                    // j2_2
+    joint_states[2] - joint_states[1],  // j3_1
+    -joint_states[1],                   // j3_2
+    -joint_states[2],                   // j4_1
+    joint_states[2],                    // j4_2
+    joint_states[3]                     // j5
   };
 
   return msg;
 }
 
-bool getEndPose(
-  const sensor_msgs::msg::JointState::ConstSharedPtr joint_state,
-  mg400_msgs::msg::EndPose & pose, const bool is_ref)
+sensor_msgs::msg::JointState::UniquePtr
+JointHandler::getJointState(
+  const double & j1, const double & j2, const double & j3, const double & j4,
+  const std::string & prefix)
 {
-  if (!joint_state) {
-    return false;
-  }
+  return JointHandler::getJointState({j1, j2, j3, j4}, prefix);
+}
 
+bool JointHandler::getEndPose(
+  const std::array<double, 4> & joints,
+  mg400_msgs::msg::EndPose & pose,
+  const bool && is_ref)
+{
   Eigen::MatrixXd pos(3, 1);
   Eigen::MatrixXd p(3, 1);
 
@@ -73,27 +79,46 @@ bool getEndPose(
   LINK4 << 0.066, 0.0, -0.057;
 
   pos = LINK1 +
-    rotY(LINK2, joint_state->position.at(1)) +
-    rotY(LINK3, joint_state->position.at(6)) +
+    rotY(LINK2, joints.at(1)) +
+    rotY(LINK3, joints.at(2)) +
     LINK4;
-  p = rotZ(pos, joint_state->position.at(0));
+  p = rotZ(pos, joints.at(0));
 
   pose.x = static_cast<double>(p(0, 0));
   pose.y = static_cast<double>(p(1, 0));
   pose.z = static_cast<double>(p(2, 0));
   if (is_ref) {
     pose.r =
-      joint_state->position.at(0) +
-      joint_state->position.at(7);
+      joints.at(0) + joints.at(3);
   } else {
-    pose.r = joint_state->position.at(7);
+    pose.r = joints.at(3);
   }
 
   return true;
 }
 
+bool JointHandler::getEndPose(
+  const sensor_msgs::msg::JointState::ConstSharedPtr joint_state,
+  mg400_msgs::msg::EndPose & pose, const bool && is_ref)
+{
+  if (!joint_state) {
+    return false;
+  }
 
-Eigen::MatrixXd rotY(
+  if (joint_state->position.size() != 8) {
+    return false;
+  }
+
+  return JointHandler::getEndPose(
+    {joint_state->position.at(0),
+      joint_state->position.at(1),
+      joint_state->position.at(6),
+      joint_state->position.at(7)},
+    pose, std::forward<const bool>(is_ref));
+}
+
+
+Eigen::MatrixXd JointHandler::rotY(
   const Eigen::MatrixXd & vec, const double & angle)
 {
   Eigen::Matrix3d rot_mat;
@@ -108,7 +133,7 @@ Eigen::MatrixXd rotY(
   return rot_mat * vec;
 }
 
-Eigen::MatrixXd rotZ(
+Eigen::MatrixXd JointHandler::rotZ(
   const Eigen::MatrixXd & vec, const double & angle)
 {
   Eigen::Matrix3d rot_mat;

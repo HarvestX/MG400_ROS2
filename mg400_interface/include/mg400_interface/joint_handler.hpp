@@ -48,17 +48,31 @@ constexpr double J3_MAX = 90.0 * TO_RADIAN;
 constexpr double J4_MIN = -180.0 * TO_RADIAN;
 constexpr double J4_MAX = 180.0 * TO_RADIAN;
 
-std::unique_ptr<sensor_msgs::msg::JointState> getJointState(
-  const double &, const double &, const double &, const double &,
-  const std::string &);
+class JointHandler
+{
+public:
+  static sensor_msgs::msg::JointState::UniquePtr getJointState(
+    const std::array<double, 4> &,
+    const std::string &);
 
-bool getEndPose(
-  const sensor_msgs::msg::JointState::ConstSharedPtr,
-  mg400_msgs::msg::EndPose &, const bool = true);
+  static sensor_msgs::msg::JointState::UniquePtr getJointState(
+    const double &, const double &, const double &, const double &,
+    const std::string &);
 
-Eigen::MatrixXd rotY(
-  const Eigen::MatrixXd &, const double &);
 
-Eigen::MatrixXd rotZ(
-  const Eigen::MatrixXd &, const double &);
+  static bool getEndPose(
+    const std::array<double, 4> &,
+    mg400_msgs::msg::EndPose &, const bool && = true);
+
+  static bool getEndPose(
+    const sensor_msgs::msg::JointState::ConstSharedPtr,
+    mg400_msgs::msg::EndPose &, const bool && = true);
+
+private:
+  static Eigen::MatrixXd rotY(
+    const Eigen::MatrixXd &, const double &);
+
+  static Eigen::MatrixXd rotZ(
+    const Eigen::MatrixXd &, const double &);
+};
 }  // namespace mg400_interface

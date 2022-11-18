@@ -14,6 +14,7 @@
 
 #include <gmock/gmock.h>
 #include <mg400_interface/commander/dashboard_commander.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 
 using ::testing::_;
 using ::testing::StrEq;
@@ -135,7 +136,9 @@ TEST_F(TestDashboardCommander, RobotMode) {
     mock, recvResponse()).WillOnce(
     Return("0,{5},RobotMode();"));
 
-  ASSERT_EQ(commander->robotMode(), mg400_interface::RobotMode::ENABLE);
+  ASSERT_EQ(
+    commander->robotMode(),
+    mg400_msgs::msg::RobotMode::ENABLE);
 }
 
 TEST_F(TestDashboardCommander, PayLoad) {
