@@ -91,7 +91,7 @@ bool ActionNode::updateEndPose(
   mg400_msgs::msg::EndPoseStamped & pose_stamped)
 {
   this->js_mutex_.lock();
-  const bool ret = mg400_interface::getEndPose(
+  const bool ret = mg400_interface::JointHandler::getEndPose(
     this->current_joint_state_, pose_stamped.pose);
   this->js_mutex_.unlock();
   if (ret) {

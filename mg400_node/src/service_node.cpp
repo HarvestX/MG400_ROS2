@@ -190,13 +190,12 @@ ServiceNode::~ServiceNode()
 
 void ServiceNode::onJsTimer()
 {
-  std::array<double, 6> joint_states;
+  std::array<double, 4> joint_states;
   this->interface_->realtime_tcp_interface->getCurrentJointStates(joint_states);
 
   this->joint_state_pub_->publish(
-    mg400_interface::getJointState(
-      joint_states[0], joint_states[1], joint_states[2], joint_states[3],
-      this->prefix_));
+    mg400_interface::JointHandler::getJointState(
+      joint_states, this->prefix_));
 }
 
 void ServiceNode::onRmTimer()
@@ -212,7 +211,7 @@ void ServiceNode::onRmTimer()
 void ServiceNode::onErrorTimer()
 {
   if (this->interface_->realtime_tcp_interface->getRobotMode() !=
-    mg400_interface::RobotMode::ERROR)
+    mg400_msgs::msg::RobotMode::ERROR)
   {
     return;
   }

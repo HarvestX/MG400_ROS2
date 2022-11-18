@@ -17,16 +17,14 @@
 #include <memory>
 #include <string>
 
+#include <mg400_interface/command_utils.hpp>
+#include <mg400_interface/joint_handler.hpp>
+#include <mg400_interface/mg400_interface.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/joint_mov_j.hpp>
-
-#include <mg400_interface/command_utils.hpp>
-#include <mg400_interface/mg400_interface.hpp>
-
-#include <mg400_interface/joint_handler.hpp>
-
-#include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 namespace mg400_node
 {
