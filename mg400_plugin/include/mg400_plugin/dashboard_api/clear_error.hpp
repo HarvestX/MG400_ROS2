@@ -15,12 +15,13 @@
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
-#include <mg400_plugin_base/dashboard_api_base.hpp>
+#include <mg400_plugin_base/api_plugin_base.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
 
 namespace mg400_plugin
 {
-class ClearError final : public mg400_plugin_base::DashboardApiBase
+class ClearError final
+  : public mg400_plugin_base::DashboardApiPluginBase
 {
 public:
   using ServiceT = mg400_msgs::srv::ClearError;

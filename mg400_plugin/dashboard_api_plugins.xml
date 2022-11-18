@@ -1,7 +1,7 @@
 <library path="mg400_dashboard_api_plugin">
   <class
       type="mg400_plugin::ClearError"
-      base_class_type="mg400_plugin_base::DashboardApiBase">
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Clear error.</description>
   </class>
 </library>

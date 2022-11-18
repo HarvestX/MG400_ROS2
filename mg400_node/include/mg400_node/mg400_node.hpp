@@ -17,10 +17,13 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <mg400_plugin_base/dashboard_api_base.hpp>
+#include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_plugin_base/api_loader_base.hpp>
+
 #include <pluginlib/class_loader.hpp>
 
 namespace mg400_node
@@ -28,20 +31,19 @@ namespace mg400_node
 class MG400Node : public rclcpp::Node
 {
 private:
-  std::vector<std::string> default_plugins_ = {
+  std::vector<std::string> default_dashboard_api_plugins_ = {
     "mg400_plugin::ClearError"
   };
 
-  std::unique_ptr<
-    pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>> class_loader_;
+
+  mg400_plugin_base::DashboardApiLoader::SharedPtr
+    dashboard_api_loader_;
+
+  mg400_plugin_base::MotionApiLoader::SharedPtr
+    motion_api_loader_;
 
   rclcpp::TimerBase::SharedPtr init_timer_;
   mg400_interface::MG400Interface::UniquePtr interface_;
-
-  std::unordered_map<
-    std::string,
-    mg400_plugin_base::DashboardApiBase::SharedPtr>
-  dashboard_api_plugin_map_;
 
 public:
   MG400Node() = delete;

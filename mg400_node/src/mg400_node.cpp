@@ -27,7 +27,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     this->get_logger(), "Connecting to %s ...", ip_address.c_str());
 
   this->declare_parameter<std::vector<std::string>>(
-    "plugins", this->default_plugins_);
+    "dashboard_api_plugins", this->default_dashboard_api_plugins_);
 
   this->interface_ =
     std::make_unique<mg400_interface::MG400Interface>(ip_address);
@@ -42,18 +42,23 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     return;
   }
 
-  this->class_loader_ =
-    std::make_unique<
-    pluginlib::ClassLoader<mg400_plugin_base::DashboardApiBase>>(
-    "mg400_plugin_base", "mg400_plugin_base::DashboardApiBase");
+  this->dashboard_api_loader_ =
+    std::make_shared<mg400_plugin_base::DashboardApiLoader>();
+  this->dashboard_api_loader_->loadPlugins(
+    this->get_parameter("dashboard_api_plugins").as_string_array());
+
+  this->motion_api_loader_ =
+    std::make_shared<mg400_plugin_base::MotionApiLoader>();
 
 
-  using namespace std::chrono_literals;  // NOLINT
+  using namespace std::chrono_literals;   // NOLINT
   this->init_timer_ = this->create_wall_timer(
     0s,
     [&]() {
       this->init_timer_->cancel();
       this->init();
+      this->dashboard_api_loader_->showPluginInfo(
+        this->get_node_logging_interface());
     });
 }
 
@@ -66,24 +71,9 @@ MG400Node::~MG400Node()
 
 void MG400Node::init()
 {
-  const auto plugins = this->get_parameter("plugins").as_string_array();
-
-  std::stringstream ss;
-  for (const auto & plugin : plugins) {
-    ss << "  " << plugin.c_str() << ": " <<
-      this->class_loader_->getClassDescription(plugin).c_str() <<
-      std::endl;
-
-    this->dashboard_api_plugin_map_.insert(
-      std::make_pair(
-        plugin, this->class_loader_->createSharedInstance(plugin)));
-
-    this->dashboard_api_plugin_map_.at(plugin)->configure(
-      this->interface_->dashboard_commander, this->shared_from_this());
-  }
-  RCLCPP_INFO(
-    this->get_logger(),
-    "Loading plugins...\n%s", ss.str().c_str());
+  this->dashboard_api_loader_->configure(
+    this->interface_->dashboard_commander,
+    this->shared_from_this());
 }
 
 }  // namespace mg400_node

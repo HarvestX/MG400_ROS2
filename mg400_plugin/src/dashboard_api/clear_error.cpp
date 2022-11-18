@@ -53,4 +53,4 @@ void ClearError::onServiceCall(
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(
   mg400_plugin::ClearError,
-  mg400_plugin_base::DashboardApiBase)
+  mg400_plugin_base::DashboardApiPluginBase)

@@ -22,23 +22,25 @@
 
 namespace mg400_plugin_base
 {
-class DashboardApiBase
+
+template<typename CommanderType>
+class ApiPluginBase
 {
 public:
-  using SharedPtr = std::shared_ptr<DashboardApiBase>;
+  typedef CommanderType CommanderT;
+  using SharedPtr = std::shared_ptr<ApiPluginBase<CommanderT>>;
 
 protected:
-  mg400_interface::DashboardCommander::SharedPtr commander_;
+  typename CommanderT::SharedPtr commander_;
   rclcpp::Node::SharedPtr base_node_;
 
 public:
-  DashboardApiBase() {}
-  virtual ~DashboardApiBase() {}
+  ApiPluginBase() {}
+  virtual ~ApiPluginBase() {}
 
   bool confiture_base(
-    const mg400_interface::DashboardCommander::SharedPtr commander,
-    const rclcpp::Node::SharedPtr node
-  )
+    const typename CommanderT::SharedPtr commander,
+    const rclcpp::Node::SharedPtr node)
   {
     if (this->base_node_) {
       RCLCPP_WARN(
@@ -53,7 +55,17 @@ public:
   }
 
   virtual void configure(
-    const mg400_interface::DashboardCommander::SharedPtr,
+    const typename CommanderT::SharedPtr,
     const rclcpp::Node::SharedPtr) = 0;
+};
+
+class DashboardApiPluginBase
+  : public ApiPluginBase<mg400_interface::DashboardCommander>
+{
+};
+
+class MotionApiPluginBase
+  : public ApiPluginBase<mg400_interface::MotionCommander>
+{
 };
 }  // namespace mg400_plugin_base
