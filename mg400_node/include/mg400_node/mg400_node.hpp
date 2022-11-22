@@ -41,7 +41,7 @@ private:
 
 
   mg400_plugin_base::DashboardApiLoader::SharedPtr
-  dashboard_api_loader_;
+    dashboard_api_loader_;
 
   mg400_plugin_base::MotionApiLoader::SharedPtr
     motion_api_loader_;
