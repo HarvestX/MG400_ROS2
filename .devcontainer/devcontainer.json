@@ -1,9 +1,0 @@
-{
-  "context": "../",
-  "dockerFile": "Dockerfile",
-  // This will launch the container as a non-root user
-  "remoteUser": "root",
-  // These are the extensions I like to use with ROS2
-  "extensions": [
-  ]
-}
