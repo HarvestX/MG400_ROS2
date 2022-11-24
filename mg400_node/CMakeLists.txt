@@ -37,30 +37,6 @@ set_property(TARGET joint_command_publisher_gui PROPERTY AUTORCC ON)
 # End Joint State Publisher GUI =====================================
 
 # ===================================================================
-ament_auto_add_library(service_node SHARED src/service_node.cpp)
-rclcpp_components_register_node(
-  service_node
-    PLUGIN "mg400_node::ServiceNode"
-    EXECUTABLE service_node_exec)
-# ===================================================================
-
-# ===================================================================
-ament_auto_add_library(action_node SHARED src/action_node.cpp)
-rclcpp_components_register_node(
-  action_node
-    PLUGIN "mg400_node::ActionNode"
-    EXECUTABLE action_node_exec)
-# ===================================================================
-
-# ===================================================================
-ament_auto_add_library(joint_handler_node SHARED src/joint_handler_node.cpp)
-rclcpp_components_register_node(
-  joint_handler_node
-    PLUGIN "mg400_node::JointHandlerNode"
-    EXECUTABLE joint_handler_node_exec)
-# ===================================================================
-
-# ===================================================================
 set(TARGET mg400_node)
 ament_auto_add_library(${TARGET} SHARED ./src/${TARGET}.cpp)
 rclcpp_components_register_node(
