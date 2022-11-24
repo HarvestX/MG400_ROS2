@@ -2,6 +2,11 @@
   <class
       type="mg400_plugin::MovJ"
       base_class_type="mg400_plugin_base::MotionApiPluginBase">
-    <description>Execute MovJ command.</description>
+    <description>Execute MovJ</description>
+  </class>
+  <class
+      type="mg400_plugin::MoveJog"
+      base_class_type="mg400_plugin_base::MotionApiPluginBase">
+    <description>Execute MoveJog</description>
   </class>
 </library>

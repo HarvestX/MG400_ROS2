@@ -136,15 +136,15 @@ void MotionCommander::arc(
 }
 */
 
-void MotionCommander::moveJog(const JogMode & axis_id)
+void MotionCommander::moveJog(const mg400_msgs::msg::MoveJog::SharedPtr & msg)
 {
-  this->moveJog(getAxisIdStr(axis_id));
+  this->moveJog(msg->jog_mode);
 }
 
-void MotionCommander::moveJog(const std::string & axis_id)
+void MotionCommander::moveJog(const std::string & jog_mode)
 {
   char buf[100];
-  snprintf(buf, sizeof(buf), "MoveJog(%s)", axis_id.c_str());
+  snprintf(buf, sizeof(buf), "MoveJog(%s)", jog_mode.c_str());
   this->tcp_if_->sendCommand(buf);
 }
 

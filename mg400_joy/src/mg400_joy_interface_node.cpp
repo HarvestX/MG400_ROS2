@@ -106,10 +106,12 @@ void MG400JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr jo
   }
 
   static bool jog_active = false;
+  static std::string jog_mode = mg400_msgs::msg::MoveJog::STOP;
   if (this->p9n_if_->isTiltedStickL() || this->p9n_if_->isTiltedStickR()) {
-    auto axis_id = this->tiltedStick2JogAxis();
-    this->callMoveJog(axis_id);
-    jog_active = true;
+    if (this->tiltedStick2JogAxis(jog_mode)) {
+      this->callMoveJog(jog_mode);
+      jog_active = true;
+    }
   } else if (jog_active) {
     // Stop jog
     this->callMoveJog("");
@@ -236,7 +238,7 @@ void MG400JoyInterfaceNode::callDisableRobot()
   }
 }
 
-void MG400JoyInterfaceNode::callMoveJog(const std::string & axis_id)
+void MG400JoyInterfaceNode::callMoveJog(const std::string & jog_mode)
 {
   if (!this->mg400_move_jog_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
@@ -257,7 +259,7 @@ void MG400JoyInterfaceNode::callMoveJog(const std::string & axis_id)
   }
 
   auto req = std::make_shared<mg400_msgs::srv::MoveJog::Request>();
-  req->axis_id = axis_id;
+  req->jog.jog_mode = jog_mode;
 
   auto future_result = this->mg400_move_jog_clnt_->async_send_request(req);
 
@@ -272,7 +274,7 @@ void MG400JoyInterfaceNode::callMoveJog(const std::string & axis_id)
   }
 }
 
-std::string MG400JoyInterfaceNode::tiltedStick2JogAxis() const
+bool MG400JoyInterfaceNode::tiltedStick2JogAxis(std::string & jog_mode) const
 {
   std::array<float, 4> tilted_values = {
     std::fabs(this->p9n_if_->tiltedStickLX()),
@@ -285,20 +287,19 @@ std::string MG400JoyInterfaceNode::tiltedStick2JogAxis() const
     tilted_values.begin(),
     std::max_element(tilted_values.begin(), tilted_values.end()));
 
-  using IfJogMode = mg400_interface::JogMode;
-  IfJogMode mode = mg400_interface::JogMode::STOP;
+  using MoveJog = mg400_msgs::msg::MoveJog;
   switch (max_idx) {
     case 0:
       {
         if (this->current_jog_mode_ == JogMode::JOINT) {
-          mode = IfJogMode::J1_POSITIVE;
+          jog_mode = MoveJog::J1_POSITIVE;
           if (this->p9n_if_->tiltedStickLX() < 0.0) {
-            mode = IfJogMode::J1_NEGATIVE;
+            jog_mode = MoveJog::J1_NEGATIVE;
           }
         } else if (this->current_jog_mode_ == JogMode::LINEAR) {
-          mode = IfJogMode::X_POSITIVE;
+          jog_mode = MoveJog::X_POSITIVE;
           if (this->p9n_if_->tiltedStickLX() < 0.0) {
-            mode = IfJogMode::X_NEGATIVE;
+            jog_mode = MoveJog::X_NEGATIVE;
           }
         }
         break;
@@ -306,44 +307,44 @@ std::string MG400JoyInterfaceNode::tiltedStick2JogAxis() const
     case 1:
       {
         if (this->current_jog_mode_ == JogMode::JOINT) {
-          mode = IfJogMode::J2_POSITIVE;
+          jog_mode = MoveJog::J2_POSITIVE;
           if (this->p9n_if_->tiltedStickLY() < 0.0) {
-            mode = IfJogMode::J2_NEGATIVE;
+            jog_mode = MoveJog::J2_NEGATIVE;
           }
         } else if (this->current_jog_mode_ == JogMode::LINEAR) {
-          mode = IfJogMode::Y_NEGATIVE;
+          jog_mode = MoveJog::Y_NEGATIVE;
           if (this->p9n_if_->tiltedStickLY() < 0.0) {
-            mode = IfJogMode::Y_POSITIVE;
+            jog_mode = MoveJog::Y_POSITIVE;
           }
         }
         break;
       }
     case 2:
       {
-        mode = IfJogMode::J4_POSITIVE;
+        jog_mode = MoveJog::J4_POSITIVE;
         if (this->p9n_if_->tiltedStickRX() < 0.0) {
-          mode = IfJogMode::J4_NEGATIVE;
+          jog_mode = MoveJog::J4_NEGATIVE;
         }
         break;
       }
     case 3:
       {
         if (this->current_jog_mode_ == JogMode::JOINT) {
-          mode = IfJogMode::J3_NEGATIVE;
+          jog_mode = MoveJog::J3_NEGATIVE;
           if (this->p9n_if_->tiltedStickRY() < 0.0) {
-            mode = IfJogMode::J3_POSITIVE;
+            jog_mode = MoveJog::J3_POSITIVE;
           }
         } else if (this->current_jog_mode_ == JogMode::LINEAR) {
-          mode = IfJogMode::Z_POSITIVE;
+          jog_mode = MoveJog::Z_POSITIVE;
           if (this->p9n_if_->tiltedStickRY() < 0.0) {
-            mode = IfJogMode::Z_NEGATIVE;
+            jog_mode = MoveJog::Z_NEGATIVE;
           }
         }
         break;
       }
     default:
-      break;
+      return false;
   }
-  return mg400_interface::getAxisIdStr(mode);
+  return true;
 }
 }  // namespace mg400_joy

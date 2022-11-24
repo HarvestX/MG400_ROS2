@@ -14,35 +14,29 @@
 
 #pragma once
 
-#include <mg400_msgs/action/mov_j.hpp>
-#include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
+#include <mg400_msgs/srv/move_jog.hpp>
+
 
 namespace mg400_plugin
 {
-class MovJ final : public mg400_plugin_base::MotionApiPluginBase
+
+class MoveJog final : public mg400_plugin_base::MotionApiPluginBase
 {
 public:
-  using ActionT = mg400_msgs::action::MovJ;
-  using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+  using ServiceT = mg400_msgs::srv::MoveJog;
 
 private:
-  rclcpp_action::Server<ActionT>::SharedPtr action_server_;
+  rclcpp::Service<ServiceT>::SharedPtr srv_;
 
 public:
   void configure(
     const mg400_interface::MotionCommander::SharedPtr,
     const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr)
-  override;
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
 
 private:
-  rclcpp_action::GoalResponse handle_goal(
-    const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr);
-  rclcpp_action::CancelResponse handle_cancel(
-    const std::shared_ptr<GoalHandle>);
-  void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>);
+  void onServiceCall(
+    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
 }  // namespace mg400_plugin

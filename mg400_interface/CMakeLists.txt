@@ -13,7 +13,6 @@ set(TARGET ${PROJECT_NAME})
 ament_auto_add_library(
   ${TARGET}
     STATIC
-      ./src/command_utils/move_jog.cpp
       ./src/commander/dashboard_commander.cpp
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp

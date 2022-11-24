@@ -17,6 +17,8 @@
 #include <memory>
 #include <string>
 
+#include <mg400_msgs/msg/move_jog.hpp>
+
 #include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 
@@ -72,10 +74,8 @@ public:
     const si_m, const si_m, const si_m,
     const si_rad, const si_rad, const si_rad);
 */
-
-  void moveJog(const JogMode &);
+  void moveJog(const mg400_msgs::msg::MoveJog::SharedPtr &);
   void moveJog(const std::string &);
-
 
   void sync();
 

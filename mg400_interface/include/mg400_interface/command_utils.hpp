@@ -20,7 +20,6 @@
 #include "mg400_interface/command_utils/collision_level.hpp"
 #include "mg400_interface/command_utils/digital_out.hpp"
 #include "mg400_interface/command_utils/distance_mode.hpp"
-#include "mg400_interface/command_utils/move_jog.hpp"
 #include "mg400_interface/command_utils/tool.hpp"
 #include "mg400_interface/command_utils/user.hpp"
 

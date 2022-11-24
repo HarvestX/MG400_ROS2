@@ -114,7 +114,7 @@ TEST_F(TestMotionCommander, MoveJog) {
     mock, sendCommand(
       StrEq(
         "MoveJog(j1+)"))).Times(1);
-  commander->moveJog(mg400_interface::JogMode::J1_POSITIVE);
+  commander->moveJog(mg400_msgs::msg::MoveJog::J1_POSITIVE);
 }
 
 
