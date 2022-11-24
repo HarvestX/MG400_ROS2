@@ -15,6 +15,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
 from launch_ros.actions import Node
@@ -43,7 +44,8 @@ def generate_launch_description():
         parameters=[{
             'ip_address': ip_address,
             'service_level': service_level,
-        }])
+        }],
+        on_exit=Shutdown())
 
     ld = LaunchDescription()
 
