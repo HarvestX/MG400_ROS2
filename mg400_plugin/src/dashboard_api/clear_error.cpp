@@ -21,10 +21,9 @@ namespace mg400_plugin
 void ClearError::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
   const rclcpp::Node::SharedPtr node,
-  const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr rt_if
-)
+  const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr rt_if)
 {
-  if (!this->confiture_base(commander, node, rt_if)) {
+  if (!this->configure_base(commander, node, rt_if)) {
     return;
   }
 
@@ -38,16 +37,15 @@ void ClearError::onServiceCall(
   const ServiceT::Request::SharedPtr,
   ServiceT::Response::SharedPtr res)
 {
+  res->result = false;
   try {
     this->commander_->clearError();
+    res->result = true;
   } catch (const std::runtime_error & ex) {
     RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
-    res->result = false;
   } catch (...) {
     RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
-    res->result = false;
   }
-  res->result = true;
 }
 }  // namespace mg400_plugin
 

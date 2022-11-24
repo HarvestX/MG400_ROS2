@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include <rclcpp/rclcpp.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
 
@@ -34,7 +33,6 @@ private:
     const rclcpp::Node::SharedPtr,
     const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
 
-private:
   void onServiceCall(
     const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };

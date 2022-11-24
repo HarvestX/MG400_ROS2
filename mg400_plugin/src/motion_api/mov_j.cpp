@@ -22,7 +22,7 @@ void MovJ::configure(
   const rclcpp::Node::SharedPtr node,
   const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr rt_if)
 {
-  if (!this->confiture_base(commander, node, rt_if)) {
+  if (!this->configure_base(commander, node, rt_if)) {
     return;
   }
 

@@ -40,7 +40,7 @@ public:
   ApiPluginBase() {}
   virtual ~ApiPluginBase() {}
 
-  bool confiture_base(
+  bool configure_base(
     const typename CommanderT::SharedPtr commander,
     const rclcpp::Node::SharedPtr node,
     const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
