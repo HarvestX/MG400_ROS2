@@ -5,13 +5,18 @@
     <description>Clear error</description>
   </class>
   <class
+      type="mg400_plugin::DisableRobot"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Disable robot</description>
+  </class>
+  <class
       type="mg400_plugin::EnableRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Enable robot</description>
   </class>
   <class
-      type="mg400_plugin::DisableRobot"
+      type="mg400_plugin::ResetRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
-    <description>Disable robot</description>
+    <description>Reset robot</description>
   </class>
 </library>
