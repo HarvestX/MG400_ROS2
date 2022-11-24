@@ -37,12 +37,12 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
   this->declare_parameter<std::string>("prefix", "");
   if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
-    rclcpp::shutdown();
+    exit(EXIT_FAILURE);
     return;
   }
 
   if (!this->interface_->activate()) {
-    rclcpp::shutdown();
+    exit(EXIT_FAILURE);
     return;
   }
 

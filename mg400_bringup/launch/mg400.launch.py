@@ -17,8 +17,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import TextSubstitution
-from launch_ros.actions import ComposableNodeContainer
-from launch_ros.descriptions import ComposableNode
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -36,28 +35,15 @@ def generate_launch_description():
         'can be called from the service.')
     service_level = LaunchConfiguration('service_level')
 
-    mg400_container = ComposableNodeContainer(
-        name='mg400_container',
+    mg400_node = Node(
+        package='mg400_node',
+        executable='mg400_node_exec',
+        name='mg400_node',
         namespace=ns,
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='mg400_node',
-                plugin='mg400_node::ServiceNode',
-                name='mg400_service_node',
-                namespace=ns,
-                parameters=[{
-                    'ip_address': ip_address,
-                    'service_level': service_level,
-                }],
-            ),
-            ComposableNode(
-                package='mg400_node',
-                plugin='mg400_node::ActionNode',
-                name='mg400_action_node',
-                namespace=ns,), ],
-    )
+        parameters=[{
+            'ip_address': ip_address,
+            'service_level': service_level,
+        }])
 
     ld = LaunchDescription()
 
@@ -65,6 +51,6 @@ def generate_launch_description():
     ld.add_action(ip_address_arg)
     ld.add_action(service_level_arg)
 
-    ld.add_action(mg400_container)
+    ld.add_action(mg400_node)
 
     return ld
