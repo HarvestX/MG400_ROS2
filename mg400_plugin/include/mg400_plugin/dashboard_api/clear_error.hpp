@@ -28,11 +28,13 @@ public:
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
 
+public:
   void configure(
     const mg400_interface::DashboardCommander::SharedPtr,
     const rclcpp::Node::SharedPtr,
     const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
 
+private:
   void onServiceCall(
     const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };

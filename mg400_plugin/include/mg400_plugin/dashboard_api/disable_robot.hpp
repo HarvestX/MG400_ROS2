@@ -15,15 +15,15 @@
 #pragma once
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/disable_robot.hpp>
 
 namespace mg400_plugin
 {
-class EnableRobot final
+class DisableRobot final
   : public mg400_plugin_base::DashboardApiPluginBase
 {
 public:
-  using ServiceT = mg400_msgs::srv::EnableRobot;
+  using ServiceT = mg400_msgs::srv::DisableRobot;
 
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;

@@ -39,7 +39,12 @@ protected:
 public:
   ApiPluginBase() {}
   virtual ~ApiPluginBase() {}
+  virtual void configure(
+    const typename CommanderT::SharedPtr,
+    const rclcpp::Node::SharedPtr,
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) = 0;
 
+protected:
   bool configure_base(
     const typename CommanderT::SharedPtr commander,
     const rclcpp::Node::SharedPtr node,
@@ -63,10 +68,6 @@ public:
     return true;
   }
 
-  virtual void configure(
-    const typename CommanderT::SharedPtr,
-    const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) = 0;
 };
 
 class DashboardApiPluginBase
