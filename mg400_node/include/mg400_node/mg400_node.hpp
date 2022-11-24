@@ -19,12 +19,11 @@
 #include <vector>
 #include <memory>
 
-#include <rclcpp/rclcpp.hpp>
-
-#include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_loader_base.hpp>
-
+#include <mg400_plugin_base/api_plugin_base.hpp>
 #include <pluginlib/class_loader.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace mg400_node
 {
@@ -38,7 +37,7 @@ private:
   std::vector<std::string> default_motion_api_plugins_ = {
     "mg400_plugin::MovJ"
   };
-
+  mg400_interface::MG400Interface::UniquePtr interface_;
 
   mg400_plugin_base::DashboardApiLoader::SharedPtr
     dashboard_api_loader_;
@@ -47,15 +46,22 @@ private:
     motion_api_loader_;
 
   rclcpp::TimerBase::SharedPtr init_timer_;
-  mg400_interface::MG400Interface::UniquePtr interface_;
+  rclcpp::TimerBase::SharedPtr joint_state_timer_;
+  rclcpp::TimerBase::SharedPtr robot_mode_timer_;
+  rclcpp::TimerBase::SharedPtr error_timer_;
+
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
 
 public:
   MG400Node() = delete;
   explicit MG400Node(const rclcpp::NodeOptions &);
   ~MG400Node();
 
-  void init();
-
+  void onInit();
+  void onJointStateTimer();
+  void onRobotModeTimer();
+  void onErrorTimer();
 };
 }  // namespace mg400_node
 
