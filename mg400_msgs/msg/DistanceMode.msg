@@ -1,0 +1,3 @@
+uint8 PERCENTAGE=0
+uint8 FROM_START_OR_TARGET=1
+uint8 mode

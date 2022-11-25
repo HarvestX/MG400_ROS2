@@ -1,4 +1,4 @@
-uint8 index
-uint8 status
+mg400_msgs/ToolDOIndex index
+mg400_msgs/DOStatus status
 ---
 bool result

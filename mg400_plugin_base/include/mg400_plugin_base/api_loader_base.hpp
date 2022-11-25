@@ -79,10 +79,13 @@ public:
     ss << "Loading [" << this->plugin_basename_ << "] Plugins..." << std::endl;
     for (const auto & it : this->plugin_map_) {
       ss << "  [" << it.first << "]: " <<
-        this->loader_->getClassDescription(it.first) <<
-        std::endl;
+        this->loader_->getClassDescription(it.first) << std::endl;
     }
-    RCLCPP_INFO(logging_interface->get_logger(), ss.str().c_str());
+    static const char ANSI_COLOR_BLUE[] = "\x1b[34m";
+    static const char ANSI_COLOR_RESET[] = "\x1b[0m";
+    RCLCPP_INFO(
+      logging_interface->get_logger(),
+      "%s%s%s", ANSI_COLOR_BLUE, ss.str().c_str(), ANSI_COLOR_RESET);
   }
 };
 

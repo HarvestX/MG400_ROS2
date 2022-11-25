@@ -15,15 +15,15 @@
 #pragma once
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/reset_robot.hpp>
+#include <mg400_msgs/srv/tool_do_execute.hpp>
 
 namespace mg400_plugin
 {
-class ResetRobot final
+class ToolDOExecute final
   : public mg400_plugin_base::DashboardApiPluginBase
 {
 public:
-  using ServiceT = mg400_msgs::srv::ResetRobot;
+  using ServiceT = mg400_msgs::srv::ToolDOExecute;
 
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;

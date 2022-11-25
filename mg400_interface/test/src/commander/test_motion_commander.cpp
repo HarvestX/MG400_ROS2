@@ -18,6 +18,10 @@
 using ::testing::_;
 using ::testing::StrEq;
 
+using DistanceMode = mg400_msgs::msg::DistanceMode;
+using DOIndex = mg400_msgs::msg::DOIndex;
+using DOStatus = mg400_msgs::msg::DOStatus;
+using User = mg400_msgs::msg::User;
 
 class MockTcpInterface : public mg400_interface::MotionTcpInterfaceBase
 {
@@ -77,8 +81,7 @@ TEST_F(TestMotionCommander, MovLIO) {
         "90.000,0.000,90.000,{0,50,1,0})"))).Times(1);
   commander->movLIO(
     -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
-    mg400_interface::DistanceMode::PERCENTAGE, 50,
-    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+    DistanceMode::PERCENTAGE, 50, DOIndex::D1, DOStatus::LOW);
 }
 
 TEST_F(TestMotionCommander, MovJIO) {
@@ -89,8 +92,7 @@ TEST_F(TestMotionCommander, MovJIO) {
         "90.000,0.000,90.000,{0,50,1,0})"))).Times(1);
   commander->movJIO(
     -500e-3, 100e-3, 200e-3, M_PI_2, 0, M_PI_2,
-    mg400_interface::DistanceMode::PERCENTAGE, 50,
-    mg400_interface::DOIndex::D1, mg400_interface::DOStatus::LOW);
+    DistanceMode::PERCENTAGE, 50, DOIndex::D1, DOStatus::LOW);
 }
 /*
 TEST_F(TestMotionCommander, Arc) {
@@ -134,7 +136,7 @@ TEST_F(TestMotionCommander, RelMovJUser) {
         "0.000,0.000,0.000,0)"))).Times(1);
   commander->relMovJUser(
     10e-3, 10e-3, 10e-3, 0, 0, 0,
-    mg400_interface::UserIndex::USER0);
+    User::USER0);
 }
 
 TEST_F(TestMotionCommander, RelMovLUser) {
@@ -145,7 +147,7 @@ TEST_F(TestMotionCommander, RelMovLUser) {
         "0.000,0.000,0.000,0)"))).Times(1);
   commander->relMovLUser(
     10e-3, 10e-3, 10e-3, 0, 0, 0,
-    mg400_interface::UserIndex::USER0);
+    User::USER0);
 }
 
 TEST_F(TestMotionCommander, RelJointMovJ) {

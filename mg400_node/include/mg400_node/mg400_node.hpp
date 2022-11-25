@@ -34,7 +34,8 @@ private:
     "mg400_plugin::ClearError",
     "mg400_plugin::DisableRobot",
     "mg400_plugin::EnableRobot",
-    "mg400_plugin::ResetRobot"
+    "mg400_plugin::ResetRobot",
+    "mg400_plugin::ToolDOExecute",
   };
 
   std::vector<std::string> default_motion_api_plugins_ = {

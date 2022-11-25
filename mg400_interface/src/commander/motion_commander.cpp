@@ -64,25 +64,27 @@ void MotionCommander::jointMovJ(
 void MotionCommander::movLIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const DistanceMode & mode, const int distance,
+  const DistanceMode & mode, const int & distance,
   const DOIndex & index, const DOStatus & status)
 {
   this->movLIO(
     x, y, z, rx, ry, rz,
-    static_cast<int>(mode), distance,
-    static_cast<int>(index), static_cast<int>(status));
+    mode.mode, distance,
+    index.index, status.status);
 }
 
 void MotionCommander::movLIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const int mode, const int distance,
-  const int index, const int status)
+  const DistanceMode::_mode_type & mode,
+  const int & distance,
+  const DOIndex::_index_type & index,
+  const DOStatus::_status_type & status)
 {
   char buf[100];
   snprintf(
     buf, sizeof(buf),
-    "MovLIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%d,%d,%d,%d})",
+    "MovLIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%u,%d,%u,%u})",
     m2mm(x), m2mm(y), m2mm(z),
     rad2degree(rx), rad2degree(ry), rad2degree(rz),
     mode, distance, index, status);
@@ -92,25 +94,25 @@ void MotionCommander::movLIO(
 void MotionCommander::movJIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const DistanceMode & mode, const int distance,
+  const DistanceMode & mode, const int & distance,
   const DOIndex & index, const DOStatus & status)
 {
   this->movJIO(
     x, y, z, rx, ry, rz,
-    static_cast<int>(mode), distance,
-    static_cast<int>(index), static_cast<int>(status));
+    mode.mode, distance, index.index, status.status);
 }
 
 void MotionCommander::movJIO(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const int mode, const int distance,
-  const int index, const int status)
+  const DistanceMode::_mode_type & mode, const int & distance,
+  const DOIndex::_index_type & index,
+  const DOStatus::_status_type & status)
 {
   char buf[100];
   snprintf(
     buf, sizeof(buf),
-    "MovJIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%d,%d,%d,%d})",
+    "MovJIO(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,{%u,%d,%u,%u})",
     m2mm(x), m2mm(y), m2mm(z),
     rad2degree(rx), rad2degree(ry), rad2degree(rz),
     mode, distance, index, status);
@@ -136,12 +138,12 @@ void MotionCommander::arc(
 }
 */
 
-void MotionCommander::moveJog(const mg400_msgs::msg::MoveJog::SharedPtr & msg)
+void MotionCommander::moveJog(const MoveJog::SharedPtr & jog_mode)
 {
-  this->moveJog(msg->jog_mode);
+  this->moveJog(jog_mode->jog_mode);
 }
 
-void MotionCommander::moveJog(const std::string & jog_mode)
+void MotionCommander::moveJog(const MoveJog::_jog_mode_type & jog_mode)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "MoveJog(%s)", jog_mode.c_str());
@@ -159,48 +161,48 @@ void MotionCommander::sync()
 void MotionCommander::relMovJUser(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const UserIndex & index)
+  const User & user)
 {
   this->relMovJUser(
     x, y, z, rx, ry, rz,
-    static_cast<int>(index));
+    user.user);
 }
 
 void MotionCommander::relMovJUser(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const int index)
+  const User::_user_type & user)
 {
   char buf[100];
   snprintf(
     buf, sizeof(buf),
-    "RelMovJUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%d)",
+    "RelMovJUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%u)",
     m2mm(x), m2mm(y), m2mm(z),
-    rad2degree(rx), rad2degree(ry), rad2degree(rz), index);
+    rad2degree(rx), rad2degree(ry), rad2degree(rz), user);
   this->tcp_if_->sendCommand(buf);
 }
 
 void MotionCommander::relMovLUser(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const UserIndex & index)
+  const User & user)
 {
   this->relMovLUser(
     x, y, z, rx, ry, rz,
-    static_cast<int>(index));
+    user.user);
 }
 
 void MotionCommander::relMovLUser(
   const si_m x, const si_m y, const si_m z,
   const si_rad rx, const si_rad ry, const si_rad rz,
-  const int index)
+  const User::_user_type & user)
 {
   char buf[100];
   snprintf(
     buf, sizeof(buf),
-    "RelMovLUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%d)",
+    "RelMovLUser(%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%.3lf,%u)",
     m2mm(x), m2mm(y), m2mm(z),
-    rad2degree(rx), rad2degree(ry), rad2degree(rz), index);
+    rad2degree(rx), rad2degree(ry), rad2degree(rz), user);
   this->tcp_if_->sendCommand(buf);
 }
 

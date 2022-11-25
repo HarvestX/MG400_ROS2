@@ -20,6 +20,12 @@ using ::testing::_;
 using ::testing::StrEq;
 using ::testing::Return;
 
+using mg400_msgs::msg::CollisionLevel;
+using mg400_msgs::msg::DOIndex;
+using mg400_msgs::msg::DOStatus;
+using mg400_msgs::msg::Tool;
+using mg400_msgs::msg::ToolDOIndex;
+using mg400_msgs::msg::User;
 
 class MockTcpInterface : public mg400_interface::DashboardTcpInterfaceBase
 {
@@ -40,7 +46,8 @@ protected:
   {
     using namespace std::chrono_literals;
     this->commander =
-      std::make_unique<mg400_interface::DashboardCommander>(&this->mock, 1ms);
+      std::make_unique<mg400_interface::DashboardCommander>(
+      &this->mock, 1ms);
   }
 
   virtual void TearDown() {}
@@ -114,7 +121,7 @@ TEST_F(TestDashboardCommander, User) {
     Return("0,{},User(1);"));
 
   ASSERT_NO_THROW(
-    commander->user(mg400_interface::UserIndex::USER1));
+    commander->user(User::USER1));
 }
 
 TEST_F(TestDashboardCommander, Tool) {
@@ -125,7 +132,7 @@ TEST_F(TestDashboardCommander, Tool) {
     mock, recvResponse()).WillOnce(
     Return("0,{},Tool(1);"));
 
-  commander->tool(1);
+  commander->tool(Tool::TOOL1);
 }
 
 TEST_F(TestDashboardCommander, RobotMode) {
@@ -161,8 +168,7 @@ TEST_F(TestDashboardCommander, DO) {
 
   ASSERT_NO_THROW(
     commander->DO(
-      mg400_interface::DOIndex::D12,
-      mg400_interface::DOStatus::HIGH));
+      DOIndex::D12, DOStatus::HIGH));
 }
 
 TEST_F(TestDashboardCommander, ToolDOExecute) {
@@ -173,8 +179,7 @@ TEST_F(TestDashboardCommander, ToolDOExecute) {
     Return("0,{},ToolDOExecute(2,1);"));
   ASSERT_NO_THROW(
     commander->toolDOExecute(
-      mg400_interface::ToolDOIndex::D2,
-      mg400_interface::DOStatus::HIGH));
+      ToolDOIndex::D2, DOStatus::HIGH));
 }
 
 TEST_F(TestDashboardCommander, AccJ) {
@@ -271,7 +276,8 @@ TEST_F(TestDashboardCommander, SetCollisionLevel) {
     mock, recvResponse()).WillOnce(
     Return("0,{},SetCollisionLevel(1);"));
   ASSERT_NO_THROW(
-    commander->setCollisionLevel(mg400_interface::CollisionLevel::LEVEL1));
+    commander->setCollisionLevel(
+      CollisionLevel::LEVEL1));
 }
 
 TEST_F(TestDashboardCommander, GetAngle) {

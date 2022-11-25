@@ -18,6 +18,13 @@
 #include <vector>
 #include <string>
 #include <memory>
+
+#include <mg400_msgs/msg/collision_level.hpp>
+#include <mg400_msgs/msg/do_index.hpp>
+#include <mg400_msgs/msg/do_status.hpp>
+#include <mg400_msgs/msg/tool_do_index.hpp>
+#include <mg400_msgs/msg/tool.hpp>
+#include <mg400_msgs/msg/user.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/commander/response_parser.hpp"
@@ -35,6 +42,13 @@ public:
   using SharedPtr = std::shared_ptr<DashboardCommander>;
 
 private:
+  using CollisionLevel = mg400_msgs::msg::CollisionLevel;
+  using DOIndex = mg400_msgs::msg::DOIndex;
+  using DOStatus = mg400_msgs::msg::DOStatus;
+  using Tool = mg400_msgs::msg::Tool;
+  using ToolDOIndex = mg400_msgs::msg::ToolDOIndex;
+  using User = mg400_msgs::msg::User;
+
   DashboardTcpInterfaceBase * tcp_if_;
   rclcpp::Clock::SharedPtr clock_;
   const std::chrono::nanoseconds TIMEOUT;
@@ -56,21 +70,29 @@ public:
 
   void speedFactor(const int) const;
 
-  void user(const UserIndex &) const;
-  void user(const int) const;
+  void user(const User::SharedPtr &) const;
+  void user(const User::_user_type &) const;
 
-  void tool(const ToolIndex &) const;
-  void tool(const int) const;
+  void tool(const Tool::SharedPtr &) const;
+  void tool(const Tool::_tool_type &) const;
 
   uint64_t robotMode() const;
 
   void payload(const double, const double) const;
 
-  void DO(const DOIndex &&, const DOStatus &&) const;
-  void DO(const int, const int) const;
+  void DO(
+    const DOIndex &,
+    const DOStatus &) const;
+  void DO(
+    const DOIndex::_index_type &,
+    const DOStatus::_status_type &) const;
 
-  void toolDOExecute(const ToolDOIndex &&, const DOStatus &&) const;
-  void toolDOExecute(const int, const int) const;
+  void toolDOExecute(
+    const ToolDOIndex &,
+    const DOStatus &) const;
+  void toolDOExecute(
+    const ToolDOIndex::_index_type &,
+    const DOStatus::_status_type &) const;
 
   void accJ(const int);
 
@@ -94,7 +116,7 @@ public:
   void continueScript();
 */
   void setCollisionLevel(const CollisionLevel &);
-  void setCollisionLevel(const int);
+  void setCollisionLevel(const CollisionLevel::_level_type &);
 
   std::vector<double> getAngle();
 
