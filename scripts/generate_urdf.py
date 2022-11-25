@@ -63,7 +63,7 @@ def main():
     if not xacro_filename.is_file():
         logging.error('{} does not exist'.format(str(xacro_filename)))
         exit(1)
-    print('Generateing URDF: {} 🍺'.format(args.name))
+    print('Generating URDF: {} 🍺'.format(args.name))
     open_xacro_and_save_urdf(args.name)
     print('Done! 🍻')
 
