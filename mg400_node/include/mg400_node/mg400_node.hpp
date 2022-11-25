@@ -30,15 +30,15 @@ namespace mg400_node
 class MG400Node : public rclcpp::Node
 {
 private:
-  std::vector<std::string> default_dashboard_api_plugins_ = {
+  const std::vector<std::string> default_dashboard_api_plugins_ = {
     "mg400_plugin::ClearError",
     "mg400_plugin::DisableRobot",
     "mg400_plugin::EnableRobot",
     "mg400_plugin::ResetRobot",
-    "mg400_plugin::ToolDOExecute",
+    "mg400_plugin::ToolDOExecute"
   };
 
-  std::vector<std::string> default_motion_api_plugins_ = {
+  const std::vector<std::string> default_motion_api_plugins_ = {
     "mg400_plugin::MoveJog",
     "mg400_plugin::MovJ"
   };
