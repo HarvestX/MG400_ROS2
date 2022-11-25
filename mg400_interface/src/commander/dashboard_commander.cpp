@@ -59,31 +59,31 @@ void DashboardCommander::speedFactor(const int ratio) const
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-void DashboardCommander::user(const UserIndex & index) const
+void DashboardCommander::user(const User::SharedPtr & user) const
 {
-  this->user(static_cast<int>(index));
+  this->user(user->user);
 }
 
-void DashboardCommander::user(const int index) const
+void DashboardCommander::user(const User::_user_type & index) const
 {
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "User(%d)", index);
+  const int cx = snprintf(buf, sizeof(buf), "User(%u)", index);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-void DashboardCommander::tool(const ToolIndex & index) const
+void DashboardCommander::tool(const Tool::SharedPtr & tool) const
 {
-  return this->tool(static_cast<int>(index));
+  return this->tool(tool->tool);
 }
 
-void DashboardCommander::tool(const int index) const
+void DashboardCommander::tool(const Tool::_tool_type & index) const
 {
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "Tool(%d)", index);
+  const int cx = snprintf(buf, sizeof(buf), "Tool(%u)", index);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-RobotMode DashboardCommander::robotMode() const
+uint64_t DashboardCommander::robotMode() const
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -91,7 +91,7 @@ RobotMode DashboardCommander::robotMode() const
   if (!response.result) {
     throw std::runtime_error("Dobot not return 0");
   }
-  return static_cast<RobotMode>(ResponseParser::takeInt(response.ret_val));
+  return static_cast<uint64_t>(ResponseParser::takeInt(response.ret_val));
 }
 
 void DashboardCommander::payload(
@@ -105,39 +105,33 @@ void DashboardCommander::payload(
 }
 
 void DashboardCommander::DO(
-  const DOIndex && do_index,
-  const DOStatus && do_status) const
+  const DOIndex & do_index, const DOStatus & do_status) const
 {
-  this->DO(
-    static_cast<int>(do_index),
-    static_cast<int>(do_status));
+  this->DO(do_index.index, do_status.status);
 }
 
 void DashboardCommander::DO(
-  const int do_index,
-  const int do_status) const
+  const DOIndex::_index_type & do_index,
+  const DOStatus::_status_type & do_status) const
 {
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "DO(%d,%d)", do_index, do_status);
+  const int cx = snprintf(buf, sizeof(buf), "DO(%u,%u)", do_index, do_status);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
 void DashboardCommander::toolDOExecute(
-  const ToolDOIndex && tool_do_index,
-  const DOStatus && do_status) const
+  const ToolDOIndex & tool_do_index, const DOStatus & do_status) const
 {
-  this->toolDOExecute(
-    static_cast<int>(tool_do_index),
-    static_cast<int>(do_status));
+  this->toolDOExecute(tool_do_index.index, do_status.status);
 }
 
 void DashboardCommander::toolDOExecute(
-  const int tool_do_index,
-  const int do_status) const
+  const ToolDOIndex::_index_type & tool_do_index,
+  const DOStatus::_status_type & do_status) const
 {
   static char buf[128];
   const int cx = snprintf(
-    buf, sizeof(buf), "ToolDOExecute(%d,%d)",
+    buf, sizeof(buf), "ToolDOExecute(%u,%u)",
     tool_do_index, do_status);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
@@ -213,13 +207,14 @@ bool DashboardCommander::continueScript()
 */
 void DashboardCommander::setCollisionLevel(const CollisionLevel & level)
 {
-  this->setCollisionLevel(static_cast<int>(level));
+  this->setCollisionLevel(level.level);
 }
 
-void DashboardCommander::setCollisionLevel(const int level)
+void DashboardCommander::setCollisionLevel(
+  const CollisionLevel::_level_type & level)
 {
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "SetCollisionLevel(%d)", level);
+  const int cx = snprintf(buf, sizeof(buf), "SetCollisionLevel(%u)", level);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 

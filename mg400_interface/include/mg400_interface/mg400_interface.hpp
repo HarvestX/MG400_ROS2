@@ -35,25 +35,25 @@ namespace mg400_interface
 class MG400Interface
 {
 public:
-  std::unique_ptr<mg400_interface::DashboardCommander> dashboard_commander;
-  std::unique_ptr<mg400_interface::MotionCommander> motion_commander;
-  std::unique_ptr<mg400_interface::RealtimeFeedbackTcpInterface>
-  realtime_tcp_interface;
+  using UniquePtr = std::unique_ptr<MG400Interface>;
 
-  std::unique_ptr<mg400_interface::ErrorMsgGenerator> error_msg_generator;
+  DashboardCommander::SharedPtr dashboard_commander;
+  MotionCommander::SharedPtr motion_commander;
+  RealtimeFeedbackTcpInterface::SharedPtr realtime_tcp_interface;
+
+  std::unique_ptr<ErrorMsgGenerator> error_msg_generator;
 
 private:
   const std::string IP;
 
-
-  std::unique_ptr<mg400_interface::DashboardTcpInterface> dashboard_tcp_if_;
-  std::unique_ptr<mg400_interface::MotionTcpInterface> motion_tcp_if_;
+  DashboardTcpInterface::UniquePtr dashboard_tcp_if_;
+  MotionTcpInterface::UniquePtr motion_tcp_if_;
 
 public:
   MG400Interface() = delete;
   explicit MG400Interface(const std::string &);
 
-  bool configure();
+  bool configure(const std::string & = "");
 
   bool activate();
   bool deactivate();

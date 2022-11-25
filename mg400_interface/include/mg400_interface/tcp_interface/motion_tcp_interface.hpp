@@ -37,6 +37,9 @@ public:
 
 class MotionTcpInterface : public MotionTcpInterfaceBase
 {
+public:
+  using UniquePtr = std::unique_ptr<MotionTcpInterface>;
+
 private:
   const uint16_t PORT_ = 30003;
 

@@ -14,41 +14,29 @@
 
 #pragma once
 
-namespace mg400_interface
+#include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_msgs/srv/move_jog.hpp>
+
+
+namespace mg400_plugin
 {
 
-enum class DOIndex
+class MoveJog final : public mg400_plugin_base::MotionApiPluginBase
 {
-  D1 = 1,
-  D2,
-  D3,
-  D4,
-  D5,
-  D6,
-  D7,
-  D8,
-  D9,
-  D10,
-  D11,
-  D12,
-  D13,
-  D14,
-  D15,
-  D16,
-  INVALID,
-};
+public:
+  using ServiceT = mg400_msgs::srv::MoveJog;
 
-enum class ToolDOIndex
-{
-  D1 = 1,
-  D2,
-  INVALID,
-};
+private:
+  rclcpp::Service<ServiceT>::SharedPtr srv_;
 
-enum class DOStatus
-{
-  LOW,
-  HIGH,
-  INVALID
+public:
+  void configure(
+    const mg400_interface::MotionCommander::SharedPtr,
+    const rclcpp::Node::SharedPtr,
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
+
+private:
+  void onServiceCall(
+    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
-}  // namespace mg400_interface
+}  // namespace mg400_plugin

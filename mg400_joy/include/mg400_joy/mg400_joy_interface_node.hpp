@@ -83,7 +83,7 @@ private:
   void callEnableRobot();
   void callDisableRobot();
   void callMoveJog(const std::string &);
-  std::string tiltedStick2JogAxis() const;
+  bool tiltedStick2JogAxis(std::string &) const;
 };
 }  // namespace mg400_joy
 

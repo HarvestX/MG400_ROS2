@@ -18,8 +18,9 @@
 namespace mg400_interface
 {
 RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
-  const std::string & ip)
-: current_joints_{}, rt_data_{}, is_running_(false)
+  const std::string & ip, const std::string & prefix)
+: frame_id_prefix(prefix),
+  current_joints_{}, rt_data_{}, is_running_(false)
 {
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
@@ -51,10 +52,20 @@ bool RealtimeFeedbackTcpInterface::isConnected()
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(
-  std::array<double, 6> & joints)
+  std::array<double, 4> & joints)
 {
   this->mutex_.lock();
   joints = this->current_joints_;
+  this->mutex_.unlock();
+}
+
+void RealtimeFeedbackTcpInterface::getCurrentEndPose(
+  mg400_msgs::msg::EndPose & end_pose, const bool && is_ref)
+{
+  this->mutex_.lock();
+  JointHandler::getEndPose(
+    this->current_joints_, end_pose,
+    std::forward<const bool>(is_ref));
   this->mutex_.unlock();
 }
 
@@ -63,9 +74,15 @@ RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
   return this->rt_data_;
 }
 
-RobotMode RealtimeFeedbackTcpInterface::getRobotMode()
+uint64_t RealtimeFeedbackTcpInterface::getRobotMode()
 {
-  return static_cast<RobotMode>(this->rt_data_.robot_mode);
+  return this->rt_data_.robot_mode;
+}
+
+bool RealtimeFeedbackTcpInterface::isRobotMode(
+  const uint64_t & expected_mode) const
+{
+  return this->rt_data_.robot_mode == expected_mode;
 }
 
 void RealtimeFeedbackTcpInterface::disConnect()

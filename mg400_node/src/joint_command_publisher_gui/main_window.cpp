@@ -166,7 +166,7 @@ void MainWindow::j4ValueChange(int value)
 void MainWindow::publishJointStates()
 {
   this->joint_state_pub_->publish(
-    mg400_interface::getJointState(
+    mg400_interface::JointHandler::getJointState(
       this->j1_, this->j2_, this->j3_, this->j4_,
       this->prefix_));
 }

@@ -22,14 +22,15 @@ MG400Interface::MG400Interface(const std::string & ip_address)
 {
 }
 
-bool MG400Interface::configure()
+bool MG400Interface::configure(const std::string & frame_id_prefix)
 {
   this->dashboard_tcp_if_ =
     std::make_unique<mg400_interface::DashboardTcpInterface>(this->IP);
   this->motion_tcp_if_ =
     std::make_unique<mg400_interface::MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface =
-    std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(this->IP);
+    std::make_shared<mg400_interface::RealtimeFeedbackTcpInterface>(
+    this->IP, frame_id_prefix);
 
   this->error_msg_generator =
     std::make_unique<mg400_interface::ErrorMsgGenerator>(
@@ -66,18 +67,18 @@ bool MG400Interface::activate()
   }
 
   this->dashboard_commander =
-    std::make_unique<mg400_interface::DashboardCommander>(
+    std::make_shared<mg400_interface::DashboardCommander>(
     this->dashboard_tcp_if_.get());
   this->motion_commander =
-    std::make_unique<mg400_interface::MotionCommander>(
+    std::make_shared<mg400_interface::MotionCommander>(
     this->motion_tcp_if_.get());
   return true;
 }
 
 bool MG400Interface::deactivate()
 {
-  this->dashboard_commander = nullptr;
-  this->motion_commander = nullptr;
+  this->dashboard_commander.reset();
+  this->motion_commander.reset();
   this->dashboard_tcp_if_->disConnect();
   this->motion_tcp_if_->disConnect();
   this->realtime_tcp_interface->disConnect();
