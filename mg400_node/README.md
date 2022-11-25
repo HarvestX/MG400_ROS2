@@ -1,39 +1,26 @@
 # MG400_node
 
-## Service Server Node
-
-Start service server to operate MG400 via ROS2 service.
+## API Interface Node
+Start API interface to operate MG400 via ROS2 service/action.
 
 ```bash
-ros2 run mg400_node service_node_exec
+ros2 run mg400_node mg400_node_exec
 ```
-
-### Available Services
-
-The service level can be set from the parameter `service_level`.
-
-#### service level 1
-
-- `clear_error`
-- `disable_robot`
-- `enable_robot`
-- `move_jog`
-- `mov_j`
-
-#### service level 2
-
-- `reset_robot`
-- `speed_factor`
-- `joint_mov_j`
-- `mov_l`
-
-#### service level 3
-
-- `tool_do_execute`
+### Default API plugin for `mg400_node`
+The following API interface plugin will be loaded by default
+- Dashboard API
+  - `ClearError`
+  - `DisableRobot`
+  - `EnableRobot`
+  - `ResetRobot`
+  - `ToolDOExecute`
+- Motion API
+  - `MoveJog`
+  - `MovJ`
 
 ## Joint State Publisher Gui
 
-Start joint state publisher gui.
+Start joint state publisher GUI.
 
 ```bash
 ros2 run mg400_node joint_state_publisher_gui
