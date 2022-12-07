@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ -z "$ROS_DISTRO" ]; then
+  echo "Please set \$ROS_DISTRO variable."
+  exit
+fi
+
 THIS_FILE=$BASH_SOURCE
 THIS_PROJECT_ROOT=$(realpath $(dirname $(realpath $THIS_FILE)))
 THIS_REPOSITORY_NAME="mg400"
@@ -23,3 +28,4 @@ rosdep install -r -y -i \
 unset colcon_ws
 unset THIS_FILE
 unset THIS_PROJECT_ROOT
+unset THIS_REPOSITORY_NAME
