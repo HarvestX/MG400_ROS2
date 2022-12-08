@@ -58,8 +58,8 @@ MG400 needs the emergency stop switch.
 
 ### IP address settings
 
-Set the PC's Ethernet IPv4 IP address to a fixed IP somewhere on 192.168.1.0/24 other than 192.168.1.6
-(Example: 192.168.1.10, See <https://linuxfan.info/ubuntu-2004-desktop-static-ip-address>)
+Set the PC's Ethernet IPv4 IP address to a fixed IP somewhere on `192.168.1.0/24` other than `192.168.1.6`.
+
 No need to fill in the "Gateway" and "DNS".
 
 ![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/IPv4_settings.png?raw=true)
