@@ -11,7 +11,7 @@ Dobot MG400 ROS2 Repository.
 
 | ROS2 Distro | Branch | Build status |
 | --- | --- | --- |
-| **galactic** | [`galactic`](https://github.com/HarvestX/MG400_ROS2/tree/galactic) | [![Main CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci.yml?branch=main)
+| **galactic** | [`galactic`](https://github.com/HarvestX/MG400_ROS2/tree/galactic) | [![Galactic CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml?branch=main)
 | **humble** | [`humble`](https://github.com/HarvestX/MG400_ROS2/tree/humble) | [![Humble CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml/badge.svg?branch=humble)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml?branch=humble)
 
 
