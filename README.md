@@ -16,8 +16,6 @@ Dobot MG400 ROS2 Repository.
 
 ## Requirements
 
-- Linux OS
-  - [Ubuntu 20.04](https://releases.ubuntu.com/20.04/)
 - ROS 2
   - Ubuntu20 : [Galactic Geochelone](https://docs.ros.org/en/galactic/Installation.html)
   - Ubuntu22 : [Humble Hawksbill](https://docs.ros.org/en/humble/Installation.html)
