@@ -38,7 +38,7 @@ git clone git@github.com:HarvestX/MG400_ROS2.git
 ### Run script to install dependencies
 
 ```bash
-source /opt/ros/galactic/setup.bash
+source /opt/ros/$ROS_DISTRO/setup.bash
 cd ~/ws_ros2/src/MG400_ROS2
 ./setup.bash
 exec -l $SHELL
@@ -49,7 +49,7 @@ exec -l $SHELL
 Open new terminal and type followings.
 
 ```bash
-source /opt/ros/galactic/setup.bash
+source /opt/ros/$ROS_DISTRO/setup.bash
 cd ~/ws_ros2
 colcon build
 ```
