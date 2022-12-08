@@ -7,12 +7,21 @@ Dobot MG400 ROS2 Repository.
 
 ![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/display.png?raw=true)
 
+## Repository Status
+
+| ROS2 Distro | Branch | Build status |
+| --- | --- | --- |
+| **galactic** | [`galactic`](https://github.com/HarvestX/MG400_ROS2/tree/galactic) | [![Galactic CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml?branch=main)
+| **humble** | [`humble`](https://github.com/HarvestX/MG400_ROS2/tree/humble) | [![Humble CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml/badge.svg?branch=humble)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml?branch=humble)
+
+
 ## Requirements
 
 - Linux OS
   - [Ubuntu 20.04](https://releases.ubuntu.com/20.04/)
 - ROS 2
-  - [Galactic Geochelone](https://index.ros.org/doc/ros2/Installation/Galactic/)
+  - Ubuntu20 : [Galactic Geochelone](https://docs.ros.org/en/galactic/Installation.html)
+  - Ubuntu22 : [Humble Hawksbill](https://docs.ros.org/en/humble/Installation.html)
 - MG400
   - [Firmware version 1.5.6.0](https://forum.dobot.cc/t/the-mg400-and-m1-pro-1-5-6-0-controller-versions-are-released/5923/2)
 
@@ -21,16 +30,16 @@ Dobot MG400 ROS2 Repository.
 ### Locate package in workspace
 
 ```bash
-mkdir -p ~/ws_galactic/src
-cd ~/ws_galactic/src
+mkdir -p ~/ws_ros2/src
+cd ~/ws_ros2/src
 git clone git@github.com:HarvestX/MG400_ROS2.git
 ```
 
 ### Run script to install dependencies
 
 ```bash
-source /opt/ros/galactic/setup.bash
-cd ~/ws_galactic/src/MG400_ROS2
+source /opt/ros/$ROS_DISTRO/setup.bash
+cd ~/ws_ros2/src/MG400_ROS2
 ./setup.bash
 exec -l $SHELL
 ```
@@ -40,8 +49,8 @@ exec -l $SHELL
 Open new terminal and type followings.
 
 ```bash
-source /opt/ros/galactic/setup.bash
-cd ~/ws_galactic
+source /opt/ros/$ROS_DISTRO/setup.bash
+cd ~/ws_ros2
 colcon build
 ```
 
@@ -65,7 +74,7 @@ Check the circle light on the base of MG400 blink blue.
 Before launch MG400 scripts, open new terminal and type followings.
 
 ```bash
-source ~/ws_galactic/install/setup.bash
+source ~/ws_ros2/install/setup.bash
 ```
 
 ### Launch display (It works without hardware.)

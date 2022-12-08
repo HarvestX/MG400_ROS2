@@ -1,4 +1,4 @@
-name: ci
+name: ci_humble
 
 on:
   push:
@@ -22,8 +22,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        ros_distribution: [galactic]
+        os: [ubuntu-22.04]
+        ros_distribution: [humble]
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
