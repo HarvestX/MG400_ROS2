@@ -25,6 +25,11 @@
     <description>Reset robot</description>
   </class>
   <class
+      type="mg400_plugin::SpeedFactor"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Speed factor</description>
+  </class>
+  <class
       type="mg400_plugin::ToolDOExecute"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Execute end effector digital output</description>
