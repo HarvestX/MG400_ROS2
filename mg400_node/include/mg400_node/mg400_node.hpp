@@ -33,6 +33,7 @@ private:
   const std::vector<std::string> default_dashboard_api_plugins_ = {
     "mg400_plugin::ClearError",
     "mg400_plugin::DisableRobot",
+    "mg400_plugin::EmergencyStop",
     "mg400_plugin::EnableRobot",
     "mg400_plugin::ResetRobot",
     "mg400_plugin::ToolDOExecute"
