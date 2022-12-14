@@ -1,0 +1,8 @@
+#goal definition
+mg400_msgs/EndPose pose
+---
+#result definition
+bool result
+---
+#feedback definition
+mg400_msgs/EndPoseStamped current_pose
