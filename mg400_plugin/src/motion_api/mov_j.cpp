@@ -77,7 +77,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   result->result = false;
 
   this->commander_->movJ(
-    goal->pose.x, goal->pose.y, goal->pose.z, goal->pose.z);
+    goal->pose.x, goal->pose.y, goal->pose.z, goal->pose.r);
 
   const auto is_goal_reached = [&](
     const mg400_msgs::msg::EndPose & pose,
