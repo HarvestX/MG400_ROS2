@@ -5,6 +5,11 @@
     <description>Execute MovJ</description>
   </class>
   <class
+      type="mg400_plugin::MovL"
+      base_class_type="mg400_plugin_base::MotionApiPluginBase">
+    <description>Execute MovL</description>
+  </class>
+  <class
       type="mg400_plugin::MoveJog"
       base_class_type="mg400_plugin_base::MotionApiPluginBase">
     <description>Execute MoveJog</description>

@@ -54,7 +54,7 @@ public:
 
   void movL(
     const si_m, const si_m, const si_m,
-    const si_rad, const si_rad, const si_rad);
+    const si_rad, const si_rad = 0.0, const si_rad = 0.0);
 
   void jointMovJ(
     const si_rad, const si_rad, const si_rad,

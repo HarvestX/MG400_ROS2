@@ -42,7 +42,8 @@ private:
 
   const std::vector<std::string> default_motion_api_plugins_ = {
     "mg400_plugin::MoveJog",
-    "mg400_plugin::MovJ"
+    "mg400_plugin::MovJ",
+    "mg400_plugin::MovL"
   };
   mg400_interface::MG400Interface::UniquePtr interface_;
 
