@@ -10,6 +10,11 @@
     <description>Disable robot</description>
   </class>
   <class
+      type="mg400_plugin::EmergencyStop"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Emergency stop</description>
+  </class>
+  <class
       type="mg400_plugin::EnableRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Enable robot</description>
