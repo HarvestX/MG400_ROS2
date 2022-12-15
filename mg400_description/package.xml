@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>mg400_description</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <description>Dobot MG400 structure description package.</description>
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
   <license>Apache License 2.0</license>
