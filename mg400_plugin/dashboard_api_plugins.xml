@@ -1,5 +1,15 @@
 <library path="mg400_plugin_dashboard_api">
   <class
+      type="mg400_plugin::AccJ"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Acc j</description>
+  </class>
+  <class
+      type="mg400_plugin::AccL"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Acc l</description>
+  </class>
+  <class
       type="mg400_plugin::ClearError"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Clear error</description>
@@ -28,6 +38,16 @@
       type="mg400_plugin::SpeedFactor"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Speed factor</description>
+  </class>
+  <class
+      type="mg400_plugin::SpeedJ"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Speed j</description>
+  </class>
+  <class
+      type="mg400_plugin::SpeedL"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Speed l</description>
   </class>
   <class
       type="mg400_plugin::ToolDOExecute"
