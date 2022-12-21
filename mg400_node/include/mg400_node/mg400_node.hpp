@@ -41,7 +41,9 @@ private:
     "mg400_plugin::SpeedFactor",
     "mg400_plugin::SpeedJ",
     "mg400_plugin::SpeedL",
-    "mg400_plugin::ToolDOExecute"
+    "mg400_plugin::ToolDOExecute",
+    "mg400_plugin::Tool",
+    "mg400_plugin::User"
   };
 
   const std::vector<std::string> default_motion_api_plugins_ = {
