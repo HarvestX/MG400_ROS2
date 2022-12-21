@@ -70,10 +70,10 @@ public:
 
   void speedFactor(const int) const;
 
-  void user(const User::SharedPtr &) const;
+  void user(const User &) const;
   void user(const User::_user_type &) const;
 
-  void tool(const Tool::SharedPtr &) const;
+  void tool(const Tool &) const;
   void tool(const Tool::_tool_type &) const;
 
   uint64_t robotMode() const;
