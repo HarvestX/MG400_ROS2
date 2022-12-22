@@ -31,19 +31,12 @@ class MG400Node : public rclcpp::Node
 {
 private:
   const std::vector<std::string> default_dashboard_api_plugins_ = {
-    "mg400_plugin::AccJ",
-    "mg400_plugin::AccL",
     "mg400_plugin::ClearError",
     "mg400_plugin::DisableRobot",
     "mg400_plugin::EmergencyStop",
     "mg400_plugin::EnableRobot",
     "mg400_plugin::ResetRobot",
-    "mg400_plugin::SpeedFactor",
-    "mg400_plugin::SpeedJ",
-    "mg400_plugin::SpeedL",
-    "mg400_plugin::ToolDOExecute",
-    "mg400_plugin::Tool",
-    "mg400_plugin::User"
+    "mg400_plugin::SpeedFactor"
   };
 
   const std::vector<std::string> default_motion_api_plugins_ = {
