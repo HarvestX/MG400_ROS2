@@ -59,9 +59,9 @@ void DashboardCommander::speedFactor(const int ratio) const
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-void DashboardCommander::user(const User::SharedPtr & user) const
+void DashboardCommander::user(const User & user) const
 {
-  this->user(user->user);
+  this->user(user.user);
 }
 
 void DashboardCommander::user(const User::_user_type & index) const
@@ -71,9 +71,9 @@ void DashboardCommander::user(const User::_user_type & index) const
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-void DashboardCommander::tool(const Tool::SharedPtr & tool) const
+void DashboardCommander::tool(const Tool & tool) const
 {
-  return this->tool(tool->tool);
+  return this->tool(tool.tool);
 }
 
 void DashboardCommander::tool(const Tool::_tool_type & index) const
