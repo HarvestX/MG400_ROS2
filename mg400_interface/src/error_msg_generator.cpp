@@ -17,28 +17,22 @@
 
 namespace mg400_interface
 {
-ErrorMsgGenerator::ErrorMsgGenerator(
-  const std::string & target_filename
-)
+ErrorMsgGenerator::ErrorMsgGenerator(const std::string & target_filename)
 : logger_(rclcpp::get_logger("ErrorMsgGenerator")),
-  filename_(
-    ament_index_cpp::get_package_share_directory("mg400_interface") +
+  filename_(ament_index_cpp::get_package_share_directory("mg400_interface") +
     "/resources/" + target_filename)
 {
   if (target_filename.empty()) {
     RCLCPP_ERROR(this->logger_, "Json file name not given");
   }
 
-  RCLCPP_INFO(
-    this->logger_, "Target file: %s",
-    this->filename_.c_str());
+  RCLCPP_INFO(this->logger_, "Target file: %s", this->filename_.c_str());
 }
 
 std::string ErrorMsgGenerator::get(const int id)
 {
   return this->error_map_.at(id);
 }
-
 
 bool ErrorMsgGenerator::loadJsonFile()
 {
@@ -48,18 +42,12 @@ bool ErrorMsgGenerator::loadJsonFile()
 
   for (auto data : json_data) {
     RCLCPP_DEBUG(
-      this->logger_,
-      "ID %d, Message: %s",
-      data["id"].get<int>(),
+      this->logger_, "ID %d, Message: %s", data["id"].get<int>(),
       data["en"]["description"].get<std::string>().c_str());
 
-    this->error_map_.emplace(
-      data["id"].get<int>(),
-      data["en"]["description"].get<std::string>());
+    this->error_map_.emplace(data["id"].get<int>(), data["en"]["description"].get<std::string>());
   }
 
   return true;
 }
-
-
 }  // namespace mg400_interface

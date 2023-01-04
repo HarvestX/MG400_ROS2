@@ -36,8 +36,7 @@ void DashboardTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
-    this->thread_ = std::make_unique<std::thread>(
-      &DashboardTcpInterface::checkConnection, this);
+    this->thread_ = std::make_unique<std::thread>(&DashboardTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
@@ -61,27 +60,20 @@ void DashboardTcpInterface::checkConnection()
         try {
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(
-            this->getLogger(),
-            "Tcp recv error : %s", err.what());
+          RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
           rclcpp::sleep_for(500ms);
           failed_cnt++;
         }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
-      RCLCPP_ERROR(
-        this->getLogger(),
-        "Tcp recv error : %s", err.what());
+      RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
       rclcpp::sleep_for(500ms);
       failed_cnt++;
     }
   }
 
-  RCLCPP_ERROR(
-    this->getLogger(),
-    "Failed more than %d times... Close connection.",
-    failed_cnt);
+  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times... Close connection.", failed_cnt);
   this->is_running_ = false;
 }
 
@@ -102,18 +94,14 @@ void DashboardTcpInterface::disConnect()
     this->thread_->join();
   }
   this->tcp_socket_->disConnect();
-  RCLCPP_INFO(
-    this->getLogger(),
-    "Close connection.");
+  RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
 std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
   this->tcp_socket_->recv(buf, sizeof(buf), 500);
-  RCLCPP_DEBUG(
-    this->getLogger(),
-    "recv: %s", std::string(buf).c_str());
+  RCLCPP_DEBUG(this->getLogger(), "recv: %s", std::string(buf).c_str());
   return std::string(buf);
 }
 }  // namespace mg400_interface

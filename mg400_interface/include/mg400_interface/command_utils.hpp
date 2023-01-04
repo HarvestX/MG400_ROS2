@@ -16,8 +16,6 @@
 
 #include <cmath>
 
-#include "mg400_interface/command_utils/arch.hpp"
-
 namespace mg400_interface
 {
 

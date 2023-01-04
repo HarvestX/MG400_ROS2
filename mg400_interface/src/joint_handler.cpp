@@ -19,9 +19,7 @@ namespace mg400_interface
 {
 
 sensor_msgs::msg::JointState::UniquePtr
-JointHandler::getJointState(
-  const std::array<double, 4> & joint_states,
-  const std::string & prefix)
+JointHandler::getJointState(const std::array<double, 4> & joint_states, const std::string & prefix)
 {
   auto msg = std::make_unique<sensor_msgs::msg::JointState>();
   msg->header.stamp = rclcpp::Clock().now();

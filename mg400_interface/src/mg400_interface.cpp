@@ -24,17 +24,13 @@ MG400Interface::MG400Interface(const std::string & ip_address)
 
 bool MG400Interface::configure(const std::string & frame_id_prefix)
 {
-  this->dashboard_tcp_if_ =
-    std::make_unique<mg400_interface::DashboardTcpInterface>(this->IP);
-  this->motion_tcp_if_ =
-    std::make_unique<mg400_interface::MotionTcpInterface>(this->IP);
-  this->realtime_tcp_interface =
-    std::make_shared<mg400_interface::RealtimeFeedbackTcpInterface>(
+  this->dashboard_tcp_if_ = std::make_unique<DashboardTcpInterface>(this->IP);
+  this->motion_tcp_if_ = std::make_unique<MotionTcpInterface>(this->IP);
+  this->realtime_tcp_interface = std::make_shared<RealtimeFeedbackTcpInterface>(
     this->IP, frame_id_prefix);
 
   this->error_msg_generator =
-    std::make_unique<mg400_interface::ErrorMsgGenerator>(
-    "alarm_controller.json");
+    std::make_unique<ErrorMsgGenerator>("alarm_controller.json");
 
   return this->error_msg_generator->loadJsonFile();
 }
@@ -42,36 +38,32 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
 
 bool MG400Interface::activate()
 {
-  using namespace std::chrono_literals;
+  using namespace std::chrono_literals;  // NOLINT
   this->dashboard_tcp_if_->init();
   this->realtime_tcp_interface->init();
   this->motion_tcp_if_->init();
 
   auto clock = rclcpp::Clock();
   const auto start = clock.now();
-  while (!this->dashboard_tcp_if_->isConnected() ||
-    !this->realtime_tcp_interface->isConnected() ||
-    !this->motion_tcp_if_->isConnected())
-  {
+
+  const auto is_connected = [&]() -> bool {
+      return this->dashboard_tcp_if_->isConnected() &&
+             this->realtime_tcp_interface->isConnected() &&
+             this->motion_tcp_if_->isConnected();
+    };
+
+  while (!is_connected()) {
     if (clock.now() - start > rclcpp::Duration(3s)) {
-      RCLCPP_ERROR(
-        this->getLogger(),
-        "Could not connect DOBOT MG400.");
+      RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
       return false;
     }
 
-    RCLCPP_WARN(
-      this->getLogger(),
-      "Waiting for the connection...");
+    RCLCPP_WARN(this->getLogger(), "Waiting for the connection...");
     rclcpp::sleep_for(1s);
   }
 
-  this->dashboard_commander =
-    std::make_shared<mg400_interface::DashboardCommander>(
-    this->dashboard_tcp_if_.get());
-  this->motion_commander =
-    std::make_shared<mg400_interface::MotionCommander>(
-    this->motion_tcp_if_.get());
+  this->dashboard_commander = std::make_shared<DashboardCommander>(this->dashboard_tcp_if_.get());
+  this->motion_commander = std::make_shared<MotionCommander>(this->motion_tcp_if_.get());
   return true;
 }
 
