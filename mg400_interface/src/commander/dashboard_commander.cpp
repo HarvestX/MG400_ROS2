@@ -16,7 +16,7 @@
 
 namespace mg400_interface
 {
-using namespace std::chrono_literals;
+using namespace std::chrono_literals;  // NOLINT
 
 DashboardCommander::DashboardCommander(
   DashboardTcpInterfaceBase * tcp_if,

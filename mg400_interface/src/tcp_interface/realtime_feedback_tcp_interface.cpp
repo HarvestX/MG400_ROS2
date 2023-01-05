@@ -34,8 +34,7 @@ void RealtimeFeedbackTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
-    this->thread_ = std::make_unique<std::thread>(
-      &RealtimeFeedbackTcpInterface::recvData, this);
+    this->thread_ = std::make_unique<std::thread>(&RealtimeFeedbackTcpInterface::recvData, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
@@ -51,21 +50,17 @@ bool RealtimeFeedbackTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
-void RealtimeFeedbackTcpInterface::getCurrentJointStates(
-  std::array<double, 4> & joints)
+void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
 {
   this->mutex_.lock();
   joints = this->current_joints_;
   this->mutex_.unlock();
 }
 
-void RealtimeFeedbackTcpInterface::getCurrentEndPose(
-  mg400_msgs::msg::EndPose & end_pose, const bool && is_ref)
+void RealtimeFeedbackTcpInterface::getCurrentEndPose(EndPose & end_pose, const bool && is_ref)
 {
   this->mutex_.lock();
-  JointHandler::getEndPose(
-    this->current_joints_, end_pose,
-    std::forward<const bool>(is_ref));
+  JointHandler::getEndPose(this->current_joints_, end_pose, std::forward<const bool>(is_ref));
   this->mutex_.unlock();
 }
 
@@ -79,8 +74,7 @@ uint64_t RealtimeFeedbackTcpInterface::getRobotMode()
   return this->rt_data_.robot_mode;
 }
 
-bool RealtimeFeedbackTcpInterface::isRobotMode(
-  const uint64_t & expected_mode) const
+bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode) const
 {
   return this->rt_data_.robot_mode == expected_mode;
 }
@@ -92,15 +86,13 @@ void RealtimeFeedbackTcpInterface::disConnect()
     this->thread_->join();
   }
   this->tcp_socket_->disConnect();
-  RCLCPP_INFO(
-    this->getLogger(),
-    "Close connection.");
+  RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
 void RealtimeFeedbackTcpInterface::recvData()
 {
   static const int CONNECTION_TRIAL = 3;
-  using namespace std::chrono_literals;
+  using namespace std::chrono_literals;  // NOLINT
   int failed_cnd = 0;
   while (failed_cnd < CONNECTION_TRIAL) {
     if (!this->is_running_) {
@@ -108,17 +100,14 @@ void RealtimeFeedbackTcpInterface::recvData()
     }
     try {
       if (this->tcp_socket_->isConnected()) {
-        if (this->tcp_socket_->recv(
-            &this->rt_data_, sizeof(this->rt_data_), 5000))
-        {
+        if (this->tcp_socket_->recv(&this->rt_data_, sizeof(this->rt_data_), 5000)) {
           if (this->rt_data_.len != 1440) {
             continue;
           }
 
           this->mutex_.lock();
           for (uint64_t i = 0; i < 4; ++i) {
-            this->current_joints_[i] =
-              this->rt_data_.q_actual[i] * TO_RADIAN;
+            this->current_joints_[i] = this->rt_data_.q_actual[i] * TO_RADIAN;
           }
           this->mutex_.unlock();
           continue;
@@ -130,26 +119,20 @@ void RealtimeFeedbackTcpInterface::recvData()
         try {
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(
-            this->getLogger(), "Tcp recv error: %s", err.what());
+          RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
           rclcpp::sleep_for(500ms);
           failed_cnd++;
         }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
-      RCLCPP_ERROR(
-        this->getLogger(),
-        "Tcp recv error: %s", err.what());
+      RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
       rclcpp::sleep_for(500ms);
       failed_cnd++;
     }
   }
 
-  RCLCPP_ERROR(
-    this->getLogger(),
-    "Failed more than %d times.. . Close connection.",
-    failed_cnd);
+  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times.. . Close connection.", failed_cnd);
   this->is_running_ = false;
 }
 

@@ -16,13 +16,9 @@
 
 namespace mg400_interface
 {
-
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
 
-TcpSocketHandler::TcpSocketHandler(
-  std::string ip,
-  uint16_t port
-)
+TcpSocketHandler::TcpSocketHandler(std::string ip, uint16_t port)
 : fd_(-1),
   port_(port),
   ip_(std::move(ip)),
@@ -53,8 +49,7 @@ void TcpSocketHandler::connect()
   if (this->fd_ < 0) {
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (this->fd_ < 0) {
-      throw TcpSocketException(
-              this->toString() + std::string(" socket : ") + strerror(errno));
+      throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
     }
   }
 
@@ -65,19 +60,13 @@ void TcpSocketHandler::connect()
   addr.sin_family = AF_INET;
   addr.sin_port = htons(this->port_);
 
-  if (::connect(
-      this->fd_,
-      reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0)
-  {
-    throw  TcpSocketException(
-            this->toString() + std::string(" connect : ") + strerror(errno));
+  if (::connect(this->fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
+    throw  TcpSocketException(this->toString() + std::string(" connect : ") + strerror(errno));
   }
 
   this->is_connected_ = true;
 
-  RCLCPP_INFO(
-    LOGGER,
-    "%s : connected successfully", this->toString().c_str());
+  RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpSocketHandler::disConnect()
@@ -100,18 +89,14 @@ void TcpSocketHandler::send(const void * buf, uint32_t len)
     throw TcpSocketException("tcp is disconnected");
   }
 
-  RCLCPP_INFO(
-    LOGGER,
-    "send : %s",
-    (const char *)buf);
+  RCLCPP_INFO(LOGGER, "send : %s", (const char *)buf);
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {
     int err = static_cast<int>(::send(fd_, tmp, len, MSG_NOSIGNAL));
     if (err < 0) {
       this->disConnect();
-      throw TcpSocketException(
-              this->toString() + std::string(" ::send() ") + strerror(errno));
+      throw TcpSocketException(this->toString() + std::string(" ::send() ") + strerror(errno));
     }
     len -= err;
     tmp += err;
@@ -133,21 +118,17 @@ bool TcpSocketHandler::recv(void * buf, uint32_t len, uint32_t timeout)
     int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
     if (err < 0) {
       this->disConnect();
-      throw TcpSocketException(
-              this->toString() + std::string(" select() : ") + strerror(errno));
+      throw TcpSocketException(this->toString() + std::string(" select() : ") + strerror(errno));
     } else if (err == 0) {
       return false;
     }
-
     err = static_cast<int>(::read(fd_, tmp, len));
     if (err < 0) {
       this->disConnect();
-      throw TcpSocketException(
-              this->toString() + std::string(" ::read() ") + strerror(errno));
+      throw TcpSocketException(this->toString() + std::string(" ::read() ") + strerror(errno));
     } else if (err == 0) {
       this->disConnect();
-      throw TcpSocketException(
-              this->toString() + std::string(" tcp server has disconnected."));
+      throw TcpSocketException(this->toString() + std::string(" tcp server has disconnected."));
     }
     len -= err;
     tmp += err;

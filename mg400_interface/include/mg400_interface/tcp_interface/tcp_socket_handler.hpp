@@ -46,9 +46,7 @@ private:
   std::atomic<bool> is_connected_;
 
 public:
-  TcpSocketHandler(
-    std::string,
-    uint16_t);
+  TcpSocketHandler(std::string, uint16_t);
 
   ~TcpSocketHandler();
 

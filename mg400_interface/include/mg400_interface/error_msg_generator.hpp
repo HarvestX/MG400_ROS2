@@ -24,7 +24,6 @@
 
 namespace mg400_interface
 {
-
 class ErrorMsgGenerator
 {
 private:

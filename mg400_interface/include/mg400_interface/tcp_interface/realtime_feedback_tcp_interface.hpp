@@ -36,6 +36,7 @@ public:
   const std::string frame_id_prefix;
 
 private:
+  using EndPose = mg400_msgs::msg::EndPose;
   const uint16_t PORT_ = 30004;
 
   std::mutex mutex_;
@@ -56,8 +57,7 @@ public:
   bool isConnected();
 
   void getCurrentJointStates(std::array<double, 4> &);
-  void getCurrentEndPose(
-    mg400_msgs::msg::EndPose &, const bool && = true);
+  void getCurrentEndPose(EndPose &, const bool && = true);
   RealTimeData getRealtimeData();
   uint64_t getRobotMode();
   bool isRobotMode(const uint64_t &) const;

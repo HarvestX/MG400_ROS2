@@ -37,8 +37,7 @@ void MotionTcpInterface::init() noexcept
 {
   try {
     this->is_running_ = true;
-    this->thread_ = std::make_unique<std::thread>(
-      &MotionTcpInterface::checkConnection, this);
+    this->thread_ = std::make_unique<std::thread>(&MotionTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
   }
@@ -62,27 +61,20 @@ void MotionTcpInterface::checkConnection()
         try {
           this->tcp_socket_->connect();
         } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(
-            this->getLogger(),
-            "Tcp recv error : %s", err.what());
+          RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
           rclcpp::sleep_for(500ms);
           failed_cnt++;
         }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
-      RCLCPP_ERROR(
-        this->getLogger(),
-        "Tcp recv error : %s", err.what());
+      RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
       rclcpp::sleep_for(500ms);
       failed_cnt++;
     }
   }
 
-  RCLCPP_ERROR(
-    this->getLogger(),
-    "Failed more than %d times... Close connection.",
-    failed_cnt);
+  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times... Close connection.", failed_cnt);
   this->is_running_ = false;
 }
 
@@ -98,14 +90,11 @@ void MotionTcpInterface::disConnect()
     this->thread_->join();
   }
   this->tcp_socket_->disConnect();
-  RCLCPP_INFO(
-    this->getLogger(),
-    "Close connection.");
+  RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
 void MotionTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
 }
-
 }  // namespace mg400_interface
