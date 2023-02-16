@@ -1,5 +1,5 @@
 #goal definition
-mg400_msgs/EndPose pose
+mg400_msgs/EndPoseStamped pose
 ---
 #result definition
 bool result

@@ -26,6 +26,13 @@ void MovL::configure(
     return;
   }
 
+  // setup for using tf handler
+  handler_ = std::make_shared<mg400_interface::PoseHandler>(
+    node->get_node_clock_interface(), node->get_node_logging_interface());
+  handler_->configure();
+  handler_->setDistFrameId(this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link");
+  handler_->activate();
+
   using namespace std::placeholders;  // NOLINT
 
   this->action_server_ =
@@ -72,12 +79,17 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   const auto & goal = goal_handle->get_goal();
 
+  // tf
+  mg400_msgs::msg::EndPoseStamped in, out;
+  in = goal->pose;
+  handler_->tfHeader2Dist(in, out);
+
   auto feedback = std::make_shared<mg400_msgs::action::MovL::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovL::Result>();
   result->result = false;
 
   this->commander_->movL(
-    goal->pose.x, goal->pose.y, goal->pose.z, goal->pose.r);
+    out.pose.x, out.pose.y, out.pose.z, out.pose.r);
 
   const auto is_goal_reached = [&](
     const mg400_msgs::msg::EndPose & pose,
@@ -112,7 +124,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto start = this->base_node_->get_clock()->now();
   update_pose(feedback->current_pose);
 
-  while (!is_goal_reached(feedback->current_pose.pose, goal->pose)) {
+  while (!is_goal_reached(feedback->current_pose.pose, goal->pose.pose)) {
     if (this->realtime_tcp_interface_->isRobotMode(RobotMode::ERROR)) {
       RCLCPP_ERROR(this->base_node_->get_logger(), "Robot Mode Error");
       goal_handle->abort(result);
