@@ -62,7 +62,7 @@ Set the PC's Ethernet IPv4 IP address to a fixed IP somewhere on `192.168.1.0/24
 
 No need to fill in the "Gateway" and "DNS".
 
-![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/IPv4_settings.png?raw=true)
+![Image](./media/IPv4_settings.png?raw=true)
 
 Check the circle light on the base of MG400 blink blue.
 
