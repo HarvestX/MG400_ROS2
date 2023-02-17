@@ -15,4 +15,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(rclcpp)
+ament_export_dependencies(pluginlib)
+ament_export_dependencies(mg400_interface)
 ament_auto_package()
