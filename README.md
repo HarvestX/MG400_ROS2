@@ -4,7 +4,7 @@
 
 Dobot MG400 ROS2 Repository.
 
-![Image](https://github.com/HarvestX/MG400_ROS2/blob/main/media/display.png?raw=true)
+![Image](./media/display.png)
 
 ## Repository Status
 
