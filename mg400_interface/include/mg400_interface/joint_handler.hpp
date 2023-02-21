@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <sensor_msgs/msg/joint_state.hpp>
-#include <mg400_msgs/msg/end_pose.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/command_utils.hpp"
@@ -62,11 +62,11 @@ public:
 
   static bool getEndPose(
     const std::array<double, 4> &,
-    mg400_msgs::msg::EndPose &, const bool && = true);
+    geometry_msgs::msg::Pose &, const bool && = true);
 
   static bool getEndPose(
     const sensor_msgs::msg::JointState::ConstSharedPtr,
-    mg400_msgs::msg::EndPose &, const bool && = true);
+    geometry_msgs::msg::Pose &, const bool && = true);
 
 private:
   static Eigen::MatrixXd rotY(

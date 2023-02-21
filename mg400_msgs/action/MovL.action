@@ -1,8 +1,8 @@
 #goal definition
-mg400_msgs/EndPoseStamped pose
+geometry_msgs/PoseStamped pose
 ---
 #result definition
 bool result
 ---
 #feedback definition
-mg400_msgs/EndPoseStamped current_pose
+geometry_msgs/PoseStamped current_pose

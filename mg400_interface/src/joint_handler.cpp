@@ -60,7 +60,7 @@ JointHandler::getJointState(
 
 bool JointHandler::getEndPose(
   const std::array<double, 4> & joints,
-  mg400_msgs::msg::EndPose & pose,
+  geometry_msgs::msg::Pose & pose,
   const bool && is_ref)
 {
   Eigen::MatrixXd pos(3, 1);
@@ -82,14 +82,14 @@ bool JointHandler::getEndPose(
     LINK4;
   p = rotZ(pos, joints.at(0));
 
-  pose.x = static_cast<double>(p(0, 0));
-  pose.y = static_cast<double>(p(1, 0));
-  pose.z = static_cast<double>(p(2, 0));
+  pose.position.x = static_cast<double>(p(0, 0));
+  pose.position.y = static_cast<double>(p(1, 0));
+  pose.position.z = static_cast<double>(p(2, 0));
   if (is_ref) {
-    pose.r =
+    pose.orientation.w =
       joints.at(0) + joints.at(3);
   } else {
-    pose.r = joints.at(3);
+    pose.orientation.w = joints.at(3);
   }
 
   return true;
@@ -97,7 +97,7 @@ bool JointHandler::getEndPose(
 
 bool JointHandler::getEndPose(
   const sensor_msgs::msg::JointState::ConstSharedPtr joint_state,
-  mg400_msgs::msg::EndPose & pose, const bool && is_ref)
+  geometry_msgs::msg::Pose & pose, const bool && is_ref)
 {
   if (!joint_state) {
     return false;

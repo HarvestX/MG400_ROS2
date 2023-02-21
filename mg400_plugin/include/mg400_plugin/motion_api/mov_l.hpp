@@ -17,7 +17,7 @@
 #include <mg400_msgs/action/mov_l.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_interface/pose_tf_handler.hpp>
+#include <h6x_tf_handler/pose_tf_handler.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
 namespace mg400_plugin
@@ -30,7 +30,7 @@ public:
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
-  std::shared_ptr<mg400_interface::PoseHandler> handler_;
+  std::shared_ptr<h6x_tf_handler::PoseTfHandler> tf_handler_;
 
 public:
   void configure(

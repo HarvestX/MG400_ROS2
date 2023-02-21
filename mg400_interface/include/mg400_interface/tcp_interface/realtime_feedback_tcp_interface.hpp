@@ -18,7 +18,7 @@
 #include <string>
 #include <memory>
 
-#include <mg400_msgs/msg/end_pose.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
@@ -36,7 +36,7 @@ public:
   const std::string frame_id_prefix;
 
 private:
-  using EndPose = mg400_msgs::msg::EndPose;
+  using EndPose = geometry_msgs::msg::Pose;
   const uint16_t PORT_ = 30004;
 
   std::mutex mutex_;
