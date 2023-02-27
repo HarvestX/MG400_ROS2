@@ -111,8 +111,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
     [&](geometry_msgs::msg::PoseStamped & msg) -> void
     {
       msg.header.stamp = this->base_node_->get_clock()->now();
-      msg.header.frame_id =
-        this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
+      msg.header.frame_id = this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
       this->realtime_tcp_interface_->getCurrentEndPose(msg.pose);
     };
 

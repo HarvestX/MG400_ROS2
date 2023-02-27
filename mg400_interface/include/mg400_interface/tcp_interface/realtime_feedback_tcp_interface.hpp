@@ -36,7 +36,7 @@ public:
   const std::string frame_id_prefix;
 
 private:
-  using EndPose = geometry_msgs::msg::Pose;
+  using Pose = geometry_msgs::msg::Pose;
   const uint16_t PORT_ = 30004;
 
   std::mutex mutex_;
@@ -57,7 +57,7 @@ public:
   bool isConnected();
 
   void getCurrentJointStates(std::array<double, 4> &);
-  void getCurrentEndPose(EndPose &, const bool && = true);
+  void getCurrentEndPose(Pose &);
   RealTimeData getRealtimeData();
   uint64_t getRobotMode();
   bool isRobotMode(const uint64_t &) const;

@@ -17,11 +17,10 @@
 
 namespace mg400_interface
 {
-
-sensor_msgs::msg::JointState::UniquePtr
+JointHandler::JointState::UniquePtr
 JointHandler::getJointState(const std::array<double, 4> & joint_states, const std::string & prefix)
 {
-  auto msg = std::make_unique<sensor_msgs::msg::JointState>();
+  auto msg = std::make_unique<JointState>();
   msg->header.stamp = rclcpp::Clock().now();
   msg->header.frame_id = prefix + BASE_LINK_NAME;
 
@@ -50,18 +49,14 @@ JointHandler::getJointState(const std::array<double, 4> & joint_states, const st
   return msg;
 }
 
-sensor_msgs::msg::JointState::UniquePtr
-JointHandler::getJointState(
+JointHandler::JointState::UniquePtr JointHandler::getJointState(
   const double & j1, const double & j2, const double & j3, const double & j4,
   const std::string & prefix)
 {
   return JointHandler::getJointState({j1, j2, j3, j4}, prefix);
 }
 
-bool JointHandler::getEndPose(
-  const std::array<double, 4> & joints,
-  geometry_msgs::msg::Pose & pose,
-  const bool && is_ref)
+bool JointHandler::getEndPose(const std::array<double, 4> & joints, Pose & pose)
 {
   Eigen::MatrixXd pos(3, 1);
   Eigen::MatrixXd p(3, 1);
@@ -85,19 +80,19 @@ bool JointHandler::getEndPose(
   pose.position.x = static_cast<double>(p(0, 0));
   pose.position.y = static_cast<double>(p(1, 0));
   pose.position.z = static_cast<double>(p(2, 0));
-  if (is_ref) {
-    pose.orientation.w =
-      joints.at(0) + joints.at(3);
-  } else {
-    pose.orientation.w = joints.at(3);
-  }
+
+  tf2::Quaternion quat;
+  quat.setRPY(0.0, 0.0, joints.at(3));
+
+  pose.orientation.w = quat.getW();
+  pose.orientation.x = quat.getX();
+  pose.orientation.y = quat.getY();
+  pose.orientation.z = quat.getZ();
 
   return true;
 }
 
-bool JointHandler::getEndPose(
-  const sensor_msgs::msg::JointState::ConstSharedPtr joint_state,
-  geometry_msgs::msg::Pose & pose, const bool && is_ref)
+bool JointHandler::getEndPose(const JointState::ConstSharedPtr joint_state, Pose & pose)
 {
   if (!joint_state) {
     return false;
@@ -108,16 +103,12 @@ bool JointHandler::getEndPose(
   }
 
   return JointHandler::getEndPose(
-    {joint_state->position.at(0),
-      joint_state->position.at(1),
-      joint_state->position.at(6),
-      joint_state->position.at(7)},
-    pose, std::forward<const bool>(is_ref));
+    {joint_state->position.at(0), joint_state->position.at(1),
+      joint_state->position.at(6), joint_state->position.at(7)}, pose);
 }
 
 
-Eigen::MatrixXd JointHandler::rotY(
-  const Eigen::MatrixXd & vec, const double & angle)
+Eigen::MatrixXd JointHandler::rotY(const Eigen::MatrixXd & vec, const double & angle)
 {
   Eigen::Matrix3d rot_mat;
   const double co = cos(angle);
@@ -131,8 +122,7 @@ Eigen::MatrixXd JointHandler::rotY(
   return rot_mat * vec;
 }
 
-Eigen::MatrixXd JointHandler::rotZ(
-  const Eigen::MatrixXd & vec, const double & angle)
+Eigen::MatrixXd JointHandler::rotZ(const Eigen::MatrixXd & vec, const double & angle)
 {
   Eigen::Matrix3d rot_mat;
   const double co = cos(angle);
