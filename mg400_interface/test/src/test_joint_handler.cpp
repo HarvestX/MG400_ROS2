@@ -37,5 +37,8 @@ TEST_F(TestJointHandler, getEndPoint)
   EXPECT_DOUBLE_EQ(0.284, actual.position.x);
   EXPECT_DOUBLE_EQ(0.0, actual.position.y);
   EXPECT_DOUBLE_EQ(0.118, actual.position.z);
-  EXPECT_DOUBLE_EQ(0.0, actual.orientation.w);
+  EXPECT_DOUBLE_EQ(1.0, actual.orientation.w);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.x);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.y);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.z);
 }
