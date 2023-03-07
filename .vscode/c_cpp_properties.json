@@ -7,8 +7,8 @@
       },
       "includePath": [
         "/usr/include/**",
-        "/opt/ros/galactic/include/**",
-        "/opt/ros/galactic/src/gmock_vendor/include/**",
+        "/opt/ros/humble/include/**",
+        "/opt/ros/humble/src/gmock_vendor/include/**",
         "${workspaceFolder}/../../install/mg400_msgs/include/**",
         "${workspaceFolder}/../../install/mg400_node/joint_state_publisher_gui_autogen/include/**",
         "${workspaceFolder}/../../install/p9n_interface/include/**",
