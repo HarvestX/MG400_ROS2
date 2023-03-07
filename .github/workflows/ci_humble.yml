@@ -32,6 +32,7 @@ jobs:
           target-ros2-distro: ${{ matrix.ros_distribution }}
           import-token: ${{ secrets.GITHUB_TOKEN }}
           package-name: |
+            mg400
             mg400_bringup
             mg400_description
             mg400_interface

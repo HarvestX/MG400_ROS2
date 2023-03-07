@@ -1,0 +1,39 @@
+name: release
+on:
+  workflow_dispatch:
+    inputs:
+      fragment:
+        type: choice
+        description: Semantic version target
+        options:
+          - bug
+          - feature
+          - major
+      target:
+        type: choice
+        description: Release target package name
+        options:
+          - mg400
+          - mg400_bringup
+          - mg400_description
+          - mg400_interface
+          - mg400_joy
+          - mg400_msgs
+          - mg400_node
+          - mg400_plugin
+          - mg400_plugin_base
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upgrade version
+        id: upgrade
+        uses: HarvestX/ros2-release-ci-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          base_pkg: mg400
+        with:
+          target-package: ${{ github.event.inputs.target }}
+          version-fragment: ${{ github.event.inputs.fragment }}
+          create-release: ${{ github.event.inputs.target == env.base_pkg }}
