@@ -1,9 +1,9 @@
 {
   "python.autoComplete.extraPaths": [
-    "/opt/ros/galactic/lib/python3.8/site-packages",
+    "/opt/ros/humble/lib/python3.10/site-packages",
   ],
   "python.analysis.extraPaths": [
-    "/opt/ros/galactic/lib/python3.8/site-packages"
+    "/opt/ros/humble/lib/python3.10/site-packages"
   ],
   "[jsonc]": {
     "editor.formatOnSave": true,
@@ -23,5 +23,4 @@
   "files.associations": {
     ".repos": "yaml"
   },
-  "cmake.sourceDirectory": "${workspaceFolder}/mg400_description",
 }

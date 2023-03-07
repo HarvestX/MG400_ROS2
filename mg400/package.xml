@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mg400</name>
+  <version>1.2.0</version>
+  <description>HarvestX MG400 Packages.</description>
+  <maintainer email="40206149+m12watanabe1a@users.noreply.github.com">m12watanabe1a</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>mg400_bringup</depend>
+  <depend>mg400_description</depend>
+  <depend>mg400_interface</depend>
+  <depend>mg400_joy</depend>
+  <depend>mg400_msgs</depend>
+  <depend>mg400_node</depend>
+  <depend>mg400_plugin</depend>
+  <depend>mg400_plugin_base</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
