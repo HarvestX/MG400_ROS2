@@ -2,4 +2,4 @@ repositories:
   PlayStation-JoyInterface-ROS2:
     type: git
     url: https://github.com/HarvestX/PlayStation-JoyInterface-ROS2.git
-    version: galactic
+    version: humble
