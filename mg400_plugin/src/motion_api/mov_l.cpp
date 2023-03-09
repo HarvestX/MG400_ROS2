@@ -89,7 +89,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   this->commander_->movL(
     tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
-    tf_goal.pose.orientation.w);
+    tf2::getYaw(tf_goal.pose.orientation));
 
   const auto is_goal_reached = [&](
     const geometry_msgs::msg::Pose & pose,

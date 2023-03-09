@@ -19,6 +19,7 @@
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <h6x_tf_handler/pose_tf_handler.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include <tf2/utils.h>
 
 namespace mg400_plugin
 {
