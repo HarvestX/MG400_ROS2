@@ -57,10 +57,10 @@ void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> &
   this->mutex_.unlock();
 }
 
-void RealtimeFeedbackTcpInterface::getCurrentEndPose(EndPose & end_pose, const bool && is_ref)
+void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
 {
   this->mutex_.lock();
-  JointHandler::getEndPose(this->current_joints_, end_pose, std::forward<const bool>(is_ref));
+  JointHandler::getEndPose(this->current_joints_, pose);
   this->mutex_.unlock();
 }
 

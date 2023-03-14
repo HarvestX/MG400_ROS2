@@ -20,6 +20,7 @@
         "${workspaceFolder}/mg400_node/src/joint_state_publisher/**",
         "${workspaceFolder}/mg400_plugin_base/include/**",
         "${workspaceFolder}/mg400_plugin/include/**",
+        "${workspaceFolder}/../../install/h6x_tf_handler/include/**",
       ],
       "name": "ROS",
       "intelliSenseMode": "clang-x64",

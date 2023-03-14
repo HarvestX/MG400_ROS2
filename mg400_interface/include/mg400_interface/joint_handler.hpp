@@ -16,11 +16,12 @@
 
 #include <eigen3/Eigen/Core>
 
+#include <geometry_msgs/msg/pose.hpp>
 #include <memory>
-#include <string>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <mg400_msgs/msg/end_pose.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <string>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include "mg400_interface/command_utils.hpp"
 
@@ -50,29 +51,23 @@ constexpr double J4_MAX = 180.0 * TO_RADIAN;
 
 class JointHandler
 {
+private:
+  using JointState = sensor_msgs::msg::JointState;
+  using Pose = geometry_msgs::msg::Pose;
+
 public:
-  static sensor_msgs::msg::JointState::UniquePtr getJointState(
-    const std::array<double, 4> &,
-    const std::string &);
+  static JointState::UniquePtr getJointState(const std::array<double, 4> &, const std::string &);
 
-  static sensor_msgs::msg::JointState::UniquePtr getJointState(
-    const double &, const double &, const double &, const double &,
-    const std::string &);
+  static JointState::UniquePtr getJointState(
+    const double &, const double &, const double &, const double &, const std::string &);
 
 
-  static bool getEndPose(
-    const std::array<double, 4> &,
-    mg400_msgs::msg::EndPose &, const bool && = true);
+  static bool getEndPose(const std::array<double, 4> &, Pose &);
 
-  static bool getEndPose(
-    const sensor_msgs::msg::JointState::ConstSharedPtr,
-    mg400_msgs::msg::EndPose &, const bool && = true);
+  static bool getEndPose(const JointState::ConstSharedPtr, Pose &);
 
 private:
-  static Eigen::MatrixXd rotY(
-    const Eigen::MatrixXd &, const double &);
-
-  static Eigen::MatrixXd rotZ(
-    const Eigen::MatrixXd &, const double &);
+  static Eigen::MatrixXd rotY(const Eigen::MatrixXd &, const double &);
+  static Eigen::MatrixXd rotZ(const Eigen::MatrixXd &, const double &);
 };
 }  // namespace mg400_interface

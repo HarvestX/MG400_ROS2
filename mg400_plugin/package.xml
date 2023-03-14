@@ -12,6 +12,7 @@
   <depend>mg400_msgs</depend>
   <depend>mg400_plugin_base</depend>
   <depend>rclcpp_action</depend>
+  <depend>h6x_tf_handler</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

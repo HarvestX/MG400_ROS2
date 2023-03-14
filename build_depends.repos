@@ -3,3 +3,11 @@ repositories:
     type: git
     url: https://github.com/HarvestX/PlayStation-JoyInterface-ROS2.git
     version: humble
+  h6x_tf_manager:
+    type: git
+    url: https://github.com/HarvestX/h6x_tf_manager.git
+    version: humble
+  h6x_tf_manager:
+    type: git
+    url: git@github.com:HarvestX/h6x_tf_manager.git
+    version: humble

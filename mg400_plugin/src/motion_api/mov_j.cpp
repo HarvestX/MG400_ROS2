@@ -26,6 +26,13 @@ void MovJ::configure(
     return;
   }
 
+  // setup for using tf handler
+  tf_handler_ = std::make_shared<h6x_tf_handler::PoseTfHandler>(
+    node->get_node_clock_interface(), node->get_node_logging_interface());
+  tf_handler_->configure();
+  tf_handler_->setDistFrameId(this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link");
+  tf_handler_->activate();
+
   using namespace std::placeholders;  // NOLINT
 
   this->action_server_ =
@@ -72,16 +79,21 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   const auto & goal = goal_handle->get_goal();
 
+  // tf (from goal->pose to tf_goal)
+  geometry_msgs::msg::PoseStamped tf_goal;
+  tf_handler_->tfHeader2Dist(goal->pose, tf_goal);
+
   auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
   auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
   result->result = false;
 
   this->commander_->movJ(
-    goal->pose.x, goal->pose.y, goal->pose.z, goal->pose.r);
+    tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
+    tf2::getYaw(tf_goal.pose.orientation));
 
   const auto is_goal_reached = [&](
-    const mg400_msgs::msg::EndPose & pose,
-    const mg400_msgs::msg::EndPose & goal) -> bool {
+    const geometry_msgs::msg::Pose & pose,
+    const geometry_msgs::msg::Pose & goal) -> bool {
       const double tolerance_mm = 5e-3;  // 5 mm
       const double tolerance_rad = 1.74e-2;  // 1 rad
       auto is_in_tolerance = [](
@@ -89,18 +101,17 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
           return std::abs(val) < tolerance;
         };
 
-      return is_in_tolerance(pose.x - goal.x, tolerance_mm) &&
-             is_in_tolerance(pose.y - goal.y, tolerance_mm) &&
-             is_in_tolerance(pose.z - goal.z, tolerance_mm) &&
-             is_in_tolerance(pose.r - goal.r, tolerance_rad);
+      return is_in_tolerance(pose.position.x - goal.position.x, tolerance_mm) &&
+             is_in_tolerance(pose.position.y - goal.position.y, tolerance_mm) &&
+             is_in_tolerance(pose.position.z - goal.position.z, tolerance_mm) &&
+             is_in_tolerance(pose.orientation.w - goal.orientation.w, tolerance_rad);
     };
 
   const auto update_pose =
-    [&](mg400_msgs::msg::EndPoseStamped & msg) -> void
+    [&](geometry_msgs::msg::PoseStamped & msg) -> void
     {
       msg.header.stamp = this->base_node_->get_clock()->now();
-      msg.header.frame_id =
-        this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
+      msg.header.frame_id = this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
       this->realtime_tcp_interface_->getCurrentEndPose(msg.pose);
     };
 
@@ -112,7 +123,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto start = this->base_node_->get_clock()->now();
   update_pose(feedback->current_pose);
 
-  while (!is_goal_reached(feedback->current_pose.pose, goal->pose)) {
+  while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
     if (this->realtime_tcp_interface_->isRobotMode(RobotMode::ERROR)) {
       RCLCPP_ERROR(this->base_node_->get_logger(), "Robot Mode Error");
       goal_handle->abort(result);

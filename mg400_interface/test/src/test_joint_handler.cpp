@@ -31,11 +31,14 @@ TEST_F(TestJointHandler, getEndPoint)
   auto js = std::make_shared<sensor_msgs::msg::JointState>();
   js->position = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-  mg400_msgs::msg::EndPose actual;
+  geometry_msgs::msg::Pose actual;
   const auto ret = mg400_interface::JointHandler::getEndPose(js, actual);
   ASSERT_TRUE(ret);
-  EXPECT_DOUBLE_EQ(0.284, actual.x);
-  EXPECT_DOUBLE_EQ(0.0, actual.y);
-  EXPECT_DOUBLE_EQ(0.118, actual.z);
-  EXPECT_DOUBLE_EQ(0.0, actual.r);
+  EXPECT_DOUBLE_EQ(0.284, actual.position.x);
+  EXPECT_DOUBLE_EQ(0.0, actual.position.y);
+  EXPECT_DOUBLE_EQ(0.118, actual.position.z);
+  EXPECT_DOUBLE_EQ(1.0, actual.orientation.w);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.x);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.y);
+  EXPECT_DOUBLE_EQ(0.0, actual.orientation.z);
 }
