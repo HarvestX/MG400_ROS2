@@ -20,6 +20,7 @@
 #include <h6x_tf_handler/pose_tf_handler.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <tf2/utils.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 namespace mg400_plugin
 {
