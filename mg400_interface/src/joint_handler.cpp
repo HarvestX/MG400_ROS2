@@ -82,7 +82,7 @@ bool JointHandler::getEndPose(const std::array<double, 4> & joints, Pose & pose)
   pose.position.z = static_cast<double>(p(2, 0));
 
   tf2::Quaternion quat;
-  quat.setRPY(0.0, 0.0, joints.at(3));
+  quat.setRPY(0.0, 0.0, joints.at(0) + joints.at(3));
 
   pose.orientation.w = quat.getW();
   pose.orientation.x = quat.getX();
