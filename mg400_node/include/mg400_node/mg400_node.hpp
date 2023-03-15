@@ -36,7 +36,8 @@ private:
     "mg400_plugin::EmergencyStop",
     "mg400_plugin::EnableRobot",
     "mg400_plugin::ResetRobot",
-    "mg400_plugin::SpeedFactor"
+    "mg400_plugin::SpeedFactor",
+    "mg400_plugin::ToolDOExecute"
   };
 
   const std::vector<std::string> default_motion_api_plugins_ = {
