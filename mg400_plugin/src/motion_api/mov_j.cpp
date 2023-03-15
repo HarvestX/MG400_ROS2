@@ -115,25 +115,6 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
       msg.header.stamp = this->base_node_->get_clock()->now();
       msg.header.frame_id = this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
       this->realtime_tcp_interface_->getCurrentEndPose(msg.pose);
-
-      // RealtimeFeedbackTcpInterface::getCurrentEndPose returns position based on 'mg400_origin_link'
-      // but the orientation is based on 'mg400_end_effector_flange'.
-      // Hence here we apply the rotation of 'mg400_end_effector_flange' to the returned value to make
-      // the orientation based on 'mg400_origin_link' as well.
-      auto flange_coord_rot = tf2::Quaternion();
-      flange_coord_rot.setRPY(0, 0, std::atan2(msg.pose.position.y, msg.pose.position.x));
-
-      auto flange_rot = tf2::Quaternion(
-        msg.pose.orientation.x,
-        msg.pose.orientation.y,
-        msg.pose.orientation.z,
-        msg.pose.orientation.w);
-      tf2::Quaternion rot_on_mg400_origin_link = flange_coord_rot * flange_rot;
-
-      msg.pose.orientation.x = rot_on_mg400_origin_link.x();
-      msg.pose.orientation.y = rot_on_mg400_origin_link.y();
-      msg.pose.orientation.z = rot_on_mg400_origin_link.z();
-      msg.pose.orientation.w = rot_on_mg400_origin_link.w();
     };
 
 
