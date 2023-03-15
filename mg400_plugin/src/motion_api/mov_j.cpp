@@ -104,7 +104,9 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
       return is_in_tolerance(pose.position.x - goal.position.x, tolerance_mm) &&
              is_in_tolerance(pose.position.y - goal.position.y, tolerance_mm) &&
              is_in_tolerance(pose.position.z - goal.position.z, tolerance_mm) &&
-             is_in_tolerance(tf2::getYaw(pose.orientation) - tf2::getYaw(goal.orientation), tolerance_rad);
+             is_in_tolerance(
+        tf2::getYaw(pose.orientation) - tf2::getYaw(goal.orientation),
+        tolerance_rad);
     };
 
   const auto update_pose =
@@ -121,7 +123,11 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
       auto flange_coord_rot = tf2::Quaternion();
       flange_coord_rot.setRPY(0, 0, std::atan2(msg.pose.position.y, msg.pose.position.x));
 
-      auto flange_rot = tf2::Quaternion(msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
+      auto flange_rot = tf2::Quaternion(
+        msg.pose.orientation.x,
+        msg.pose.orientation.y,
+        msg.pose.orientation.z,
+        msg.pose.orientation.w);
       tf2::Quaternion rot_on_mg400_origin_link = flange_coord_rot * flange_rot;
 
       msg.pose.orientation.x = rot_on_mg400_origin_link.x();
