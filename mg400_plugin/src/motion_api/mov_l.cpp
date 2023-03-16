@@ -104,7 +104,9 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
       return is_in_tolerance(pose.position.x - goal.position.x, tolerance_mm) &&
              is_in_tolerance(pose.position.y - goal.position.y, tolerance_mm) &&
              is_in_tolerance(pose.position.z - goal.position.z, tolerance_mm) &&
-             is_in_tolerance(pose.orientation.w - goal.orientation.w, tolerance_rad);
+             is_in_tolerance(
+        tf2::getYaw(pose.orientation) - tf2::getYaw(goal.orientation),
+        tolerance_rad);
     };
 
   const auto update_pose =
