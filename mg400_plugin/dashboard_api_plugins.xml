@@ -25,6 +25,11 @@
     <description>CP</description>
   </class>
   <class
+      type="mg400_plugin::DI"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>DI</description>
+  </class>
+  <class
       type="mg400_plugin::DisableRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Disable robot</description>

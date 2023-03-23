@@ -36,6 +36,7 @@ private:
     // "mg400_plugin::Arch",
     "mg400_plugin::ClearError",
     // "mg400_plugin::CP",
+    // "mg400_plugin::DI",
     "mg400_plugin::DisableRobot",
     // "mg400_plugin::DO",
     "mg400_plugin::EmergencyStop",
