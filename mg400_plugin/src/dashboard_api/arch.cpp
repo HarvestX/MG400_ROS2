@@ -38,7 +38,7 @@ void Arch::onServiceCall(
 {
   res->result = false;
   try {
-    // this->commander_->arch();
+    this->commander_->arch(req->index);
     res->result = true;
   } catch (const std::runtime_error & ex) {
     RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());

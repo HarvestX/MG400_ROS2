@@ -163,19 +163,19 @@ void DashboardCommander::speedL(const int R)
   const int cx = snprintf(buf, sizeof(buf), "SpeedL(%d)", R);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
-/*
-bool DashboardCommander::arch(const ArchIndex & index)
+
+void DashboardCommander::arch(const ArchIndex & index)
 {
   return this->arch(static_cast<int>(index));
 }
 
-bool DashboardCommander::arch(const int index)
+void DashboardCommander::arch(const int index)
 {
-  char buf[100];
-  snprintf(buf, sizeof(buf), "Arch(%d)", index);
-  return this->sendCommand(buf);
+  static char buf[128];
+  const int cx = snprintf(buf, sizeof(buf), "Arch(%d)", index);
+  this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
-*/
+
 void DashboardCommander::cp(const int R)
 {
   static char buf[128];

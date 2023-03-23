@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 
+#include <mg400_msgs/msg/arch.hpp>
 #include <mg400_msgs/msg/collision_level.hpp>
 #include <mg400_msgs/msg/do_index.hpp>
 #include <mg400_msgs/msg/do_status.hpp>
@@ -28,7 +29,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/commander/response_parser.hpp"
-#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 namespace mg400_interface
@@ -42,6 +42,7 @@ public:
   using SharedPtr = std::shared_ptr<DashboardCommander>;
 
 private:
+  using ArchIndex = mg400_msgs::msg::Arch;
   using CollisionLevel = mg400_msgs::msg::CollisionLevel;
   using DOIndex = mg400_msgs::msg::DOIndex;
   using DOStatus = mg400_msgs::msg::DOStatus;
@@ -101,10 +102,10 @@ public:
   void speedJ(const int);
 
   void speedL(const int);
-/*
+
   void arch(const ArchIndex &);
   void arch(const int);
-*/
+
   void cp(const int);
 /*
   void runScript(const std::string &);
