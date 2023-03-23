@@ -10,14 +10,29 @@
     <description>Acc l</description>
   </class>
   <class
+      type="mg400_plugin::Arch"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Arch</description>
+  </class>
+  <class
       type="mg400_plugin::ClearError"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Clear error</description>
   </class>
   <class
+      type="mg400_plugin::CP"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>CP</description>
+  </class>
+  <class
       type="mg400_plugin::DisableRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Disable robot</description>
+  </class>
+  <class
+      type="mg400_plugin::DO"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>DO</description>
   </class>
   <class
       type="mg400_plugin::EmergencyStop"
@@ -30,9 +45,34 @@
     <description>Enable robot</description>
   </class>
   <class
+      type="mg400_plugin::GetAngle"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Get angle</description>
+  </class>
+  <class
+      type="mg400_plugin::GetPose"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Get pose</description>
+  </class>
+  <class
+      type="mg400_plugin::PayLoad"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Pay load</description>
+  </class>
+  <class
       type="mg400_plugin::ResetRobot"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Reset robot</description>
+  </class>
+  <class
+      type="mg400_plugin::RobotMode"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Robot mode</description>
+  </class>
+  <class
+      type="mg400_plugin::SetCollisionLevel"
+      base_class_type="mg400_plugin_base::DashboardApiPluginBase">
+    <description>Set collision level</description>
   </class>
   <class
       type="mg400_plugin::SpeedFactor"
