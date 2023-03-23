@@ -29,6 +29,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/commander/response_parser.hpp"
+#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 
 namespace mg400_interface
