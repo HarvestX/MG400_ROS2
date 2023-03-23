@@ -104,7 +104,7 @@ public:
   void speedL(const int);
 
   void arch(const ArchIndex &);
-  void arch(const int);
+  void arch(const ArchIndex::_index_type &);
 
   void cp(const int);
 /*

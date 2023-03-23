@@ -166,13 +166,13 @@ void DashboardCommander::speedL(const int R)
 
 void DashboardCommander::arch(const ArchIndex & index)
 {
-  return this->arch(static_cast<int>(index));
+  return this->arch(index.index);
 }
 
-void DashboardCommander::arch(const int index)
+void DashboardCommander::arch(const ArchIndex::_index_type & arch_index)
 {
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "Arch(%d)", index);
+  const int cx = snprintf(buf, sizeof(buf), "Arch(%u)", arch_index);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
