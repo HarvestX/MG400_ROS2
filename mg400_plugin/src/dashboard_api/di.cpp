@@ -37,7 +37,7 @@ void DI::onServiceCall(
   ServiceT::Response::SharedPtr res)
 {
   try {
-    res->result = this->commander_->DI(req->index);
+    res->result = this->commander_->DI(req->index.index);
   } catch (const std::runtime_error & ex) {
     RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
   } catch (...) {

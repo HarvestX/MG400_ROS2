@@ -357,11 +357,16 @@ std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
   return ResponseParser::takeErrorMessage(response.ret_val);
 }
 
-int DashboardCommander::DI(const int index) const
+int DashboardCommander::DI(const DIIndex & do_index) const
+{
+  return this->DI(do_index.index);
+}
+
+int DashboardCommander::DI(const DIIndex::_index_type & di_index) const
 {
   static DashboardResponse response;
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "DI(%d)", index);
+  const int cx = snprintf(buf, sizeof(buf), "DI(%u)", di_index);
   ResponseParser::parseResponse(
     this->sendAndWaitResponse(std::string(buf, cx)), response);
   if (!response.result) {
