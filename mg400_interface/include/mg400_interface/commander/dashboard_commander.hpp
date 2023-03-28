@@ -19,7 +19,9 @@
 #include <string>
 #include <memory>
 
+#include <mg400_msgs/msg/arch.hpp>
 #include <mg400_msgs/msg/collision_level.hpp>
+#include <mg400_msgs/msg/di_index.hpp>
 #include <mg400_msgs/msg/do_index.hpp>
 #include <mg400_msgs/msg/do_status.hpp>
 #include <mg400_msgs/msg/tool_do_index.hpp>
@@ -42,7 +44,9 @@ public:
   using SharedPtr = std::shared_ptr<DashboardCommander>;
 
 private:
+  using ArchIndex = mg400_msgs::msg::Arch;
   using CollisionLevel = mg400_msgs::msg::CollisionLevel;
+  using DIIndex = mg400_msgs::msg::DIIndex;
   using DOIndex = mg400_msgs::msg::DOIndex;
   using DOStatus = mg400_msgs::msg::DOStatus;
   using Tool = mg400_msgs::msg::Tool;
@@ -101,10 +105,10 @@ public:
   void speedJ(const int);
 
   void speedL(const int);
-/*
+
   void arch(const ArchIndex &);
-  void arch(const int);
-*/
+  void arch(const ArchIndex::_index_type &);
+
   void cp(const int);
 /*
   void runScript(const std::string &);
@@ -142,7 +146,8 @@ public:
 */
   std::array<std::vector<int>, 6> getErrorId() const;
 
-  int DI(const int) const;
+  int DI(const DIIndex &) const;
+  int DI(const DIIndex::_index_type &) const;
 
   // --------------------------------------------------------------------------
 

@@ -163,19 +163,19 @@ void DashboardCommander::speedL(const int R)
   const int cx = snprintf(buf, sizeof(buf), "SpeedL(%d)", R);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
-/*
-bool DashboardCommander::arch(const ArchIndex & index)
+
+void DashboardCommander::arch(const ArchIndex & index)
 {
-  return this->arch(static_cast<int>(index));
+  return this->arch(index.index);
 }
 
-bool DashboardCommander::arch(const int index)
+void DashboardCommander::arch(const ArchIndex::_index_type & arch_index)
 {
-  char buf[100];
-  snprintf(buf, sizeof(buf), "Arch(%d)", index);
-  return this->sendCommand(buf);
+  static char buf[128];
+  const int cx = snprintf(buf, sizeof(buf), "Arch(%u)", arch_index);
+  this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
-*/
+
 void DashboardCommander::cp(const int R)
 {
   static char buf[128];
@@ -357,11 +357,16 @@ std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
   return ResponseParser::takeErrorMessage(response.ret_val);
 }
 
-int DashboardCommander::DI(const int index) const
+int DashboardCommander::DI(const DIIndex & do_index) const
+{
+  return this->DI(do_index.index);
+}
+
+int DashboardCommander::DI(const DIIndex::_index_type & di_index) const
 {
   static DashboardResponse response;
   static char buf[128];
-  const int cx = snprintf(buf, sizeof(buf), "DI(%d)", index);
+  const int cx = snprintf(buf, sizeof(buf), "DI(%u)", di_index);
   ResponseParser::parseResponse(
     this->sendAndWaitResponse(std::string(buf, cx)), response);
   if (!response.result) {

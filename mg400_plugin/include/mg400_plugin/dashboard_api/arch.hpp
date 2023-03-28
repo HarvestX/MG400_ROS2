@@ -14,20 +14,27 @@
 
 #pragma once
 
+#include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_msgs/srv/arch.hpp>
 
-namespace mg400_interface
+namespace mg400_plugin
 {
-enum class ArchIndex
+class Arch final : public mg400_plugin_base::DashboardApiPluginBase
 {
-  ARCH0,
-  ARCH1,
-  ARCH2,
-  ARCH3,
-  ARCH4,
-  ARCH5,
-  ARCH6,
-  ARCH7,
-  ARCH8,
-  ARCH9
+public:
+  using ServiceT = mg400_msgs::srv::Arch;
+
+private:
+  rclcpp::Service<ServiceT>::SharedPtr srv_;
+
+public:
+  void configure(
+    const mg400_interface::DashboardCommander::SharedPtr,
+    const rclcpp::Node::SharedPtr,
+    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
+
+private:
+  void onServiceCall(
+    const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
-}  // namespace mg400_interface
+}  // namespace mg400_plugin
