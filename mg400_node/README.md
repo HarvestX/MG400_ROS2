@@ -13,6 +13,7 @@ The following API interface plugin will be loaded by default
   - `DisableRobot`
   - `EnableRobot`
   - `ResetRobot`
+  - `SpeedFactor`
   - `ToolDOExecute`
 - Motion API
   - `MoveJog`
