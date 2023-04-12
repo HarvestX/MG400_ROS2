@@ -6,6 +6,9 @@ ros2 service call /mg400/clear_error mg400_msgs/srv/ClearError
 # Turn on
 ros2 service call /mg400/enable_robot mg400_msgs/srv/EnableRobot
 
+# Set speed
+ros2 service call /mg400/speed_factor mg400_msgs/srv/SpeedFactor "{ratio: 40}"
+
 # Move
 ## Roll
 ros2 action send_goal /mg400/mov_j mg400_msgs/action/MovJ \

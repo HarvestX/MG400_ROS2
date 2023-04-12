@@ -29,12 +29,6 @@ def generate_launch_description():
     ip_address_arg = DeclareLaunchArgument(
         'ip_address', default_value=TextSubstitution(text='192.168.1.6'))
     ip_address = LaunchConfiguration('ip_address')
-    service_level_arg = DeclareLaunchArgument(
-        'service_level',
-        default_value='1',
-        description='Determine the command level that '
-        'can be called from the service.')
-    service_level = LaunchConfiguration('service_level')
 
     mg400_node = Node(
         package='mg400_node',
@@ -43,7 +37,6 @@ def generate_launch_description():
         namespace=ns,
         parameters=[{
             'ip_address': ip_address,
-            'service_level': service_level,
         }],
         on_exit=Shutdown())
 
@@ -51,7 +44,6 @@ def generate_launch_description():
 
     ld.add_action(ns_arg)
     ld.add_action(ip_address_arg)
-    ld.add_action(service_level_arg)
 
     ld.add_action(mg400_node)
 
