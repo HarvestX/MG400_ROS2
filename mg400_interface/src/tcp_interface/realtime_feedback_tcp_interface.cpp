@@ -112,6 +112,7 @@ void RealtimeFeedbackTcpInterface::recvData()
         auto recvd_data = std::make_shared<RealTimeData>();
         if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 5000)) {
           if (recvd_data->len != 1440) {
+            this->rt_data_ = nullptr;
             continue;
           }
           this->rt_data_ = recvd_data;
