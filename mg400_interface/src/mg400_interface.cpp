@@ -46,7 +46,7 @@ bool MG400Interface::activate()
   auto clock = rclcpp::Clock();
   const auto start = clock.now();
 
-  if (rclcpp::sleep_for(1s) && !this->ok()) {
+  if (rclcpp::sleep_for(2s) && !this->ok()) {
     RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
     // disconnect each interface in parallel because it takes time sometimes.
     std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });

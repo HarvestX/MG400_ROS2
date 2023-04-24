@@ -142,6 +142,9 @@ void RealtimeFeedbackTcpInterface::recvData()
         } else {
           // timeout
           RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
+          this->mutex_rt_data_.lock();
+          this->rt_data_ = nullptr;
+          this->mutex_rt_data_.unlock();
         }
       } else {
         try {
