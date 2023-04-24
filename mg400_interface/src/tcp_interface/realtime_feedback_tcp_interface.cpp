@@ -51,6 +51,11 @@ bool RealtimeFeedbackTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
+bool RealtimeFeedbackTcpInterface::isActive()
+{
+  return this->getRealtimeData() != nullptr;
+}
+
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
 {
   this->mutex_current_joints_.lock();

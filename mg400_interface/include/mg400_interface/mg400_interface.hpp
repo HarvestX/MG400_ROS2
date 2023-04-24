@@ -57,6 +57,7 @@ public:
 
   bool activate();
   bool deactivate();
+  bool ok();
 
 private:
   static const rclcpp::Logger getLogger() noexcept;

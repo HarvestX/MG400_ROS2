@@ -46,13 +46,7 @@ bool MG400Interface::activate()
   auto clock = rclcpp::Clock();
   const auto start = clock.now();
 
-  const auto is_connected = [&]() -> bool {
-      return this->dashboard_tcp_if_->isConnected() &&
-             this->realtime_tcp_interface->isConnected() &&
-             this->motion_tcp_if_->isConnected();
-    };
-
-  if (rclcpp::sleep_for(500ms) && !is_connected()) {
+  if (rclcpp::sleep_for(1s) && !this->ok()) {
     RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
     // disconnect each interface in parallel because it takes time sometimes.
     std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
@@ -77,6 +71,17 @@ bool MG400Interface::deactivate()
   this->motion_tcp_if_->disConnect();
   this->realtime_tcp_interface->disConnect();
   return true;
+}
+
+bool MG400Interface::ok()
+{
+  // When MG400 is being initialized when booting up, realtime tcp interface
+  // will be connected but not active yet.
+  // We assume MG400Interface is ok when realtime tcp interface is active.
+  return this->dashboard_tcp_if_->isConnected() &&
+         this->realtime_tcp_interface->isConnected() &&
+         this->motion_tcp_if_->isConnected() &&
+         this->realtime_tcp_interface->isActive();
 }
 
 const rclcpp::Logger MG400Interface::getLogger() noexcept

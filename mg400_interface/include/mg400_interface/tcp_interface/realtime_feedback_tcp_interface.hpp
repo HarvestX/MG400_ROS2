@@ -56,6 +56,7 @@ public:
 
   static rclcpp::Logger getLogger();
   bool isConnected();
+  bool isActive();
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
