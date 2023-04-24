@@ -55,6 +55,12 @@ bool MG400Interface::activate()
   while (!is_connected()) {
     if (clock.now() - start > rclcpp::Duration(3s)) {
       RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
+      std::thread disconnect1([this](){ this->dashboard_tcp_if_->disConnect(); });
+      std::thread disconnect2([this](){ this->realtime_tcp_interface->disConnect(); });
+      std::thread disconnect3([this](){ this->motion_tcp_if_->disConnect(); });
+      disconnect1.join();
+      disconnect2.join();
+      disconnect3.join();
       return false;
     }
 

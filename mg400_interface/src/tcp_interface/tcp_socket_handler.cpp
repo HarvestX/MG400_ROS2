@@ -44,11 +44,20 @@ void TcpSocketHandler::close()
   this->fd_ = -1;
 }
 
-void TcpSocketHandler::connect()
+void TcpSocketHandler::connect(const uint32_t timeout)
 {
   if (this->fd_ < 0) {
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (this->fd_ < 0) {
+      throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
+    }
+
+    timeval tv = {0, 0};
+    tv.tv_sec = timeout / 1000;
+    tv.tv_usec = (timeout % 1000) * 1000;
+    if (::setsockopt(this->fd_, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv)) < 0) {
+      ::close(this->fd_);
+      this->fd_ = -1;
       throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
     }
   }
@@ -61,7 +70,13 @@ void TcpSocketHandler::connect()
   addr.sin_port = htons(this->port_);
 
   if (::connect(this->fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
-    throw  TcpSocketException(this->toString() + std::string(" connect : ") + strerror(errno));
+    ::close(this->fd_);
+    this->fd_ = -1;
+    if (errno == EINPROGRESS || errno == EAGAIN) {
+      throw  TcpSocketException(this->toString() + std::string(" connect : timeout"));
+    } else {
+      throw  TcpSocketException(this->toString() + std::string(" connect : ") + strerror(errno));
+    }
   }
 
   this->is_connected_.store(true);
@@ -72,9 +87,9 @@ void TcpSocketHandler::connect()
 void TcpSocketHandler::disConnect()
 {
   if (this->is_connected_.load()) {
-    this->fd_ = -1;
-    this->is_connected_.store(false);
     ::close(this->fd_);
+    this->is_connected_.store(false);
+    this->fd_ = -1;
   }
 }
 

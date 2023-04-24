@@ -51,7 +51,7 @@ public:
   ~TcpSocketHandler();
 
   void close();
-  void connect();
+  void connect(const uint32_t);
   void disConnect();
   bool isConnected() const;
   void send(const void *, uint32_t);

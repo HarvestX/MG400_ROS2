@@ -59,7 +59,7 @@ void MotionTcpInterface::checkConnection()
         continue;
       } else {
         try {
-          this->tcp_socket_->connect();
+          this->tcp_socket_->connect(1000);
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
           rclcpp::sleep_for(500ms);
