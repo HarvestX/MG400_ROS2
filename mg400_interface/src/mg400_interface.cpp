@@ -52,20 +52,16 @@ bool MG400Interface::activate()
              this->motion_tcp_if_->isConnected();
     };
 
-  while (!is_connected()) {
-    if (clock.now() - start > rclcpp::Duration(3s)) {
-      RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
-      std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
-      std::thread discnt_realtime_tcp_if_([this](){ this->realtime_tcp_interface->disConnect(); });
-      std::thread discnt_motion_tcp_if_([this](){ this->motion_tcp_if_->disConnect(); });
-      discnt_dashboard_tcp_if_.join();
-      discnt_realtime_tcp_if_.join();
-      discnt_motion_tcp_if_.join();
-      return false;
-    }
-
-    RCLCPP_WARN(this->getLogger(), "Waiting for the connection...");
-    rclcpp::sleep_for(1s);
+  if (rclcpp::sleep_for(500ms) && !is_connected()) {
+    RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
+    // disconnect each interface in parallel because it takes time sometimes.
+    std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
+    std::thread discnt_realtime_tcp_if_([this](){ this->realtime_tcp_interface->disConnect(); });
+    std::thread discnt_motion_tcp_if_([this](){ this->motion_tcp_if_->disConnect(); });
+    discnt_dashboard_tcp_if_.join();
+    discnt_realtime_tcp_if_.join();
+    discnt_motion_tcp_if_.join();
+    return false;
   }
 
   this->dashboard_commander = std::make_shared<DashboardCommander>(this->dashboard_tcp_if_.get());
