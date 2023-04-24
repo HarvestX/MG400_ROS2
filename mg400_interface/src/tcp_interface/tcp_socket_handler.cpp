@@ -21,9 +21,9 @@ static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
 TcpSocketHandler::TcpSocketHandler(std::string ip, uint16_t port)
 : fd_(-1),
   port_(port),
-  ip_(std::move(ip)),
-  is_connected_(false)
+  ip_(std::move(ip))
 {
+  this->is_connected_.store(false);
 }
 
 TcpSocketHandler::~TcpSocketHandler()
@@ -40,7 +40,7 @@ void TcpSocketHandler::close()
   }
 
   ::close(this->fd_);
-  this->is_connected_ = false;
+  this->is_connected_.store(false);
   this->fd_ = -1;
 }
 
@@ -64,28 +64,28 @@ void TcpSocketHandler::connect()
     throw  TcpSocketException(this->toString() + std::string(" connect : ") + strerror(errno));
   }
 
-  this->is_connected_ = true;
+  this->is_connected_.store(true);
 
   RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpSocketHandler::disConnect()
 {
-  if (this->is_connected_) {
+  if (this->is_connected_.load()) {
     this->fd_ = -1;
-    this->is_connected_ = false;
+    this->is_connected_.store(false);
     ::close(this->fd_);
   }
 }
 
 bool TcpSocketHandler::isConnected() const
 {
-  return this->is_connected_;
+  return this->is_connected_.load();
 }
 
 void TcpSocketHandler::send(const void * buf, uint32_t len)
 {
-  if (!this->is_connected_) {
+  if (!this->is_connected_.load()) {
     throw TcpSocketException("tcp is disconnected");
   }
 
