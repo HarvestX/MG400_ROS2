@@ -64,19 +64,28 @@ void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
   this->mutex_.unlock();
 }
 
-RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
+std::shared_ptr<RealTimeData> RealtimeFeedbackTcpInterface::getRealtimeData()
 {
   return this->rt_data_;
 }
 
-uint64_t RealtimeFeedbackTcpInterface::getRobotMode()
+bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 {
-  return this->rt_data_.robot_mode;
+  if (this->rt_data_) {
+    mode = this->rt_data_->robot_mode;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode) const
 {
-  return this->rt_data_.robot_mode == expected_mode;
+  if (this->rt_data_) {
+    return this->rt_data_->robot_mode == expected_mode;
+  } else {
+    return false;
+  }
 }
 
 void RealtimeFeedbackTcpInterface::disConnect()
@@ -100,14 +109,16 @@ void RealtimeFeedbackTcpInterface::recvData()
     }
     try {
       if (this->tcp_socket_->isConnected()) {
-        if (this->tcp_socket_->recv(&this->rt_data_, sizeof(this->rt_data_), 5000)) {
-          if (this->rt_data_.len != 1440) {
+        auto recvd_data = std::make_shared<RealTimeData>();
+        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 5000)) {
+          if (recvd_data->len != 1440) {
             continue;
           }
+          this->rt_data_ = recvd_data;
 
           this->mutex_.lock();
           for (uint64_t i = 0; i < 4; ++i) {
-            this->current_joints_[i] = this->rt_data_.q_actual[i] * TO_RADIAN;
+            this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
           }
           this->mutex_.unlock();
           continue;

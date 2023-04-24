@@ -40,8 +40,9 @@ int main(int argc, char ** argv)
   }
 
   while (true) {
-    auto data = std::make_unique<mg400_interface::RealTimeData>(
-      rt_tcp_if->getRealtimeData());
+    auto data = rt_tcp_if->getRealtimeData();
+    if (!data) continue;
+
     auto tmp = std::system("clear");
     (void)tmp;  // for compiler warning
 

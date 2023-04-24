@@ -116,9 +116,11 @@ void MG400Node::onJointStateTimer()
 void MG400Node::onRobotModeTimer()
 {
   auto msg = std::make_unique<mg400_msgs::msg::RobotMode>();
-  msg->robot_mode =
-    this->interface_->realtime_tcp_interface->getRobotMode();
-  this->robot_mode_pub_->publish(std::move(msg));
+  uint64_t mode;
+  if (this->interface_->realtime_tcp_interface->getRobotMode(mode)) {
+    msg->robot_mode = mode;
+    this->robot_mode_pub_->publish(std::move(msg));
+  }
 }
 
 void MG400Node::onErrorTimer()

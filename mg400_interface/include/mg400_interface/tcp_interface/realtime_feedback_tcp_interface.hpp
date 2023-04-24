@@ -41,7 +41,7 @@ private:
 
   std::mutex mutex_;
   std::array<double, 4> current_joints_;
-  RealTimeData rt_data_;
+  std::shared_ptr<RealTimeData> rt_data_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
@@ -58,8 +58,8 @@ public:
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
-  RealTimeData getRealtimeData();
-  uint64_t getRobotMode();
+  std::shared_ptr<RealTimeData> getRealtimeData();
+  bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &) const;
   void disConnect();
 
