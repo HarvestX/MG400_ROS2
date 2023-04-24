@@ -53,37 +53,43 @@ bool RealtimeFeedbackTcpInterface::isConnected()
 
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
 {
-  this->mutex_.lock();
+  this->mutex_current_joints_.lock();
   joints = this->current_joints_;
-  this->mutex_.unlock();
+  this->mutex_current_joints_.unlock();
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
 {
-  this->mutex_.lock();
+  this->mutex_current_joints_.lock();
   JointHandler::getEndPose(this->current_joints_, pose);
-  this->mutex_.unlock();
+  this->mutex_current_joints_.unlock();
 }
 
 std::shared_ptr<RealTimeData> RealtimeFeedbackTcpInterface::getRealtimeData()
 {
-  return this->rt_data_;
+  std::shared_ptr<RealTimeData> rt_data_local_;
+  this->mutex_rt_data_.lock();
+  rt_data_local_ = this->rt_data_;
+  this->mutex_rt_data_.unlock();
+  return rt_data_local_;
 }
 
 bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 {
-  if (this->rt_data_) {
-    mode = this->rt_data_->robot_mode;
+  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
+  if (rt_data_local_) {
+    mode = rt_data_local_->robot_mode;
     return true;
   } else {
     return false;
   }
 }
 
-bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode) const
+bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 {
-  if (this->rt_data_) {
-    return this->rt_data_->robot_mode == expected_mode;
+  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
+  if (rt_data_local_) {
+    return rt_data_local_->robot_mode == expected_mode;
   } else {
     return false;
   }
@@ -113,16 +119,20 @@ void RealtimeFeedbackTcpInterface::recvData()
         auto recvd_data = std::make_shared<RealTimeData>();
         if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 5000)) {
           if (recvd_data->len != 1440) {
+            this->mutex_rt_data_.lock();
             this->rt_data_ = nullptr;
+            this->mutex_rt_data_.unlock();
             continue;
           }
+          this->mutex_rt_data_.lock();
           this->rt_data_ = recvd_data;
+          this->mutex_rt_data_.unlock();
 
-          this->mutex_.lock();
+          this->mutex_current_joints_.lock();
           for (uint64_t i = 0; i < 4; ++i) {
-            this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
+            this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
           }
-          this->mutex_.unlock();
+          this->mutex_current_joints_.unlock();
           continue;
         } else {
           // timeout

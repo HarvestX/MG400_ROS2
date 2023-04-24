@@ -39,7 +39,8 @@ private:
   using Pose = geometry_msgs::msg::Pose;
   const uint16_t PORT_ = 30004;
 
-  std::mutex mutex_;
+  std::mutex mutex_current_joints_;
+  std::mutex mutex_rt_data_;
   std::array<double, 4> current_joints_;
   std::shared_ptr<RealTimeData> rt_data_;
   std::atomic<bool> is_running_;
@@ -60,7 +61,7 @@ public:
   void getCurrentEndPose(Pose &);
   std::shared_ptr<RealTimeData> getRealtimeData();
   bool getRobotMode(uint64_t &);
-  bool isRobotMode(const uint64_t &) const;
+  bool isRobotMode(const uint64_t &);
   void disConnect();
 
 private:
