@@ -160,8 +160,7 @@ void MG400Node::onErrorTimer()
 
 void MG400Node::onInterfaceCheckTimer()
 {
-  if (!this->interface_->ok())
-  {
+  if (!this->interface_->ok()) {
     // Stop the timer and try to reconnect
     this->cancelTimer();
     this->interface_->deactivate();
