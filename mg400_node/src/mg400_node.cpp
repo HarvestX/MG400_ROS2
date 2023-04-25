@@ -192,6 +192,4 @@ void MG400Node::cancelTimer()
   this->error_timer_.reset();
 }
 
-
-
 }  // namespace mg400_node
