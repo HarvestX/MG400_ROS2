@@ -20,9 +20,9 @@ namespace mg400_plugin
 void MovL::configure(
   const mg400_interface::MotionCommander::SharedPtr commander,
   const rclcpp::Node::SharedPtr node,
-  const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr rt_if)
+  const mg400_interface::MG400Interface::SharedPtr mg400_if)
 {
-  if (!this->configure_base(commander, node, rt_if)) {
+  if (!this->configure_base(commander, node, mg400_if)) {
     return;
   }
 
@@ -30,7 +30,7 @@ void MovL::configure(
   tf_handler_ = std::make_shared<h6x_tf_handler::PoseTfHandler>(
     node->get_node_clock_interface(), node->get_node_logging_interface());
   tf_handler_->configure();
-  tf_handler_->setDistFrameId(this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link");
+  tf_handler_->setDistFrameId(this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link");
   tf_handler_->activate();
 
   using namespace std::placeholders;  // NOLINT
@@ -47,7 +47,7 @@ rclcpp_action::GoalResponse MovL::handle_goal(
   const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr)
 {
   using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->realtime_tcp_interface_->isRobotMode(RobotMode::ENABLE)) {
+  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
     RCLCPP_ERROR(
       this->base_node_->get_logger(), "Robot mode is not enabled");
     return rclcpp_action::GoalResponse::REJECT;
@@ -114,8 +114,8 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
     {
       msg.header.stamp = this->base_node_->get_clock()->now();
       msg.header.frame_id =
-        this->realtime_tcp_interface_->frame_id_prefix + "mg400_origin_link";
-      this->realtime_tcp_interface_->getCurrentEndPose(msg.pose);
+        this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
+      this->mg400_interface_->realtime_tcp_interface->getCurrentEndPose(msg.pose);
     };
 
 
@@ -127,7 +127,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
   update_pose(feedback->current_pose);
 
   while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
-    if (this->realtime_tcp_interface_->isRobotMode(RobotMode::ERROR)) {
+    if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ERROR)) {
       RCLCPP_ERROR(this->base_node_->get_logger(), "Robot Mode Error");
       goal_handle->abort(result);
       return;

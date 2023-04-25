@@ -36,6 +36,7 @@ class MG400Interface
 {
 public:
   using UniquePtr = std::unique_ptr<MG400Interface>;
+  using SharedPtr = std::shared_ptr<MG400Interface>;
 
   DashboardCommander::SharedPtr dashboard_commander;
   MotionCommander::SharedPtr motion_commander;

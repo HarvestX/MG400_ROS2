@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>mg400_interface</depend>
   <depend>mg400_msgs</depend>
   <depend>mg400_plugin_base</depend>
   <depend>rclcpp_action</depend>
