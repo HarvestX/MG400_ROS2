@@ -37,13 +37,17 @@ void PayLoad::onServiceCall(
   ServiceT::Response::SharedPtr res)
 {
   res->result = false;
-  try {
-    this->commander_->payload(req->weight, req->inertia);
-    res->result = true;
-  } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
-  } catch (...) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+  if (this->mg400_interface_->ok()) {
+    try {
+      this->commander_->payload(req->weight, req->inertia);
+      res->result = true;
+    } catch (const std::runtime_error & ex) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+    } catch (...) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+    }
+  } else {
+    RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 is not connected");
   }
 }
 }  // namespace mg400_plugin

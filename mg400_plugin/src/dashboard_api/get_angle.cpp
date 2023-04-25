@@ -36,18 +36,22 @@ void GetAngle::onServiceCall(
   const ServiceT::Request::SharedPtr,
   ServiceT::Response::SharedPtr res)
 {
-  try {
-    auto joints = this->commander_->getAngle();
-    res->joint1 = joints[0];
-    res->joint2 = joints[1];
-    res->joint3 = joints[2];
-    res->joint4 = joints[3];
-    res->joint5 = joints[4];
-    res->joint6 = joints[5];
-  } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
-  } catch (...) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+  if (this->mg400_interface_->ok()) {
+    try {
+      auto joints = this->commander_->getAngle();
+      res->joint1 = joints[0];
+      res->joint2 = joints[1];
+      res->joint3 = joints[2];
+      res->joint4 = joints[3];
+      res->joint5 = joints[4];
+      res->joint6 = joints[5];
+    } catch (const std::runtime_error & ex) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+    } catch (...) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+    }
+  } else {
+    RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 is not connected");
   }
 }
 }  // namespace mg400_plugin

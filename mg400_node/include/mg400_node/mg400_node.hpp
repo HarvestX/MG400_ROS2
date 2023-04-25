@@ -45,7 +45,7 @@ private:
     "mg400_plugin::MovJ",
     "mg400_plugin::MovL"
   };
-  mg400_interface::MG400Interface::UniquePtr interface_;
+  mg400_interface::MG400Interface::SharedPtr interface_;
 
   mg400_plugin_base::DashboardApiLoader::SharedPtr
     dashboard_api_loader_;

@@ -36,18 +36,22 @@ void GetPose::onServiceCall(
   const ServiceT::Request::SharedPtr,
   ServiceT::Response::SharedPtr res)
 {
-  try {
-    auto poses = this->commander_->getPose();
-    res->pose1 = poses[0];
-    res->pose2 = poses[1];
-    res->pose3 = poses[2];
-    res->pose4 = poses[3];
-    res->pose5 = poses[4];
-    res->pose6 = poses[5];
-  } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
-  } catch (...) {
-    RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+  if (this->mg400_interface_->ok()) {
+    try {
+      auto poses = this->commander_->getPose();
+      res->pose1 = poses[0];
+      res->pose2 = poses[1];
+      res->pose3 = poses[2];
+      res->pose4 = poses[3];
+      res->pose5 = poses[4];
+      res->pose6 = poses[5];
+    } catch (const std::runtime_error & ex) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+    } catch (...) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+    }
+  } else {
+    RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 is not connected");
   }
 }
 }  // namespace mg400_plugin

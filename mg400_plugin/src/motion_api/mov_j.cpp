@@ -46,6 +46,12 @@ void MovJ::configure(
 rclcpp_action::GoalResponse MovJ::handle_goal(
   const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr)
 {
+  if (!this->mg400_interface_->ok()) {
+    RCLCPP_ERROR(
+      this->base_node_->get_logger(), "MG400 is not connected");
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
     RCLCPP_ERROR(
@@ -126,6 +132,12 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   update_pose(feedback->current_pose);
 
   while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
+    if (!this->mg400_interface_->ok()) {
+      RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 Connection Error");
+      goal_handle->abort(result);
+      return;
+    }
+
     if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ERROR)) {
       RCLCPP_ERROR(this->base_node_->get_logger(), "Robot Mode Error");
       goal_handle->abort(result);

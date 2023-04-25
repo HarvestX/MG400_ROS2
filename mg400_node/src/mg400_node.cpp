@@ -34,7 +34,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
 
   this->interface_ =
-    std::make_unique<mg400_interface::MG400Interface>(ip_address);
+    std::make_shared<mg400_interface::MG400Interface>(ip_address);
 
   this->declare_parameter<std::string>("prefix", "");
   if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
@@ -74,14 +74,15 @@ void MG400Node::onInit()
 
   this->dashboard_api_loader_->configure(
     this->interface_->dashboard_commander,
-    this->shared_from_this());
+    this->shared_from_this(),
+    this->interface_);
   this->dashboard_api_loader_->showPluginInfo(
     this->get_node_logging_interface());
 
   this->motion_api_loader_->configure(
     this->interface_->motion_commander,
     this->shared_from_this(),
-    this->interface_->realtime_tcp_interface);
+    this->interface_);
   this->motion_api_loader_->showPluginInfo(
     this->get_node_logging_interface());
 
