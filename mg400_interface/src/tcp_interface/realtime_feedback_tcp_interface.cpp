@@ -120,7 +120,7 @@ void RealtimeFeedbackTcpInterface::recvData()
     try {
       if (this->tcp_socket_->isConnected()) {
         auto recvd_data = std::make_shared<RealTimeData>();
-        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1000)) {
+        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
           if (recvd_data->len != 1440) {
             this->mutex_rt_data_.lock();
             this->rt_data_ = nullptr;
@@ -146,7 +146,7 @@ void RealtimeFeedbackTcpInterface::recvData()
         }
       } else {
         try {
-          this->tcp_socket_->connect(1000);
+          this->tcp_socket_->connect(1s);
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
           this->is_running_.store(false);

@@ -46,6 +46,7 @@ bool MG400Interface::activate()
   auto clock = rclcpp::Clock();
   const auto start = clock.now();
 
+  using namespace std::chrono_literals;  // NOLINT
   if (rclcpp::sleep_for(2s) && !this->isConnected()) {
     RCLCPP_ERROR(this->getLogger(), "Could not connect to DOBOT MG400.");
     this->deactivate();
