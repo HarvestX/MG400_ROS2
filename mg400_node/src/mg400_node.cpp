@@ -46,7 +46,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
   while (!this->interface_->activate()) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-    rclcpp::sleep_for(2s);
+    rclcpp::sleep_for(5s);
   }
 
   this->dashboard_api_loader_ =
@@ -94,7 +94,7 @@ void MG400Node::onInit()
   this->robot_mode_pub_ =
     this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
-  
+
   this->runTimer();
 }
 
@@ -161,14 +161,13 @@ void MG400Node::onErrorTimer()
 
 void MG400Node::onInterfaceCheckTimer()
 {
-  if (!this->interface_->ok())
-  {
+  if (!this->interface_->ok()) {
     // Stop the timer and try to reconnect
     this->cancelTimer();
     this->interface_->deactivate();
     while (!this->interface_->activate()) {
       RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-      rclcpp::sleep_for(2s);
+      rclcpp::sleep_for(5s);
     }
     this->runTimer();
   }

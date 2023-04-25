@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
 
   while (true) {
     auto data = rt_tcp_if->getRealtimeData();
-    if (!data) continue;
+    if (!data) {continue;}
 
     auto tmp = std::system("clear");
     (void)tmp;  // for compiler warning

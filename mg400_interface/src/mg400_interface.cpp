@@ -53,7 +53,9 @@ bool MG400Interface::activate()
   }
 
   if (this->isConnected() && !this->ok()) {
-    RCLCPP_WARN(this->getLogger(), "Connection established but no response from DOBOT MG400. Waiting...");
+    RCLCPP_WARN(
+      this->getLogger(),
+      "Connection established but no response from DOBOT MG400. Waiting...");
     if (rclcpp::sleep_for(10s) && !this->ok()) {
       this->deactivate();
       return false;
@@ -73,9 +75,9 @@ bool MG400Interface::deactivate()
   this->motion_commander.reset();
 
   // disconnect each interface in parallel because it takes time sometimes.
-  std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
-  std::thread discnt_realtime_tcp_if_([this](){ this->realtime_tcp_interface->disConnect(); });
-  std::thread discnt_motion_tcp_if_([this](){ this->motion_tcp_if_->disConnect(); });
+  std::thread discnt_dashboard_tcp_if_([this]() {this->dashboard_tcp_if_->disConnect();});
+  std::thread discnt_realtime_tcp_if_([this]() {this->realtime_tcp_interface->disConnect();});
+  std::thread discnt_motion_tcp_if_([this]() {this->motion_tcp_if_->disConnect();});
   discnt_dashboard_tcp_if_.join();
   discnt_realtime_tcp_if_.join();
   discnt_motion_tcp_if_.join();
