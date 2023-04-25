@@ -166,7 +166,7 @@ void MG400Node::onInterfaceCheckTimer()
     this->interface_->deactivate();
     while (!this->interface_->activate()) {
       RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-      rclcpp::sleep_for(2s);
+      rclcpp::sleep_for(5s);
     }
     this->runTimer();
   }
