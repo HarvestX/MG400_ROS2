@@ -93,7 +93,7 @@ void MG400Node::onInit()
   this->robot_mode_pub_ =
     this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
-  
+
   this->runTimer();
 }
 
