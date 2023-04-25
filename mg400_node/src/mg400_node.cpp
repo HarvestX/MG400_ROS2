@@ -46,7 +46,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
   while (!this->interface_->activate()) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-    rclcpp::sleep_for(2s);
+    rclcpp::sleep_for(5s);
   }
 
   this->dashboard_api_loader_ =
