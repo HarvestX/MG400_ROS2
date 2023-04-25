@@ -112,17 +112,15 @@ void RealtimeFeedbackTcpInterface::disConnect()
 
 void RealtimeFeedbackTcpInterface::recvData()
 {
-  static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;  // NOLINT
-  int failed_cnd = 0;
-  while (failed_cnd < CONNECTION_TRIAL) {
+  while (true) {
     if (!this->is_running_.load()) {
       return;
     }
     try {
       if (this->tcp_socket_->isConnected()) {
         auto recvd_data = std::make_shared<RealTimeData>();
-        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 500)) {
+        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1000)) {
           if (recvd_data->len != 1440) {
             this->mutex_rt_data_.lock();
             this->rt_data_ = nullptr;
@@ -151,20 +149,16 @@ void RealtimeFeedbackTcpInterface::recvData()
           this->tcp_socket_->connect(1000);
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-          rclcpp::sleep_for(500ms);
-          failed_cnd++;
+          this->is_running_.store(false);
+          return;
         }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-      rclcpp::sleep_for(500ms);
-      failed_cnd++;
+      this->is_running_.store(false);
     }
   }
-
-  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times.. . Close connection.", failed_cnd);
-  this->is_running_.store(false);
 }
 
 }  // namespace mg400_interface

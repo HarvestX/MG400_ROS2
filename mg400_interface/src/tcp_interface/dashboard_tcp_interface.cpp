@@ -44,16 +44,13 @@ void DashboardTcpInterface::init() noexcept
 
 void DashboardTcpInterface::checkConnection()
 {
-  static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;
-  int failed_cnt = 0;
-  while (failed_cnt < CONNECTION_TRIAL) {
+  while (true) {
     if (!this->is_running_.load()) {
       return;
     }
     try {
       if (this->tcp_socket_->isConnected()) {
-        failed_cnt = 0;
         rclcpp::sleep_for(1s);
         continue;
       } else {
@@ -61,20 +58,17 @@ void DashboardTcpInterface::checkConnection()
           this->tcp_socket_->connect(1000);
         } catch (const TcpSocketException & err) {
           RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-          rclcpp::sleep_for(500ms);
-          failed_cnt++;
+          this->is_running_.store(false);
+          return;
         }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-      rclcpp::sleep_for(500ms);
-      failed_cnt++;
+      this->is_running_.store(false);
+      return;
     }
   }
-
-  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times... Close connection.", failed_cnt);
-  this->is_running_.store(false);
 }
 
 bool DashboardTcpInterface::isConnected()

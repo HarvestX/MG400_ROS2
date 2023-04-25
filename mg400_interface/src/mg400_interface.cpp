@@ -46,20 +46,24 @@ bool MG400Interface::activate()
   auto clock = rclcpp::Clock();
   const auto start = clock.now();
 
-  if (rclcpp::sleep_for(2s) && !this->ok()) {
-    RCLCPP_ERROR(this->getLogger(), "Could not connect DOBOT MG400.");
-    // disconnect each interface in parallel because it takes time sometimes.
-    std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
-    std::thread discnt_realtime_tcp_if_([this](){ this->realtime_tcp_interface->disConnect(); });
-    std::thread discnt_motion_tcp_if_([this](){ this->motion_tcp_if_->disConnect(); });
-    discnt_dashboard_tcp_if_.join();
-    discnt_realtime_tcp_if_.join();
-    discnt_motion_tcp_if_.join();
+  if (rclcpp::sleep_for(2s) && !this->isConnected()) {
+    RCLCPP_ERROR(this->getLogger(), "Could not connect to DOBOT MG400.");
+    this->deactivate();
     return false;
+  }
+
+  if (this->isConnected() && !this->ok()) {
+    RCLCPP_WARN(this->getLogger(), "Connection established but no response from DOBOT MG400. Waiting...");
+    if (rclcpp::sleep_for(10s) && !this->ok()) {
+      this->deactivate();
+      return false;
+    }
   }
 
   this->dashboard_commander = std::make_shared<DashboardCommander>(this->dashboard_tcp_if_.get());
   this->motion_commander = std::make_shared<MotionCommander>(this->motion_tcp_if_.get());
+
+  RCLCPP_INFO(this->getLogger(), "Connected to DOBOT MG400");
   return true;
 }
 
@@ -67,9 +71,15 @@ bool MG400Interface::deactivate()
 {
   this->dashboard_commander.reset();
   this->motion_commander.reset();
-  this->dashboard_tcp_if_->disConnect();
-  this->motion_tcp_if_->disConnect();
-  this->realtime_tcp_interface->disConnect();
+
+  // disconnect each interface in parallel because it takes time sometimes.
+  std::thread discnt_dashboard_tcp_if_([this](){ this->dashboard_tcp_if_->disConnect(); });
+  std::thread discnt_realtime_tcp_if_([this](){ this->realtime_tcp_interface->disConnect(); });
+  std::thread discnt_motion_tcp_if_([this](){ this->motion_tcp_if_->disConnect(); });
+  discnt_dashboard_tcp_if_.join();
+  discnt_realtime_tcp_if_.join();
+  discnt_motion_tcp_if_.join();
+
   return true;
 }
 
@@ -78,14 +88,19 @@ bool MG400Interface::ok()
   // When MG400 is being initialized when booting up, realtime tcp interface
   // will be connected but not active yet.
   // We assume MG400Interface is ok when realtime tcp interface is active.
-  return this->dashboard_tcp_if_->isConnected() &&
-         this->realtime_tcp_interface->isConnected() &&
-         this->motion_tcp_if_->isConnected() &&
+  return this->isConnected() &&
          this->realtime_tcp_interface->isActive();
 }
 
 const rclcpp::Logger MG400Interface::getLogger() noexcept
 {
   return rclcpp::get_logger("MG400Interface");
+}
+
+bool MG400Interface::isConnected()
+{
+  return this->dashboard_tcp_if_->isConnected() &&
+         this->realtime_tcp_interface->isConnected() &&
+         this->motion_tcp_if_->isConnected();
 }
 }  // namespace mg400_interface
