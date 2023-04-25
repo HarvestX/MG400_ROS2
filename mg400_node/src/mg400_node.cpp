@@ -93,13 +93,8 @@ void MG400Node::onInit()
   this->robot_mode_pub_ =
     this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
-
-  this->joint_state_timer_ = this->create_wall_timer(
-    10ms, std::bind(&MG400Node::onJointStateTimer, this));
-  this->robot_mode_timer_ = this->create_wall_timer(
-    100ms, std::bind(&MG400Node::onRobotModeTimer, this));
-  this->error_timer_ = this->create_wall_timer(
-    500ms, std::bind(&MG400Node::onErrorTimer, this));
+  
+  this->runTimer();
 }
 
 void MG400Node::onJointStateTimer()
@@ -160,22 +155,43 @@ void MG400Node::onErrorTimer()
     } catch (...) {
       RCLCPP_ERROR(this->get_logger(), "Unknown exception");
     }
-  } else {
-  this->joint_state_timer_.reset();
-  this->robot_mode_timer_.reset();
-  this->error_timer_.reset();
-  this->interface_->deactivate();
-  while (!this->interface_->activate()) {
-    RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-    rclcpp::sleep_for(2s);
   }
+}
+
+void MG400Node::onInterfaceCheckTimer()
+{
+  if (!this->interface_->ok())
+  {
+    // Stop the timer and try to reconnect
+    this->cancelTimer();
+    this->interface_->deactivate();
+    while (!this->interface_->activate()) {
+      RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
+      rclcpp::sleep_for(2s);
+    }
+    this->runTimer();
+  }
+}
+
+void MG400Node::runTimer()
+{
   this->joint_state_timer_ = this->create_wall_timer(
     10ms, std::bind(&MG400Node::onJointStateTimer, this));
   this->robot_mode_timer_ = this->create_wall_timer(
     100ms, std::bind(&MG400Node::onRobotModeTimer, this));
   this->error_timer_ = this->create_wall_timer(
     500ms, std::bind(&MG400Node::onErrorTimer, this));
-  }
+  this->interface_check_timer_ = this->create_wall_timer(
+    100ms, std::bind(&MG400Node::onInterfaceCheckTimer, this));
 }
+
+void MG400Node::cancelTimer()
+{
+  this->joint_state_timer_.reset();
+  this->robot_mode_timer_.reset();
+  this->error_timer_.reset();
+}
+
+
 
 }  // namespace mg400_node
