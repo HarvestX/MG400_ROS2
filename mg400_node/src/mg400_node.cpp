@@ -17,6 +17,8 @@
 
 namespace mg400_node
 {
+using namespace std::chrono_literals;   // NOLINT
+
 MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 : rclcpp::Node("mg400_node", options)
 {
@@ -92,7 +94,6 @@ void MG400Node::onInit()
     this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
 
-  using namespace std::chrono_literals;   // NOLINT
   this->joint_state_timer_ = this->create_wall_timer(
     10ms, std::bind(&MG400Node::onJointStateTimer, this));
   this->robot_mode_timer_ = this->create_wall_timer(
@@ -159,6 +160,21 @@ void MG400Node::onErrorTimer()
     } catch (...) {
       RCLCPP_ERROR(this->get_logger(), "Unknown exception");
     }
+  } else {
+  this->joint_state_timer_.reset();
+  this->robot_mode_timer_.reset();
+  this->error_timer_.reset();
+  this->interface_->deactivate();
+  while (!this->interface_->activate()) {
+    RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
+    rclcpp::sleep_for(2s);
+  }
+  this->joint_state_timer_ = this->create_wall_timer(
+    10ms, std::bind(&MG400Node::onJointStateTimer, this));
+  this->robot_mode_timer_ = this->create_wall_timer(
+    100ms, std::bind(&MG400Node::onRobotModeTimer, this));
+  this->error_timer_ = this->create_wall_timer(
+    500ms, std::bind(&MG400Node::onErrorTimer, this));
   }
 }
 

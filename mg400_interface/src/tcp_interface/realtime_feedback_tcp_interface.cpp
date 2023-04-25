@@ -122,7 +122,7 @@ void RealtimeFeedbackTcpInterface::recvData()
     try {
       if (this->tcp_socket_->isConnected()) {
         auto recvd_data = std::make_shared<RealTimeData>();
-        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 500)) {
+        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1000)) {
           if (recvd_data->len != 1440) {
             this->mutex_rt_data_.lock();
             this->rt_data_ = nullptr;
