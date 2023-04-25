@@ -56,7 +56,7 @@ bool MG400Interface::activate()
   if (this->isConnected() && !this->ok()) {
     RCLCPP_WARN(
       this->getLogger(),
-      "Connection established but no response from DOBOT MG400. Waiting...");
+      "Connection established but no data sent from DOBOT MG400. Waiting...");
     if (rclcpp::sleep_for(10s) && !this->ok()) {
       this->deactivate();
       return false;

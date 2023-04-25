@@ -113,12 +113,11 @@ void RealtimeFeedbackTcpInterface::disConnect()
 void RealtimeFeedbackTcpInterface::recvData()
 {
   using namespace std::chrono_literals;  // NOLINT
-  while (true) {
-    if (!this->is_running_.load()) {
-      return;
-    }
+  while (this->is_running_.load()) {
     try {
-      if (this->tcp_socket_->isConnected()) {
+      if (!this->tcp_socket_->isConnected()) {
+        this->tcp_socket_->connect(1s);
+      } else {
         auto recvd_data = std::make_shared<RealTimeData>();
         if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
           if (recvd_data->len != 1440) {
@@ -144,19 +143,11 @@ void RealtimeFeedbackTcpInterface::recvData()
           this->rt_data_ = nullptr;
           this->mutex_rt_data_.unlock();
         }
-      } else {
-        try {
-          this->tcp_socket_->connect(1s);
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-          this->is_running_.store(false);
-          return;
-        }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-      this->is_running_.store(false);
+      return;
     }
   }
 }
