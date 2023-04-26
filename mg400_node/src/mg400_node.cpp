@@ -22,8 +22,6 @@ using namespace std::chrono_literals;   // NOLINT
 MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 : rclcpp::Node("mg400_node", options)
 {
-  using namespace std::chrono_literals;  // NOLINT
-
   const std::string ip_address =
     this->declare_parameter<std::string>("ip_address", "192.168.1.6");
   RCLCPP_INFO(

@@ -16,6 +16,8 @@
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals; // NOLINT
+
 DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
 {
   this->is_running_.store(false);
@@ -44,28 +46,17 @@ void DashboardTcpInterface::init() noexcept
 
 void DashboardTcpInterface::checkConnection()
 {
-  using namespace std::chrono_literals;
-  while (true) {
-    if (!this->is_running_.load()) {
-      return;
-    }
+  while (this->is_running_.load()) {
     try {
-      if (this->tcp_socket_->isConnected()) {
+      if (!this->tcp_socket_->isConnected()) {
+        this->tcp_socket_->connect(1s);
+      } else {
         rclcpp::sleep_for(1s);
         continue;
-      } else {
-        try {
-          this->tcp_socket_->connect(1000);
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-          this->is_running_.store(false);
-          return;
-        }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-      this->is_running_.store(false);
       return;
     }
   }
@@ -94,7 +85,7 @@ void DashboardTcpInterface::disConnect()
 std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
-  this->tcp_socket_->recv(buf, sizeof(buf), 500);
+  this->tcp_socket_->recv(buf, sizeof(buf), 500ms);
   RCLCPP_DEBUG(this->getLogger(), "recv: %s", std::string(buf).c_str());
   return std::string(buf);
 }

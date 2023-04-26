@@ -44,7 +44,7 @@ void TcpSocketHandler::close()
   this->fd_ = -1;
 }
 
-void TcpSocketHandler::connect(const uint32_t timeout)
+void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
 {
   if (this->fd_ < 0) {
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -53,8 +53,8 @@ void TcpSocketHandler::connect(const uint32_t timeout)
     }
 
     timeval tv = {0, 0};
-    tv.tv_sec = timeout / 1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
+    tv.tv_sec = timeout.count() / (int)1e9;
+    tv.tv_usec = (timeout.count() % (int)1e9) / (int)1e3;
     if (::setsockopt(this->fd_, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv)) < 0) {
       ::close(this->fd_);
       this->fd_ = -1;
@@ -118,7 +118,7 @@ void TcpSocketHandler::send(const void * buf, uint32_t len)
   }
 }
 
-bool TcpSocketHandler::recv(void * buf, uint32_t len, uint32_t timeout)
+bool TcpSocketHandler::recv(void * buf, uint32_t len, const std::chrono::nanoseconds & timeout)
 {
   uint8_t * tmp = reinterpret_cast<uint8_t *>(buf);
   fd_set read_fds;
@@ -128,8 +128,8 @@ bool TcpSocketHandler::recv(void * buf, uint32_t len, uint32_t timeout)
     FD_ZERO(&read_fds);
     FD_SET(this->fd_, &read_fds);
 
-    tv.tv_sec = timeout / 1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
+    tv.tv_sec = timeout.count() / (int)1e9;
+    tv.tv_usec = (timeout.count() % (int)1e9) / (int)1e3;
     int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
     if (err < 0) {
       this->disConnect();

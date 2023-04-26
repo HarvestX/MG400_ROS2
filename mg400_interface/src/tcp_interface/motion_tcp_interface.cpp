@@ -45,28 +45,18 @@ void MotionTcpInterface::init() noexcept
 
 void MotionTcpInterface::checkConnection()
 {
-  using namespace std::chrono_literals;
-  while (true) {
-    if (!this->is_running_.load()) {
-      return;
-    }
+  using namespace std::chrono_literals; // NOLINT
+  while (this->is_running_.load()) {
     try {
-      if (this->tcp_socket_->isConnected()) {
+      if (!this->tcp_socket_->isConnected()) {
+        this->tcp_socket_->connect(1s);
+      } else {
         rclcpp::sleep_for(1s);
         continue;
-      } else {
-        try {
-          this->tcp_socket_->connect(1000);
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-          this->is_running_.store(false);
-          return;
-        }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-      this->is_running_.store(false);
       return;
     }
   }

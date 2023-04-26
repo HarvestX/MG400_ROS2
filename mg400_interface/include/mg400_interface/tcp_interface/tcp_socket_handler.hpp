@@ -51,11 +51,11 @@ public:
   ~TcpSocketHandler();
 
   void close();
-  void connect(const uint32_t);
+  void connect(const std::chrono::nanoseconds &);
   void disConnect();
   bool isConnected() const;
   void send(const void *, uint32_t);
-  bool recv(void *, uint32_t, uint32_t);
+  bool recv(void *, uint32_t, const std::chrono::nanoseconds &);
   std::string toString();
 };
 }  // namespace mg400_interface
