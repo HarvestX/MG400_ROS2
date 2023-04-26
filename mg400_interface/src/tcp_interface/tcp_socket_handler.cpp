@@ -53,9 +53,11 @@ void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
     }
 
     timeval tv = {0, 0};
-    tv.tv_sec = timeout.count() / (int)1e9;
-    tv.tv_usec = (timeout.count() % (int)1e9) / (int)1e3;
-    if (::setsockopt(this->fd_, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv)) < 0) {
+    tv.tv_sec = timeout.count() / static_cast<int>(1e9);
+    tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
+    if (::setsockopt(
+        this->fd_, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char *>(&tv), sizeof(tv)) < 0)
+    {
       ::close(this->fd_);
       this->fd_ = -1;
       throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
@@ -128,8 +130,8 @@ bool TcpSocketHandler::recv(void * buf, uint32_t len, const std::chrono::nanosec
     FD_ZERO(&read_fds);
     FD_SET(this->fd_, &read_fds);
 
-    tv.tv_sec = timeout.count() / (int)1e9;
-    tv.tv_usec = (timeout.count() % (int)1e9) / (int)1e3;
+    tv.tv_sec = timeout.count() / static_cast<int>(1e9);
+    tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
     int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
     if (err < 0) {
       this->disConnect();
