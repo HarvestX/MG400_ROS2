@@ -37,7 +37,7 @@ public:
   void configure(
     const mg400_interface::MotionCommander::SharedPtr,
     const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr)
+    const mg400_interface::MG400Interface::SharedPtr)
   override;
 
 private:

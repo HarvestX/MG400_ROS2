@@ -31,7 +31,7 @@ public:
   void configure(
     const mg400_interface::DashboardCommander::SharedPtr,
     const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) override;
+    const mg400_interface::MG400Interface::SharedPtr) override;
 
 private:
   void onServiceCall(

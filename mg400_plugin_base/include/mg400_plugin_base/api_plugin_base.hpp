@@ -33,8 +33,8 @@ public:
 protected:
   typename CommanderT::SharedPtr commander_;
   rclcpp::Node::SharedPtr base_node_;
-  mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
-    realtime_tcp_interface_;
+  mg400_interface::MG400Interface::SharedPtr
+    mg400_interface_;
 
 public:
   ApiPluginBase() {}
@@ -42,14 +42,13 @@ public:
   virtual void configure(
     const typename CommanderT::SharedPtr,
     const rclcpp::Node::SharedPtr,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr) = 0;
+    const mg400_interface::MG400Interface::SharedPtr) = 0;
 
 protected:
   bool configure_base(
     const typename CommanderT::SharedPtr commander,
     const rclcpp::Node::SharedPtr node,
-    const mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
-    rt_if = nullptr)
+    const mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
     if (this->base_node_) {
       RCLCPP_WARN(
@@ -61,8 +60,8 @@ protected:
     this->commander_ = commander;
     this->base_node_ = node;
 
-    if (rt_if) {
-      this->realtime_tcp_interface_ = rt_if;
+    if (mg400_if) {
+      this->mg400_interface_ = mg400_if;
     }
 
     return true;

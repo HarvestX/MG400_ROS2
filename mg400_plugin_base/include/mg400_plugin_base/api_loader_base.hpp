@@ -62,12 +62,10 @@ public:
   void configure(
     typename PluginT::CommanderT::SharedPtr commander,
     const rclcpp::Node::SharedPtr node,
-    mg400_interface::RealtimeFeedbackTcpInterface::SharedPtr
-    rt_if = nullptr
-  )
+    mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
     for (const auto & it : this->plugin_map_) {
-      it.second->configure(commander, node->shared_from_this(), rt_if);
+      it.second->configure(commander, node->shared_from_this(), mg400_if);
     }
   }
 
