@@ -115,35 +115,40 @@ void RealtimeFeedbackTcpInterface::recvData()
   using namespace std::chrono_literals;  // NOLINT
   while (this->is_running_.load()) {
     try {
+      // Error: Connection error
       if (!this->tcp_socket_->isConnected()) {
         this->tcp_socket_->connect(1s);
-      } else {
-        auto recvd_data = std::make_shared<RealTimeData>();
-        if (this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
-          if (recvd_data->len != 1440) {
-            this->mutex_rt_data_.lock();
-            this->rt_data_ = nullptr;
-            this->mutex_rt_data_.unlock();
-            continue;
-          }
-          this->mutex_rt_data_.lock();
-          this->rt_data_ = recvd_data;
-          this->mutex_rt_data_.unlock();
-
-          this->mutex_current_joints_.lock();
-          for (uint64_t i = 0; i < 4; ++i) {
-            this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
-          }
-          this->mutex_current_joints_.unlock();
-          continue;
-        } else {
-          // timeout
-          RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
-          this->mutex_rt_data_.lock();
-          this->rt_data_ = nullptr;
-          this->mutex_rt_data_.unlock();
-        }
+        continue;
       }
+
+      // Error: Data take timeout
+      auto recvd_data = std::make_shared<RealTimeData>();
+      if (!this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
+        RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
+        this->mutex_rt_data_.lock();
+        this->rt_data_ = nullptr;
+        this->mutex_rt_data_.unlock();
+        continue;
+      }
+
+      // Error: Size invalid
+      if (recvd_data->len != sizeof(RealTimeData)) {
+        this->mutex_rt_data_.lock();
+        this->rt_data_ = nullptr;
+        this->mutex_rt_data_.unlock();
+        continue;
+      }
+
+      // Success
+      this->mutex_rt_data_.lock();
+      this->rt_data_ = recvd_data;
+      this->mutex_rt_data_.unlock();
+
+      this->mutex_current_joints_.lock();
+      for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
+        this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
+      }
+      this->mutex_current_joints_.unlock();
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
@@ -151,5 +156,4 @@ void RealtimeFeedbackTcpInterface::recvData()
     }
   }
 }
-
 }  // namespace mg400_interface
