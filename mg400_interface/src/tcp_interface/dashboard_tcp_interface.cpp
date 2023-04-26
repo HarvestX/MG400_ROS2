@@ -16,6 +16,8 @@
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals; // NOLINT
+
 DashboardTcpInterface::DashboardTcpInterface(const std::string & ip)
 {
   this->is_running_.store(false);
@@ -44,37 +46,20 @@ void DashboardTcpInterface::init() noexcept
 
 void DashboardTcpInterface::checkConnection()
 {
-  static const int CONNECTION_TRIAL = 3;
-  using namespace std::chrono_literals;
-  int failed_cnt = 0;
-  while (failed_cnt < CONNECTION_TRIAL) {
-    if (!this->is_running_.load()) {
-      return;
-    }
+  while (this->is_running_.load()) {
     try {
-      if (this->tcp_socket_->isConnected()) {
-        failed_cnt = 0;
+      if (!this->tcp_socket_->isConnected()) {
+        this->tcp_socket_->connect(1s);
+      } else {
         rclcpp::sleep_for(1s);
         continue;
-      } else {
-        try {
-          this->tcp_socket_->connect();
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-          rclcpp::sleep_for(500ms);
-          failed_cnt++;
-        }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error : %s", err.what());
-      rclcpp::sleep_for(500ms);
-      failed_cnt++;
+      return;
     }
   }
-
-  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times... Close connection.", failed_cnt);
-  this->is_running_.store(false);
 }
 
 bool DashboardTcpInterface::isConnected()
@@ -100,7 +85,7 @@ void DashboardTcpInterface::disConnect()
 std::string DashboardTcpInterface::recvResponse()
 {
   char buf[100];
-  this->tcp_socket_->recv(buf, sizeof(buf), 500);
+  this->tcp_socket_->recv(buf, sizeof(buf), 500ms);
   RCLCPP_DEBUG(this->getLogger(), "recv: %s", std::string(buf).c_str());
   return std::string(buf);
 }

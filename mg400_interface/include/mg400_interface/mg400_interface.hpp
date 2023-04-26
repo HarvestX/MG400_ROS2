@@ -57,8 +57,10 @@ public:
 
   bool activate();
   bool deactivate();
+  bool ok();
 
 private:
   static const rclcpp::Logger getLogger() noexcept;
+  bool isConnected();
 };
 }  // namespace mg400_interface

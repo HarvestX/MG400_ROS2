@@ -39,9 +39,10 @@ private:
   using Pose = geometry_msgs::msg::Pose;
   const uint16_t PORT_ = 30004;
 
-  std::mutex mutex_;
+  std::mutex mutex_current_joints_;
+  std::mutex mutex_rt_data_;
   std::array<double, 4> current_joints_;
-  RealTimeData rt_data_;
+  std::shared_ptr<RealTimeData> rt_data_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   std::shared_ptr<TcpSocketHandler> tcp_socket_;
@@ -55,12 +56,13 @@ public:
 
   static rclcpp::Logger getLogger();
   bool isConnected();
+  bool isActive();
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
-  RealTimeData getRealtimeData();
-  uint64_t getRobotMode();
-  bool isRobotMode(const uint64_t &) const;
+  std::shared_ptr<RealTimeData> getRealtimeData();
+  bool getRobotMode(uint64_t &);
+  bool isRobotMode(const uint64_t &);
   void disConnect();
 
 private:

@@ -51,33 +51,53 @@ bool RealtimeFeedbackTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
+bool RealtimeFeedbackTcpInterface::isActive()
+{
+  return this->getRealtimeData() != nullptr;
+}
+
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
 {
-  this->mutex_.lock();
+  this->mutex_current_joints_.lock();
   joints = this->current_joints_;
-  this->mutex_.unlock();
+  this->mutex_current_joints_.unlock();
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
 {
-  this->mutex_.lock();
+  this->mutex_current_joints_.lock();
   JointHandler::getEndPose(this->current_joints_, pose);
-  this->mutex_.unlock();
+  this->mutex_current_joints_.unlock();
 }
 
-RealTimeData RealtimeFeedbackTcpInterface::getRealtimeData()
+std::shared_ptr<RealTimeData> RealtimeFeedbackTcpInterface::getRealtimeData()
 {
-  return this->rt_data_;
+  std::shared_ptr<RealTimeData> rt_data_local_;
+  this->mutex_rt_data_.lock();
+  rt_data_local_ = this->rt_data_;
+  this->mutex_rt_data_.unlock();
+  return rt_data_local_;
 }
 
-uint64_t RealtimeFeedbackTcpInterface::getRobotMode()
+bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 {
-  return this->rt_data_.robot_mode;
+  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
+  if (rt_data_local_) {
+    mode = rt_data_local_->robot_mode;
+    return true;
+  } else {
+    return false;
+  }
 }
 
-bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode) const
+bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 {
-  return this->rt_data_.robot_mode == expected_mode;
+  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
+  if (rt_data_local_) {
+    return rt_data_local_->robot_mode == expected_mode;
+  } else {
+    return false;
+  }
 }
 
 void RealtimeFeedbackTcpInterface::disConnect()
@@ -92,49 +112,48 @@ void RealtimeFeedbackTcpInterface::disConnect()
 
 void RealtimeFeedbackTcpInterface::recvData()
 {
-  static const int CONNECTION_TRIAL = 3;
   using namespace std::chrono_literals;  // NOLINT
-  int failed_cnd = 0;
-  while (failed_cnd < CONNECTION_TRIAL) {
-    if (!this->is_running_.load()) {
-      return;
-    }
+  while (this->is_running_.load()) {
     try {
-      if (this->tcp_socket_->isConnected()) {
-        if (this->tcp_socket_->recv(&this->rt_data_, sizeof(this->rt_data_), 5000)) {
-          if (this->rt_data_.len != 1440) {
-            continue;
-          }
-
-          this->mutex_.lock();
-          for (uint64_t i = 0; i < 4; ++i) {
-            this->current_joints_[i] = this->rt_data_.q_actual[i] * TO_RADIAN;
-          }
-          this->mutex_.unlock();
-          continue;
-        } else {
-          // timeout
-          RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
-        }
-      } else {
-        try {
-          this->tcp_socket_->connect();
-        } catch (const TcpSocketException & err) {
-          RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-          rclcpp::sleep_for(500ms);
-          failed_cnd++;
-        }
+      // Error: Connection error
+      if (!this->tcp_socket_->isConnected()) {
+        this->tcp_socket_->connect(1s);
+        continue;
       }
+
+      // Error: Data take timeout
+      auto recvd_data = std::make_shared<RealTimeData>();
+      if (!this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
+        RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
+        this->mutex_rt_data_.lock();
+        this->rt_data_ = nullptr;
+        this->mutex_rt_data_.unlock();
+        continue;
+      }
+
+      // Error: Size invalid
+      if (recvd_data->len != sizeof(RealTimeData)) {
+        this->mutex_rt_data_.lock();
+        this->rt_data_ = nullptr;
+        this->mutex_rt_data_.unlock();
+        continue;
+      }
+
+      // Success
+      this->mutex_rt_data_.lock();
+      this->rt_data_ = recvd_data;
+      this->mutex_rt_data_.unlock();
+
+      this->mutex_current_joints_.lock();
+      for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
+        this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
+      }
+      this->mutex_current_joints_.unlock();
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
-      rclcpp::sleep_for(500ms);
-      failed_cnd++;
+      return;
     }
   }
-
-  RCLCPP_ERROR(this->getLogger(), "Failed more than %d times.. . Close connection.", failed_cnd);
-  this->is_running_.store(false);
 }
-
 }  // namespace mg400_interface
