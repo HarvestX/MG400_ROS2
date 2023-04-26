@@ -30,7 +30,8 @@ void MovJ::configure(
   tf_handler_ = std::make_shared<h6x_tf_handler::PoseTfHandler>(
     node->get_node_clock_interface(), node->get_node_logging_interface());
   tf_handler_->configure();
-  tf_handler_->setDistFrameId(this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link");
+  tf_handler_->setDistFrameId(
+    this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link");
   tf_handler_->activate();
 
   using namespace std::placeholders;  // NOLINT
