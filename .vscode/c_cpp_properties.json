@@ -18,7 +18,7 @@
         "${workspaceFolder}/mg400_node/src/joint_state_publisher/**",
         "${workspaceFolder}/mg400_plugin_base/include/**",
         "${workspaceFolder}/mg400_plugin/include/**",
-        "${workspaceFolder}/mg400_rviz_plugin/include/**",
+        "${workspaceFolder}/mg400_rviz_plugin/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "clang-x64",

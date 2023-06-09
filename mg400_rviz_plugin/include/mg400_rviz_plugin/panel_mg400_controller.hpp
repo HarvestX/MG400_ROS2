@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <string>
+
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
 #include <rviz_common/panel.hpp>
@@ -29,6 +31,19 @@
 
 namespace mg400_rviz_plugin
 {
+class MG400InputGroup : public QHBoxLayout
+{
+private:
+  QLabel * prefix_, * suffix_;
+  QLineEdit * l_edit_;
+
+public:
+  explicit MG400InputGroup(const std::string &, const std::string &);
+  void onDisable();
+  void onEnable();
+  double getValue();
+};
+
 class Mg400ControllerPanel : public rviz_common::Panel
 {
   Q_OBJECT
@@ -40,19 +55,12 @@ public:
 private:
   using RobotMode = mg400_msgs::msg::RobotMode;
 
-
 protected:
   QRadioButton * radio_enable_;
   QRadioButton * radio_disable_;
 
-  QLabel * label_x_;
-  QLabel * label_y_;
-  QLabel * label_z_;
-  QLabel * label_r_;
-  QLineEdit * edit_movj_x_;
-  QLineEdit * edit_movj_y_;
-  QLineEdit * edit_movj_z_;
-  QLineEdit * edit_movj_r_;
+  MG400InputGroup * input_x_, * input_y_, * input_z_, * input_r_;
+
   QPushButton * button_send_movj_;
 
   bool is_enabled_before = false;
@@ -70,12 +78,6 @@ protected:
 
   rclcpp::CallbackGroup::SharedPtr callback_group_;
   rclcpp::executors::SingleThreadedExecutor callback_group_executor_;
-
-private:
-  float goal_x;
-  float goal_y;
-  float goal_z;
-  float goal_r;
 
 public:
   explicit Mg400ControllerPanel(QWidget * parent = nullptr);

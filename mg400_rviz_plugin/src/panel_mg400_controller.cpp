@@ -17,6 +17,37 @@
 namespace mg400_rviz_plugin
 {
 
+MG400InputGroup::MG400InputGroup(const std::string & prefix, const std::string & suffix)
+{
+  this->prefix_ = new QLabel(prefix.data());
+  this->addWidget(this->prefix_);
+  this->l_edit_ = new QLineEdit("");
+  this->l_edit_->setMaximumWidth(60);
+  this->l_edit_->setPlaceholderText("0.0");
+  this->addWidget(this->l_edit_);
+  this->suffix_ = new QLabel(suffix.data());
+  this->addWidget(this->suffix_);
+}
+
+void MG400InputGroup::onDisable()
+{
+  this->prefix_->setStyleSheet("color: gray");
+  this->suffix_->setStyleSheet("color: gray");
+  this->l_edit_->setEnabled(false);
+}
+
+void MG400InputGroup::onEnable()
+{
+  this->prefix_->setStyleSheet("color: black;");
+  this->suffix_->setStyleSheet("color: black;");
+  this->l_edit_->setEnabled(true);
+}
+
+double MG400InputGroup::getValue()
+{
+  return this->l_edit_->text().toDouble();
+}
+
 Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
 : rviz_common::Panel(parent)
 {
@@ -36,46 +67,30 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   QHBoxLayout * layout_movj = new QHBoxLayout;
   QVBoxLayout * layout_movj_goal = new QVBoxLayout;
 
-  QHBoxLayout * layout_movj_goal_x = new QHBoxLayout;
-  label_x_ = new QLabel("x:");
-  layout_movj_goal_x->addWidget(label_x_);
-  edit_movj_x_ = new QLineEdit("");
-  layout_movj_goal_x->addWidget(edit_movj_x_);
-  layout_movj_goal->addLayout(layout_movj_goal_x);
+  this->input_x_ = new MG400InputGroup("x", "[mm]");
+  layout_movj_goal->addLayout(this->input_x_);
 
-  QHBoxLayout * layout_movj_goal_y = new QHBoxLayout;
-  label_y_ = new QLabel("y:");
-  layout_movj_goal_y->addWidget(label_y_);
-  edit_movj_y_ = new QLineEdit("");
-  layout_movj_goal_y->addWidget(edit_movj_y_);
-  layout_movj_goal->addLayout(layout_movj_goal_y);
+  this->input_y_ = new MG400InputGroup("y", "[mm]");
+  layout_movj_goal->addLayout(this->input_y_);
 
-  QHBoxLayout * layout_movj_goal_z = new QHBoxLayout;
-  label_z_ = new QLabel("z:");
-  layout_movj_goal_z->addWidget(label_z_);
-  edit_movj_z_ = new QLineEdit("");
-  layout_movj_goal_z->addWidget(edit_movj_z_);
-  layout_movj_goal->addLayout(layout_movj_goal_z);
+  this->input_z_ = new MG400InputGroup("z", "[mm]");
+  layout_movj_goal->addLayout(this->input_z_);
 
-  QHBoxLayout * layout_movj_goal_r = new QHBoxLayout;
-  label_r_ = new QLabel("r:");
-  layout_movj_goal_r->addWidget(label_r_);
-  edit_movj_r_ = new QLineEdit("");
-  layout_movj_goal_r->addWidget(edit_movj_r_);
-  layout_movj_goal->addLayout(layout_movj_goal_r);
+  this->input_r_ = new MG400InputGroup("r", "[degree]");
+  layout_movj_goal->addLayout(this->input_r_);
 
   layout_movj->addLayout(layout_movj_goal);
-  button_send_movj_ = new QPushButton("Send");
-  layout_movj->addWidget(button_send_movj_);
+  this->button_send_movj_ = new QPushButton("Send");
+  layout_movj->addWidget(this->button_send_movj_);
 
   layout->addLayout(layout_movj);
 
-  setLayout(layout);
+  this->setLayout(layout);
 
   QTimer * output_timer = new QTimer(this);
-  connect(output_timer, SIGNAL(timeout()), this, SLOT(tick()));
-  output_timer->start(100);
-  connect(button_send_movj_, SIGNAL(clicked()), this, SLOT(callbackSendMovJ()));
+  this->connect(output_timer, SIGNAL(timeout()), this, SLOT(tick()));
+  output_timer->start(100);  // Timeout set to 100ms = 0.1s
+  this->connect(this->button_send_movj_, SIGNAL(clicked()), this, SLOT(callbackSendMovJ()));
 }
 
 void Mg400ControllerPanel::onInitialize()
@@ -118,19 +133,12 @@ void Mg400ControllerPanel::load(const rviz_common::Config & config)
 void Mg400ControllerPanel::tick()
 {
   if (radio_enable_->isChecked()) {
-    label_x_->setStyleSheet("color: black;");
-    label_y_->setStyleSheet("color: black;");
-    label_z_->setStyleSheet("color: black;");
-    label_r_->setStyleSheet("color: black;");
-    edit_movj_x_->setEnabled(true);
-    edit_movj_y_->setEnabled(true);
-    edit_movj_z_->setEnabled(true);
-    edit_movj_r_->setEnabled(true);
+    this->input_x_->onEnable();
+    this->input_y_->onEnable();
+    this->input_z_->onEnable();
+    this->input_r_->onEnable();
+
     button_send_movj_->setEnabled(true);
-    goal_x = edit_movj_x_->text().toFloat();
-    goal_y = edit_movj_y_->text().toFloat();
-    goal_z = edit_movj_z_->text().toFloat();
-    goal_r = edit_movj_r_->text().toFloat();
 
     if (!is_enabled_before) {
       Mg400ControllerPanel::callEnableRobot();
@@ -139,14 +147,11 @@ void Mg400ControllerPanel::tick()
   }
 
   if (radio_disable_->isChecked()) {
-    label_x_->setStyleSheet("color: gray;");
-    label_y_->setStyleSheet("color: gray;");
-    label_z_->setStyleSheet("color: gray;");
-    label_r_->setStyleSheet("color: gray;");
-    edit_movj_x_->setEnabled(false);
-    edit_movj_y_->setEnabled(false);
-    edit_movj_z_->setEnabled(false);
-    edit_movj_r_->setEnabled(false);
+    this->input_x_->onDisable();
+    this->input_y_->onDisable();
+    this->input_z_->onDisable();
+    this->input_r_->onDisable();
+
     button_send_movj_->setEnabled(false);
     Mg400ControllerPanel::callDisableRobot();
     is_enabled_before = false;
@@ -159,12 +164,12 @@ void Mg400ControllerPanel::callbackSendMovJ()
   goal_msg.pose.header.frame_id = "mg400_origin_link";
   goal_msg.pose.header.stamp.sec = 0;
   goal_msg.pose.header.stamp.nanosec = 0;
-  goal_msg.pose.pose.position.x = goal_x;
-  goal_msg.pose.pose.position.y = goal_y;
-  goal_msg.pose.pose.position.z = goal_z;
+  goal_msg.pose.pose.position.x = this->input_x_->getValue() * 1e-3;
+  goal_msg.pose.pose.position.y = this->input_y_->getValue() * 1e-3;
+  goal_msg.pose.pose.position.z = this->input_z_->getValue() * 1e-3;
 
   tf2::Quaternion quat;
-  quat.setRPY(0.0, 0.0, goal_r * M_PI / 180);
+  quat.setRPY(0.0, 0.0, this->input_r_->getValue() * M_PI / 180.0);
   goal_msg.pose.pose.orientation.x = quat.getX();
   goal_msg.pose.pose.orientation.y = quat.getY();
   goal_msg.pose.pose.orientation.z = quat.getZ();
@@ -187,17 +192,14 @@ void Mg400ControllerPanel::callbackSendMovJ()
 void Mg400ControllerPanel::callEnableRobot()
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
-    RCLCPP_WARN(
-      nh_->get_logger(),
-      "robot already enabled");
+    RCLCPP_WARN(nh_->get_logger(), "robot already enabled");
     return;
   }
 
   using namespace std::chrono_literals;  // NOLINT
   if (!mg400_enable_robot_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
-      nh_->get_logger(), "\"%s\" is not ready",
-      mg400_enable_robot_clnt_->get_service_name());
+      nh_->get_logger(), "\"%s\" is not ready", mg400_enable_robot_clnt_->get_service_name());
     return;
   }
 
@@ -209,8 +211,7 @@ void Mg400ControllerPanel::callEnableRobot()
     rclcpp::FutureReturnCode::SUCCESS)
   {
     RCLCPP_ERROR(
-      nh_->get_logger(),
-      "\"%s\" service client: async_send_request failed",
+      nh_->get_logger(), "\"%s\" service client: async_send_request failed",
       mg400_enable_robot_clnt_->get_service_name());
     return;
   }
@@ -218,8 +219,7 @@ void Mg400ControllerPanel::callEnableRobot()
   const auto wrapped_result = future_result.get();
   if (!wrapped_result->result) {
     RCLCPP_ERROR(
-      nh_->get_logger(),
-      "\"%s\" service client: failed",
+      nh_->get_logger(), "\"%s\" service client: failed",
       mg400_enable_robot_clnt_->get_service_name());
   }
 }
@@ -227,9 +227,7 @@ void Mg400ControllerPanel::callEnableRobot()
 void Mg400ControllerPanel::callDisableRobot()
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
-    RCLCPP_WARN(
-      nh_->get_logger(),
-      "robot already disabled");
+    RCLCPP_WARN(nh_->get_logger(), "robot already disabled");
     return;
   }
 
@@ -249,8 +247,7 @@ void Mg400ControllerPanel::callDisableRobot()
     rclcpp::FutureReturnCode::SUCCESS)
   {
     RCLCPP_ERROR(
-      nh_->get_logger(),
-      "\"%s\" service client: async_send_request failed",
+      nh_->get_logger(), "\"%s\" service client: async_send_request failed",
       mg400_disable_robot_clnt_->get_service_name());
     return;
   }

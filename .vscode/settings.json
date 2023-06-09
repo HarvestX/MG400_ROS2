@@ -22,6 +22,6 @@
   "xml.format.splitAttributes": true,
   "files.associations": {
     ".repos": "yaml",
-    "/usr/include/c++**" : "hpp",
+    "/usr/include/c++**" : "cpp",
   },
 }
