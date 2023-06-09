@@ -7,14 +7,6 @@ ros2 launch mg400_bringup main.launch.py
 ```
 
 ## Connect launch server with MG400_Mock
-
 ```bash
-ros2 launch mg400_bringup simulator.launch.py
-```
-
-or
-
-
-```bash
-ros2 launch mg400_bringup main.launch.py ip_address:=127.0.0.1
+ros2 launch mg400_bringup main.launch.py ip_address:=<ip_address of mock>
 ```
