@@ -193,6 +193,7 @@ void Mg400ControllerPanel::callEnableRobot()
     return;
   }
 
+  using namespace std::chrono_literals;  // NOLINT
   if (!mg400_enable_robot_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
       nh_->get_logger(), "\"%s\" is not ready",
@@ -232,6 +233,7 @@ void Mg400ControllerPanel::callDisableRobot()
     return;
   }
 
+  using namespace std::chrono_literals;  // NOLINT
   if (!mg400_disable_robot_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
       nh_->get_logger(), "\"%s\" is not ready",
@@ -256,8 +258,7 @@ void Mg400ControllerPanel::callDisableRobot()
   const auto wrapped_result = future_result.get();
   if (!wrapped_result->result) {
     RCLCPP_ERROR(
-      nh_->get_logger(),
-      "\"%s\" service client: failed",
+      nh_->get_logger(), "\"%s\" service client: failed",
       mg400_disable_robot_clnt_->get_service_name());
   }
 }
@@ -303,8 +304,7 @@ void Mg400ControllerPanel::onResult(const GoalHandle::WrappedResult & result)
     RCLCPP_ERROR(nh_->get_logger(), "Failed");
   }
 }
-
-}
+}  // namespace mg400_rviz_plugin
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(mg400_rviz_plugin::Mg400ControllerPanel, rviz_common::Panel)

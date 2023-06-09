@@ -29,32 +29,17 @@
 
 namespace mg400_rviz_plugin
 {
-using namespace std::chrono_literals; // NOLINT
-
 class Mg400ControllerPanel : public rviz_common::Panel
 {
   Q_OBJECT
 
 public:
-  Mg400ControllerPanel(QWidget * parent = nullptr);
-
   using ActionT = mg400_msgs::action::MovJ;
   using GoalHandle = rclcpp_action::ClientGoalHandle<ActionT>;
 
-  virtual void onInitialize();
-  virtual void load(const rviz_common::Config & config);
-  virtual void save(rviz_common::Config config) const;
-
-public Q_SLOTS:
-  void tick();
-  void callbackSendMovJ();
-
 private:
   using RobotMode = mg400_msgs::msg::RobotMode;
-  float goal_x;
-  float goal_y;
-  float goal_z;
-  float goal_r;
+
 
 protected:
   QRadioButton * radio_enable_;
@@ -86,11 +71,28 @@ protected:
   rclcpp::CallbackGroup::SharedPtr callback_group_;
   rclcpp::executors::SingleThreadedExecutor callback_group_executor_;
 
+private:
+  float goal_x;
+  float goal_y;
+  float goal_z;
+  float goal_r;
+
+public:
+  explicit Mg400ControllerPanel(QWidget * parent = nullptr);
+
+  virtual void onInitialize();
+  virtual void load(const rviz_common::Config & config);
+  virtual void save(rviz_common::Config config) const;
+
+public Q_SLOTS:
+  void tick();
+  void callbackSendMovJ();
+
+protected:
   void callEnableRobot();
   void callDisableRobot();
   void onGoalResponse(const GoalHandle::SharedPtr & goal_handle);
   void onFeedback(GoalHandle::SharedPtr, const ActionT::Feedback::ConstSharedPtr);
   void onResult(const GoalHandle::WrappedResult &);
 };
-
-}
+}  // namespace mg400_rviz_plugin
