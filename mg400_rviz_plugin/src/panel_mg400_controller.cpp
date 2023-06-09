@@ -102,12 +102,13 @@ void Mg400ControllerPanel::onInitialize()
   this->callback_group_executor_.add_callback_group(
     this->callback_group_, nh_->get_node_base_interface());
 
+  // TODO(anyone): make namespace editable
+  this->current_robot_mode_ = mg400_msgs::msg::RobotMode::INIT;
   rm_sub_ = nh_->create_subscription<RobotMode>(
     "/mg400/robot_mode", rclcpp::SensorDataQoS().keep_last(1),
     [&](const mg400_msgs::msg::RobotMode::ConstSharedPtr msg) {
-      this->current_robot_mode_ = msg;
+      this->current_robot_mode_ = msg->robot_mode;
     });
-  this->current_robot_mode_ = std::make_shared<const RobotMode>();
 
   mg400_enable_robot_clnt_ =
     nh_->create_client<mg400_msgs::srv::EnableRobot>(
@@ -140,10 +141,7 @@ void Mg400ControllerPanel::tick()
 
     button_send_movj_->setEnabled(true);
 
-    if (!is_enabled_before) {
-      Mg400ControllerPanel::callEnableRobot();
-      is_enabled_before = true;
-    }
+    Mg400ControllerPanel::callEnableRobot();
   }
 
   if (radio_disable_->isChecked()) {
@@ -154,7 +152,6 @@ void Mg400ControllerPanel::tick()
 
     button_send_movj_->setEnabled(false);
     Mg400ControllerPanel::callDisableRobot();
-    is_enabled_before = false;
   }
 }
 
@@ -191,7 +188,7 @@ void Mg400ControllerPanel::callbackSendMovJ()
 
 void Mg400ControllerPanel::callEnableRobot()
 {
-  if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
+  if (this->current_robot_mode_ == RobotMode::ENABLE) {
     RCLCPP_WARN(nh_->get_logger(), "robot already enabled");
     return;
   }
@@ -226,7 +223,7 @@ void Mg400ControllerPanel::callEnableRobot()
 
 void Mg400ControllerPanel::callDisableRobot()
 {
-  if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
+  if (this->current_robot_mode_ == RobotMode::DISABLED) {
     RCLCPP_WARN(nh_->get_logger(), "robot already disabled");
     return;
   }

@@ -63,12 +63,10 @@ protected:
 
   QPushButton * button_send_movj_;
 
-  bool is_enabled_before = false;
-
   rclcpp::Node::SharedPtr nh_;
 
   rclcpp::Subscription<RobotMode>::SharedPtr rm_sub_;
-  RobotMode::ConstSharedPtr current_robot_mode_;
+  RobotMode::_robot_mode_type current_robot_mode_;
 
   rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr
     mg400_enable_robot_clnt_;
