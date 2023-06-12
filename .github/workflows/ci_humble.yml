@@ -41,4 +41,5 @@ jobs:
             mg400_node
             mg400_plugin
             mg400_plugin_base
+            mg400_rviz_plugin
           vcs-repo-file-url: build_depends.repos

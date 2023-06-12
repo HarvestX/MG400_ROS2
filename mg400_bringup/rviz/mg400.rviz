@@ -19,6 +19,8 @@ Panels:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
+  - Class: mg400_rviz_plugin/Mg400Controller
+    Name: Mg400Controller
 Visualization Manager:
   Class: ""
   Displays:

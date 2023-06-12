@@ -21,6 +21,7 @@
   "uncrustify.configPath.linux": ".vscode/uncrustify.cfg",
   "xml.format.splitAttributes": true,
   "files.associations": {
-    ".repos": "yaml"
+    ".repos": "yaml",
+    "/usr/include/c++**" : "cpp",
   },
 }

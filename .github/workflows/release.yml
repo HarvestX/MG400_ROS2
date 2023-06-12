@@ -22,6 +22,7 @@ on:
           - mg400_node
           - mg400_plugin
           - mg400_plugin_base
+          - mg400_rviz_plugin
 jobs:
   release:
     name: Release

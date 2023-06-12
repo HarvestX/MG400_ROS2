@@ -1,0 +1,10 @@
+<library path="mg400_rviz_plugin">
+  <class
+      name="mg400_rviz_plugin/Mg400Controller"
+      type="mg400_rviz_plugin::Mg400ControllerPanel"
+      base_class_type="rviz_common::Panel">
+    <description>
+      Make a MG400 control panel
+    </description>
+  </class>
+</library>
