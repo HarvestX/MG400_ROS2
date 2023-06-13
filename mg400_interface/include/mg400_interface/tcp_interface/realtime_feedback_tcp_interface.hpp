@@ -60,7 +60,7 @@ public:
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
-  std::shared_ptr<RealTimeData> getRealtimeData();
+  bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
   void disConnect();
