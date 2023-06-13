@@ -58,24 +58,21 @@ bool RealtimeFeedbackTcpInterface::isActive()
 
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
 {
-  this->mutex_current_joints_.lock();
+  std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
   joints = this->current_joints_;
-  this->mutex_current_joints_.unlock();
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
 {
-  this->mutex_current_joints_.lock();
+  std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
   JointHandler::getEndPose(this->current_joints_, pose);
-  this->mutex_current_joints_.unlock();
 }
 
 std::shared_ptr<RealTimeData> RealtimeFeedbackTcpInterface::getRealtimeData()
 {
   std::shared_ptr<RealTimeData> rt_data_local_;
-  this->mutex_rt_data_.lock();
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
   rt_data_local_ = this->rt_data_;
-  this->mutex_rt_data_.unlock();
   return rt_data_local_;
 }
 
@@ -121,34 +118,30 @@ void RealtimeFeedbackTcpInterface::recvData()
         continue;
       }
 
-      // Error: Data take timeout
       auto recvd_data = std::make_shared<RealTimeData>();
       if (!this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
+        // Error: Data take timeout
         RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
-        this->mutex_rt_data_.lock();
+        std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
-        this->mutex_rt_data_.unlock();
         continue;
       }
 
-      // Error: Size invalid
       if (recvd_data->len != sizeof(RealTimeData)) {
-        this->mutex_rt_data_.lock();
+        // Error: Invalid size
+        std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
-        this->mutex_rt_data_.unlock();
         continue;
+      } else {
+        // Success
+        std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+        this->rt_data_ = recvd_data;
       }
 
-      // Success
-      this->mutex_rt_data_.lock();
-      this->rt_data_ = recvd_data;
-      this->mutex_rt_data_.unlock();
-
-      this->mutex_current_joints_.lock();
+      std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
       for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
         this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
       }
-      this->mutex_current_joints_.unlock();
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
