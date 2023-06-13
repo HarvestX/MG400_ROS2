@@ -53,7 +53,8 @@ bool RealtimeFeedbackTcpInterface::isConnected()
 
 bool RealtimeFeedbackTcpInterface::isActive()
 {
-  return this->getRealtimeData() != nullptr;
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  return this->rt_data_ != nullptr;
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
@@ -68,19 +69,22 @@ void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
   JointHandler::getEndPose(this->current_joints_, pose);
 }
 
-std::shared_ptr<RealTimeData> RealtimeFeedbackTcpInterface::getRealtimeData()
+bool RealtimeFeedbackTcpInterface::getRealtimeData(RealTimeData & data)
 {
-  std::shared_ptr<RealTimeData> rt_data_local_;
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  rt_data_local_ = this->rt_data_;
-  return rt_data_local_;
+  if (this->rt_data_ != nullptr) {
+    data = *this->rt_data_;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 {
-  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
-  if (rt_data_local_) {
-    mode = rt_data_local_->robot_mode;
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  if (this->rt_data_) {
+    mode = this->rt_data_->robot_mode;
     return true;
   } else {
     return false;
@@ -89,9 +93,9 @@ bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 
 bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 {
-  std::shared_ptr<RealTimeData> rt_data_local_ = this->getRealtimeData();
-  if (rt_data_local_) {
-    return rt_data_local_->robot_mode == expected_mode;
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  if (this->rt_data_) {
+    return this->rt_data_->robot_mode == expected_mode;
   } else {
     return false;
   }
@@ -135,12 +139,13 @@ void RealtimeFeedbackTcpInterface::recvData()
       } else {
         // Success
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-        this->rt_data_ = recvd_data;
+        this->rt_data_ = std::move(recvd_data);
       }
 
       std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
+      std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
       for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
-        this->current_joints_[i] = this->getRealtimeData()->q_actual[i] * TO_RADIAN;
+        this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
