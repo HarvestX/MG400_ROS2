@@ -188,7 +188,9 @@ void Mg400ControllerPanel::callbackSendMovJ()
 
 void Mg400ControllerPanel::callEnableRobot()
 {
-  if (this->current_robot_mode_ == RobotMode::ENABLE) {
+  if (this->current_robot_mode_ == RobotMode::ENABLE ||
+    this->current_robot_mode_ == RobotMode::RUNNING)
+  {
     RCLCPP_WARN(nh_->get_logger(), "robot already enabled");
     return;
   }
