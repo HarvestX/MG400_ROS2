@@ -132,16 +132,25 @@ void MG400Node::onErrorTimer()
 
     try {
       std::stringstream ss;
-      const auto joints_error_ids =
+      const auto error_ids =
         this->interface_->dashboard_commander->getErrorId();
-      for (size_t i = 0; i < joints_error_ids.size(); ++i) {
-        if (joints_error_ids.at(i).empty()) {
+      
+      if (!error_ids.at(0).empty()) {
+        ss << "Controller and Algorith:" << std::endl;
+        for (auto error_id : error_ids.at(0)) {
+          const auto message =
+            this->interface_->controller_error_msg_generator->get(error_id);
+          ss << "\t" << message << std::endl;
+        }
+      }
+      for (size_t i = 1; i < error_ids.size(); ++i) {
+        if (error_ids.at(i).empty()) {
           continue;
         }
-        ss << "Joint" << (i + 1) << ":" << std::endl;
-        for (auto error_id : joints_error_ids.at(i)) {
+        ss << "Servo" << i << ":" << std::endl;
+        for (auto error_id : error_ids.at(i)) {
           const auto message =
-            this->interface_->error_msg_generator->get(error_id);
+            this->interface_->servo_error_msg_generator->get(error_id);
           ss << "\t" << message << std::endl;
         }
       }
