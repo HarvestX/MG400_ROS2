@@ -35,7 +35,7 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
     std::make_unique<ErrorMsgGenerator>("alarm_servo.json");
 
   return this->controller_error_msg_generator->loadJsonFile() &&
-    this->servo_error_msg_generator->loadJsonFile();
+         this->servo_error_msg_generator->loadJsonFile();
 }
 
 
