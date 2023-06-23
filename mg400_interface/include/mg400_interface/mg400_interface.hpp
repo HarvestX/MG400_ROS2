@@ -42,7 +42,8 @@ public:
   MotionCommander::SharedPtr motion_commander;
   RealtimeFeedbackTcpInterface::SharedPtr realtime_tcp_interface;
 
-  std::unique_ptr<ErrorMsgGenerator> error_msg_generator;
+  std::unique_ptr<ErrorMsgGenerator> controller_error_msg_generator;
+  std::unique_ptr<ErrorMsgGenerator> servo_error_msg_generator;
 
 private:
   const std::string IP;

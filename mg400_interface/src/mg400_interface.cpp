@@ -29,10 +29,13 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
   this->realtime_tcp_interface = std::make_shared<RealtimeFeedbackTcpInterface>(
     this->IP, frame_id_prefix);
 
-  this->error_msg_generator =
+  this->controller_error_msg_generator =
     std::make_unique<ErrorMsgGenerator>("alarm_controller.json");
+  this->servo_error_msg_generator =
+    std::make_unique<ErrorMsgGenerator>("alarm_servo.json");
 
-  return this->error_msg_generator->loadJsonFile();
+  return this->controller_error_msg_generator->loadJsonFile() &&
+         this->servo_error_msg_generator->loadJsonFile();
 }
 
 
