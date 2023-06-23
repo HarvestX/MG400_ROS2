@@ -134,7 +134,6 @@ void MG400Node::onErrorTimer()
       std::stringstream ss;
       const auto error_ids =
         this->interface_->dashboard_commander->getErrorId();
-      
       if (!error_ids.at(0).empty()) {
         ss << "Controller and Algorith:" << std::endl;
         for (auto error_id : error_ids.at(0)) {
