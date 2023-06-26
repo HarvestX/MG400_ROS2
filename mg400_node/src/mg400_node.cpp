@@ -32,7 +32,6 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
 
-
   this->interface_ =
     std::make_shared<mg400_interface::MG400Interface>(ip_address);
 
@@ -42,10 +41,16 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     return;
   }
 
+  this->mg400_connected_pub_ =
+    this->create_publisher<std_msgs::msg::Bool>(
+    "mg400_connected", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
+
+  this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
   while (!this->interface_->activate()) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
     rclcpp::sleep_for(5s);
   }
+  this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
 
   this->dashboard_api_loader_ =
     std::make_shared<mg400_plugin_base::DashboardApiLoader>();
@@ -94,8 +99,8 @@ void MG400Node::onInit()
     "robot_mode", rclcpp::SensorDataQoS());
   this->error_id_pub_ =
     this->create_publisher<mg400_msgs::msg::ErrorID>(
-    "error_id", rclcpp::SensorDataQoS());
-
+    "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  
   this->runTimer();
 }
 
@@ -176,14 +181,21 @@ void MG400Node::onErrorTimer()
 void MG400Node::onInterfaceCheckTimer()
 {
   if (!this->interface_->ok()) {
-    // Stop the timer and try to reconnect
+    this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
+
     this->cancelTimer();
     this->interface_->deactivate();
-    while (!this->interface_->activate()) {
-      RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-      rclcpp::sleep_for(5s);
-    }
-    this->runTimer();
+    this->reconnect_timer_ = this->create_wall_timer(
+      5s,
+      [this]() {
+        RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
+        if (this->interface_->activate()) {
+          this->reconnect_timer_.reset();
+          this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
+          this->runTimer();
+        }
+      }
+    );
   }
 }
 
@@ -204,6 +216,7 @@ void MG400Node::cancelTimer()
   this->joint_state_timer_.reset();
   this->robot_mode_timer_.reset();
   this->error_timer_.reset();
+  this->interface_check_timer_.reset();
 }
 
 }  // namespace mg400_node
