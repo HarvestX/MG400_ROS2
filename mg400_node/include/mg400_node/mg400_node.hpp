@@ -59,7 +59,6 @@ private:
   rclcpp::TimerBase::SharedPtr robot_mode_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
   rclcpp::TimerBase::SharedPtr interface_check_timer_;
-  rclcpp::TimerBase::SharedPtr reconnect_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
