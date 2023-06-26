@@ -20,6 +20,7 @@
 #include <memory>
 
 #include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_msgs/msg/error_id.hpp>
 #include <mg400_plugin_base/api_loader_base.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <pluginlib/class_loader.hpp>
@@ -61,6 +62,7 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
 
 public:
   MG400Node() = delete;

@@ -92,6 +92,9 @@ void MG400Node::onInit()
   this->robot_mode_pub_ =
     this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
+  this->error_id_pub_ =
+    this->create_publisher<mg400_msgs::msg::ErrorID>(
+    "error_id", rclcpp::SensorDataQoS());
 
   this->runTimer();
 }
@@ -131,10 +134,12 @@ void MG400Node::onErrorTimer()
     }
 
     try {
+      auto msg = std::make_unique<mg400_msgs::msg::ErrorID>();
       std::stringstream ss;
       const auto error_ids =
         this->interface_->dashboard_commander->getErrorId();
       if (!error_ids.at(0).empty()) {
+        msg->controller.ids = error_ids.at(0);
         ss << "Controller and Algorith:" << std::endl;
         for (auto error_id : error_ids.at(0)) {
           const auto message =
@@ -143,6 +148,9 @@ void MG400Node::onErrorTimer()
         }
       }
       for (size_t i = 1; i < error_ids.size(); ++i) {
+        auto ids = mg400_msgs::msg::IDArray();
+        ids.ids = error_ids.at(i);
+        msg->servo.push_back(ids);
         if (error_ids.at(i).empty()) {
           continue;
         }
@@ -154,7 +162,7 @@ void MG400Node::onErrorTimer()
         }
       }
       RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
-      this->interface_->dashboard_commander->clearError();
+      this->error_id_pub_->publish(std::move(msg));
     } catch (const std::runtime_error & ex) {
       RCLCPP_ERROR(this->get_logger(), ex.what());
     } catch (const std::out_of_range & ex) {
