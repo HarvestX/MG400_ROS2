@@ -32,7 +32,6 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
 
-
   this->interface_ =
     std::make_shared<mg400_interface::MG400Interface>(ip_address);
 
@@ -126,50 +125,55 @@ void MG400Node::onRobotModeTimer()
 
 void MG400Node::onErrorTimer()
 {
-  if (this->interface_->ok()) {
-    if (!this->interface_->realtime_tcp_interface->isRobotMode(
-        mg400_msgs::msg::RobotMode::ERROR))
-    {
-      return;
-    }
+  if (!this->interface_->ok()) {
+    auto msg = std::make_unique<mg400_msgs::msg::ErrorID>();
+    msg->connected = false;
+    this->error_id_pub_->publish(std::move(msg));
+    return;
+  }
 
-    try {
-      auto msg = std::make_unique<mg400_msgs::msg::ErrorID>();
-      std::stringstream ss;
-      const auto error_ids =
-        this->interface_->dashboard_commander->getErrorId();
-      if (!error_ids.at(0).empty()) {
-        msg->controller.ids = error_ids.at(0);
-        ss << "Controller and Algorith:" << std::endl;
-        for (auto error_id : error_ids.at(0)) {
-          const auto message =
-            this->interface_->controller_error_msg_generator->get(error_id);
-          ss << "\t" << message << std::endl;
-        }
+  if (!this->interface_->realtime_tcp_interface->isRobotMode(
+      mg400_msgs::msg::RobotMode::ERROR))
+  {
+    return;
+  }
+
+  try {
+    auto msg = std::make_unique<mg400_msgs::msg::ErrorID>();
+    std::stringstream ss;
+    const auto error_ids =
+      this->interface_->dashboard_commander->getErrorId();
+    if (!error_ids.at(0).empty()) {
+      msg->controller.ids = error_ids.at(0);
+      ss << "Controller and Algorith:" << std::endl;
+      for (auto error_id : error_ids.at(0)) {
+        const auto message =
+          this->interface_->controller_error_msg_generator->get(error_id);
+        ss << "\t" << message << std::endl;
       }
-      for (size_t i = 1; i < error_ids.size(); ++i) {
-        auto ids = mg400_msgs::msg::IDArray();
-        ids.ids = error_ids.at(i);
-        msg->servo.push_back(ids);
-        if (error_ids.at(i).empty()) {
-          continue;
-        }
-        ss << "Servo" << i << ":" << std::endl;
-        for (auto error_id : error_ids.at(i)) {
-          const auto message =
-            this->interface_->servo_error_msg_generator->get(error_id);
-          ss << "\t" << message << std::endl;
-        }
-      }
-      RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
-      this->error_id_pub_->publish(std::move(msg));
-    } catch (const std::runtime_error & ex) {
-      RCLCPP_ERROR(this->get_logger(), ex.what());
-    } catch (const std::out_of_range & ex) {
-      RCLCPP_ERROR(this->get_logger(), "Out of range %s", ex.what());
-    } catch (...) {
-      RCLCPP_ERROR(this->get_logger(), "Unknown exception");
     }
+    for (size_t i = 1; i < error_ids.size(); ++i) {
+      auto ids = mg400_msgs::msg::IDArray();
+      ids.ids = error_ids.at(i);
+      msg->servo.push_back(ids);
+      if (error_ids.at(i).empty()) {
+        continue;
+      }
+      ss << "Servo" << i << ":" << std::endl;
+      for (auto error_id : error_ids.at(i)) {
+        const auto message =
+          this->interface_->servo_error_msg_generator->get(error_id);
+        ss << "\t" << message << std::endl;
+      }
+    }
+    RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
+    this->error_id_pub_->publish(std::move(msg));
+  } catch (const std::runtime_error & ex) {
+    RCLCPP_ERROR(this->get_logger(), ex.what());
+  } catch (const std::out_of_range & ex) {
+    RCLCPP_ERROR(this->get_logger(), "Out of range %s", ex.what());
+  } catch (...) {
+    RCLCPP_ERROR(this->get_logger(), "Unknown exception");
   }
 }
 
@@ -179,11 +183,16 @@ void MG400Node::onInterfaceCheckTimer()
     // Stop the timer and try to reconnect
     this->cancelTimer();
     this->interface_->deactivate();
-    while (!this->interface_->activate()) {
-      RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
-      rclcpp::sleep_for(5s);
-    }
-    this->runTimer();
+    this->reconnect_timer_ = this->create_wall_timer(
+      5s,
+      [this]() {
+        RCLCPP_INFO(this->get_logger(), "Try reconnecting...");
+        if (this->interface_->activate()) {
+          this->reconnect_timer_.reset();
+          this->runTimer();
+        }
+      }
+    );
   }
 }
 
@@ -203,7 +212,7 @@ void MG400Node::cancelTimer()
 {
   this->joint_state_timer_.reset();
   this->robot_mode_timer_.reset();
-  this->error_timer_.reset();
+  this->interface_check_timer_.reset();
 }
 
 }  // namespace mg400_node
