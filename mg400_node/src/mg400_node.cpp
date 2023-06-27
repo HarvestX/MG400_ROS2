@@ -30,10 +30,10 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
 
-  this->mg400_connected_pub_ =
-    this->create_publisher<std_msgs::msg::Bool>(
-    "mg400_connected", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
-  this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
+  if (this->get_parameter("auto_connect").as_bool()) {
+    RCLCPP_INFO(this->get_logger(), "Auto connect is enabled");
+    this->configure();
+  }
 }
 
 MG400Node::~MG400Node()
@@ -46,8 +46,12 @@ MG400Node::~MG400Node()
 
 CallbackReturn MG400Node::on_configure(const State &)
 {
-  this->ip_address_ = this->get_parameter("ip_address").as_string();
+  this->mg400_connected_pub_ =
+    this->create_publisher<std_msgs::msg::Bool>(
+    "mg400_connected", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
+  this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
 
+  this->ip_address_ = this->get_parameter("ip_address").as_string();
   this->interface_ =
     std::make_shared<mg400_interface::MG400Interface>(this->ip_address_);
   if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
@@ -57,9 +61,7 @@ CallbackReturn MG400Node::on_configure(const State &)
 
   if (this->get_parameter("auto_connect").as_bool()) {
     RCLCPP_INFO(this->get_logger(), "Try connecting to MG400 at %s ...", this->ip_address_.c_str());
-    this->connect_timer_ = this->create_wall_timer(
-      5s, [this]() { this->activate(); });
-    this->connect_timer_->execute_callback();
+    this->connect_timer_ = this->create_wall_timer(0s, [this](){this->activate();});
   }
   
   return CallbackReturn::SUCCESS;
@@ -67,13 +69,16 @@ CallbackReturn MG400Node::on_configure(const State &)
 
 CallbackReturn MG400Node::on_activate(const State &)
 {
+  this->connect_timer_.reset();
+
   if (!this->interface_->activate()) {
     RCLCPP_WARN(this->get_logger(), "Failed to connect to MG400 at %s", this->ip_address_.c_str());
+    if (this->get_parameter("auto_connect").as_bool()) {
+      RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
+      this->connect_timer_ = this->create_wall_timer(5s, [this](){this->activate();});
+    }
     return CallbackReturn::FAILURE;
   }
-
-  this->connect_timer_->cancel();
-  this->connect_timer_.reset();
 
   this->dashboard_api_loader_ =
     std::make_shared<mg400_plugin_base::DashboardApiLoader>();
@@ -132,12 +137,46 @@ CallbackReturn MG400Node::on_deactivate(const State &)
   this->interface_->deactivate();
 
   if (this->get_parameter("auto_connect").as_bool()) {
-    RCLCPP_INFO(this->get_logger(), "Try reconnecting to MG400 at %s ...", this->ip_address_.c_str());
-    this->connect_timer_ = this->create_wall_timer(
-      5s, [this]() { this->activate(); });
-    this->connect_timer_->execute_callback();
+    RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
+    this->connect_timer_ = this->create_wall_timer(5s, [this](){this->activate();});
   }
 
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn MG400Node::on_cleanup(const State &)
+{
+  this->mg400_connected_pub_.reset();
+  this->interface_.reset();
+  this->connect_timer_.reset();
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn MG400Node::on_shutdown(const State &)
+{
+  this->cancelTimer();
+  this->dashboard_api_loader_.reset();
+  this->motion_api_loader_.reset();
+  this->joint_state_pub_.reset();
+  this->robot_mode_pub_.reset();
+  this->error_id_pub_.reset();
+  this->mg400_connected_pub_.reset();
+  this->interface_.reset();
+  this->connect_timer_.reset();
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn MG400Node::on_error(const State &)
+{
+  this->cancelTimer();
+  this->dashboard_api_loader_.reset();
+  this->motion_api_loader_.reset();
+  this->joint_state_pub_.reset();
+  this->robot_mode_pub_.reset();
+  this->error_id_pub_.reset();
+  this->mg400_connected_pub_.reset();
+  this->interface_.reset();
+  this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
 }
 
@@ -240,10 +279,6 @@ void MG400Node::runTimer()
 
 void MG400Node::cancelTimer()
 {
-  this->joint_state_timer_->cancel();
-  this->robot_mode_timer_->cancel();
-  this->error_timer_->cancel();
-  this->interface_check_timer_->cancel();
   this->joint_state_timer_.reset();
   this->robot_mode_timer_.reset();
   this->error_timer_.reset();
