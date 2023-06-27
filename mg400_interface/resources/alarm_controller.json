@@ -1,5 +1,19 @@
 [
     {
+        "id": -2,
+        "level": 0,
+        "en": {
+            "description": "Collision Detection",
+            "cause": "",
+            "solution": "Keep away from the work area and continue to run"
+        },
+        "zh_CN": {
+            "description": "碰撞检测停机",
+            "cause": "",
+            "solution": "离开工作区域，继续运行"
+        }
+    },
+    {
         "id": 0,
         "level": 0,
         "en": {
