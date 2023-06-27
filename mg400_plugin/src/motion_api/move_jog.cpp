@@ -26,8 +26,8 @@ void MoveJog::configure(
   const mg400_interface::MG400Interface::SharedPtr mg400_if)
 {
   if (!this->configure_base(
-    commander, node_base_if, node_clock_if,
-    node_logging_if, node_services_if, node_waitables_if, mg400_if))
+      commander, node_base_if, node_clock_if,
+      node_logging_if, node_services_if, node_waitables_if, mg400_if))
   {
     return;
   }

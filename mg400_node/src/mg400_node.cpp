@@ -116,8 +116,8 @@ CallbackReturn MG400Node::on_activate(const State &)
     "robot_mode", rclcpp::SensorDataQoS());
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
-  this->runTimer(); 
-  
+  this->runTimer();
+
   RCLCPP_INFO(this->get_logger(), "Connected to MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
   return CallbackReturn::SUCCESS;
