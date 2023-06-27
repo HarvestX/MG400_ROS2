@@ -63,7 +63,7 @@ CallbackReturn MG400Node::on_configure(const State &)
     RCLCPP_INFO(this->get_logger(), "Try connecting to MG400 at %s ...", this->ip_address_.c_str());
     this->connect_timer_ = this->create_wall_timer(0s, [this]() {this->activate();});
   }
-  
+
   return CallbackReturn::SUCCESS;
 }
 

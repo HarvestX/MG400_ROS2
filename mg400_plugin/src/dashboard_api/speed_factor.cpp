@@ -27,7 +27,8 @@ void SpeedFactor::configure(
 {
   if (!this->configure_base(
     commander, node_base_if, node_clock_if,
-    node_logging_if, node_services_if, node_waitables_if, mg400_if)) {
+    node_logging_if, node_services_if, node_waitables_if, mg400_if))
+  {
     return;
   }
 
