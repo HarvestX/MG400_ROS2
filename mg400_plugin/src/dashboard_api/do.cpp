@@ -19,17 +19,23 @@ namespace mg400_plugin
 
 void DO::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
-  const rclcpp::Node::SharedPtr node,
+  const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
+  const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_log_if,
+  const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_srv_if,
   const mg400_interface::MG400Interface::SharedPtr mg400_if)
 {
-  if (!this->configure_base(commander, node, mg400_if)) {
+  if (!this->configure_base(commander, node_base_if, node_log_if, node_srv_if, mg400_if)) {
     return;
   }
 
   using namespace std::placeholders;  // NOLINT
-  this->srv_ = node->create_service<ServiceT>(
+  this->srv_ = rclcpp::create_service<ServiceT, CallbackT>(
+    this->node_base_,
+    this->node_services_,
     "do",
-    std::bind(&DO::onServiceCall, this, _1, _2));
+    std::bind(&DO::onServiceCall, this, _1, _2),
+    rclcpp::ServicesQoS().get_rmw_qos_profile(),
+    this->node_base_->get_default_callback_group());
 }
 
 void DO::onServiceCall(
@@ -42,12 +48,12 @@ void DO::onServiceCall(
       this->commander_->DO(req->index, req->status);
       res->result = true;
     } catch (const std::runtime_error & ex) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+      RCLCPP_ERROR(this->node_logging_->get_logger(), ex.what());
     } catch (...) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+      RCLCPP_ERROR(this->node_logging_->get_logger(), "Interface Error");
     }
   } else {
-    RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 is not connected");
+    RCLCPP_ERROR(this->node_logging_->get_logger(), "MG400 is not connected");
   }
 }
 }  // namespace mg400_plugin

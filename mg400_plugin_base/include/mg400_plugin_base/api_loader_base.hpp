@@ -61,11 +61,13 @@ public:
 
   void configure(
     typename PluginT::CommanderT::SharedPtr commander,
-    const rclcpp::Node::SharedPtr node,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services,
     mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
     for (const auto & it : this->plugin_map_) {
-      it.second->configure(commander, node->shared_from_this(), mg400_if);
+      it.second->configure(commander, node_base, node_logging, node_services, mg400_if);
     }
   }
 

@@ -20,17 +20,23 @@ namespace mg400_plugin
 
 void AccJ::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
-  const rclcpp::Node::SharedPtr node,
+  const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
+  const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging,
+  const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services,
   const mg400_interface::MG400Interface::SharedPtr mg400_if)
 {
-  if (!this->configure_base(commander, node, mg400_if)) {
+  if (!this->configure_base(commander, node_base, node_logging, node_services, mg400_if)) {
     return;
   }
 
   using namespace std::placeholders;  // NOLINT
-  this->srv_ = node->create_service<ServiceT>(
+  this->srv_ = rclcpp::create_service<ServiceT, CallbackT>(
+    this->node_base_,
+    this->node_services_,
     "acc_j",
-    std::bind(&AccJ::onServiceCall, this, _1, _2));
+    std::bind(&AccJ::onServiceCall, this, _1, _2),
+    rclcpp::ServicesQoS().get_rmw_qos_profile(),
+    this->node_base_->get_default_callback_group());
 }
 
 void AccJ::onServiceCall(
@@ -43,12 +49,12 @@ void AccJ::onServiceCall(
       this->commander_->accJ(static_cast<int>(req->r));
       res->result = true;
     } catch (const std::runtime_error & ex) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), ex.what());
+      RCLCPP_ERROR(this->node_logging_->get_logger(), ex.what());
     } catch (...) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), "Interface Error");
+      RCLCPP_ERROR(this->node_logging_->get_logger(), "Interface Error");
     }
   } else {
-    RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 is not connected");
+    RCLCPP_ERROR(this->node_logging_->get_logger(), "MG400 is not connected");
   }
 }
 }  // namespace mg400_plugin

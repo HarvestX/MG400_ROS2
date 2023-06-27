@@ -18,6 +18,9 @@
 #include <string>
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/node_interfaces/node_base_interface.hpp>
+#include <rclcpp/node_interfaces/node_logging_interface.hpp>
+#include <rclcpp/node_interfaces/node_services_interface.hpp>
 #include <mg400_interface/mg400_interface.hpp>
 
 namespace mg400_plugin_base
@@ -32,7 +35,9 @@ public:
 
 protected:
   typename CommanderT::SharedPtr commander_;
-  rclcpp::Node::SharedPtr base_node_;
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_;
+  rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_;
+  rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services_;
   mg400_interface::MG400Interface::SharedPtr
     mg400_interface_;
 
@@ -41,24 +46,28 @@ public:
   virtual ~ApiPluginBase() {}
   virtual void configure(
     const typename CommanderT::SharedPtr,
-    const rclcpp::Node::SharedPtr,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
     const mg400_interface::MG400Interface::SharedPtr) = 0;
 
 protected:
   bool configure_base(
     const typename CommanderT::SharedPtr commander,
-    const rclcpp::Node::SharedPtr node,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services,
     const mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
-    if (this->base_node_) {
+    if (this->node_base_ && this->node_logging_ && this->node_services_) {
       RCLCPP_WARN(
-        this->base_node_->get_logger(),
+        this->node_logging_->get_logger(),
         "Plugin already configured.");
       return false;
     }
 
     this->commander_ = commander;
-    this->base_node_ = node;
+    this->node_base_ = node_base;
 
     if (mg400_if) {
       this->mg400_interface_ = mg400_if;

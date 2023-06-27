@@ -15,14 +15,19 @@
 #pragma once
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/pay_load.hpp>
+#include <mg400_msgs/srv/payload.hpp>
 
 namespace mg400_plugin
 {
-class PayLoad final : public mg400_plugin_base::DashboardApiPluginBase
+class Payload final : public mg400_plugin_base::DashboardApiPluginBase
 {
 public:
-  using ServiceT = mg400_msgs::srv::PayLoad;
+  using ServiceT = mg400_msgs::srv::Payload;
+  using CallbackT = std::function<
+    void (
+      const typename ServiceT::Request::SharedPtr,
+      typename ServiceT::Response::SharedPtr
+    )>;
 
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
@@ -30,7 +35,9 @@ private:
 public:
   void configure(
     const mg400_interface::DashboardCommander::SharedPtr,
-    const rclcpp::Node::SharedPtr,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
     const mg400_interface::MG400Interface::SharedPtr) override;
 
 private:

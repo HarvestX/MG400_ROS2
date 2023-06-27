@@ -81,7 +81,9 @@ CallbackReturn MG400Node::on_activate(const State &)
     this->get_parameter("dashboard_api_plugins").as_string_array());
   this->dashboard_api_loader_->configure(
     this->interface_->dashboard_commander,
-    this->shared_from_this(),
+    this->get_node_base_interface(),
+    this->get_node_logging_interface(),
+    this->get_node_services_interface(),
     this->interface_);
   this->dashboard_api_loader_->showPluginInfo(
     this->get_node_logging_interface());
@@ -92,7 +94,9 @@ CallbackReturn MG400Node::on_activate(const State &)
     this->get_parameter("motion_api_plugins").as_string_array());
   this->motion_api_loader_->configure(
     this->interface_->motion_commander,
-    this->shared_from_this(),
+    this->get_node_base_interface(),
+    this->get_node_logging_interface(),
+    this->get_node_services_interface(),
     this->interface_);
   this->motion_api_loader_->showPluginInfo(
     this->get_node_logging_interface());
@@ -107,6 +111,7 @@ CallbackReturn MG400Node::on_activate(const State &)
   
   RCLCPP_INFO(this->get_logger(), "Connected to MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
+  return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn MG400Node::on_deactivate(const State &)

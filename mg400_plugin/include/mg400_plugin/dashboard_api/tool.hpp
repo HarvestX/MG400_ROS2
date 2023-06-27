@@ -24,6 +24,11 @@ class Tool final
 {
 public:
   using ServiceT = mg400_msgs::srv::Tool;
+  using CallbackT = std::function<
+    void (
+      const typename ServiceT::Request::SharedPtr,
+      typename ServiceT::Response::SharedPtr
+    )>;
 
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
@@ -31,7 +36,9 @@ private:
 public:
   void configure(
     const mg400_interface::DashboardCommander::SharedPtr,
-    const rclcpp::Node::SharedPtr,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
     const mg400_interface::MG400Interface::SharedPtr) override;
 
 private:
