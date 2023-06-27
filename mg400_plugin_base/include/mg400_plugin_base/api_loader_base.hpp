@@ -69,7 +69,8 @@ public:
     mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
     for (const auto & it : this->plugin_map_) {
-      it.second->configure(commander, node_base_if, node_clock_if,
+      it.second->configure(
+        commander, node_base_if, node_clock_if,
         node_logging_if, node_services_if, node_waitable_if, mg400_if);
     }
   }

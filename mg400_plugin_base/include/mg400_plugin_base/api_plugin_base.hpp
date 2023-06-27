@@ -65,8 +65,8 @@ protected:
     const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr node_waitable_if,
     const mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
-    if (this->node_base_if_ && this->node_clock_if_ && this->node_logging_if_
-      && this->node_services_if_ && this->node_waitable_if_) {
+    if (this->node_base_if_ && this->node_clock_if_ &&
+      this->node_logging_if_ && this->node_services_if_ && this->node_waitable_if_) {
       RCLCPP_WARN(
         this->node_logging_if_->get_logger(),
         "Plugin already configured.");
