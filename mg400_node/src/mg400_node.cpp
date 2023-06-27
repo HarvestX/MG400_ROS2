@@ -82,8 +82,10 @@ CallbackReturn MG400Node::on_activate(const State &)
   this->dashboard_api_loader_->configure(
     this->interface_->dashboard_commander,
     this->get_node_base_interface(),
+    this->get_node_clock_interface(),
     this->get_node_logging_interface(),
     this->get_node_services_interface(),
+    this->get_node_waitables_interface(),
     this->interface_);
   this->dashboard_api_loader_->showPluginInfo(
     this->get_node_logging_interface());
@@ -95,8 +97,10 @@ CallbackReturn MG400Node::on_activate(const State &)
   this->motion_api_loader_->configure(
     this->interface_->motion_commander,
     this->get_node_base_interface(),
+    this->get_node_clock_interface(),
     this->get_node_logging_interface(),
     this->get_node_services_interface(),
+    this->get_node_waitables_interface(),
     this->interface_);
   this->motion_api_loader_->showPluginInfo(
     this->get_node_logging_interface());

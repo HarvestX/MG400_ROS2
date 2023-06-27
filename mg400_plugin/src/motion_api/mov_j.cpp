@@ -20,17 +20,20 @@ namespace mg400_plugin
 void MovJ::configure(
   const mg400_interface::MotionCommander::SharedPtr commander,
   const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
-  const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_log_if,
-  const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_srv_if,
+  const rclcpp::node_interfaces::NodeClockInterface::SharedPtr node_clock_if,
+  const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_if,
+  const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services_if,
+  const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr node_waitables_if,
   const mg400_interface::MG400Interface::SharedPtr mg400_if)
 {
-  if (!this->configure_base(commander, node_base_if, node_log_if, node_srv_if, mg400_if)) {
+  if (!this->configure_base(commander, node_base_if, node_clock_if, node_logging_if,
+    node_services_if, node_waitables_if, mg400_if)) {
     return;
   }
 
   // setup for using tf handler
   tf_handler_ = std::make_shared<h6x_tf_handler::PoseTfHandler>(
-    node->get_node_clock_interface(), node->get_node_logging_interface());
+    this->node_clock_if_, this->node_logging_if_);
   tf_handler_->configure();
   tf_handler_->setDistFrameId(
     this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link");
@@ -40,10 +43,16 @@ void MovJ::configure(
 
   this->action_server_ =
     rclcpp_action::create_server<ActionT>(
-    this->base_node_.get(), "mov_j",
+    this->node_base_if_,
+    this->node_clock_if_,
+    this->node_logging_if_,
+    this->node_waitable_if_,
+    "mov_j",
     std::bind(&MovJ::handle_goal, this, _1, _2),
     std::bind(&MovJ::handle_cancel, this, _1),
-    std::bind(&MovJ::handle_accepted, this, _1));
+    std::bind(&MovJ::handle_accepted, this, _1),
+    rcl_action_server_get_default_options(),
+    this->node_base_if_->get_default_callback_group());
 }
 
 rclcpp_action::GoalResponse MovJ::handle_goal(
@@ -51,14 +60,14 @@ rclcpp_action::GoalResponse MovJ::handle_goal(
 {
   if (!this->mg400_interface_->ok()) {
     RCLCPP_ERROR(
-      this->base_node_->get_logger(), "MG400 is not connected");
+      this->node_logging_if_->get_logger(), "MG400 is not connected");
     return rclcpp_action::GoalResponse::REJECT;
   }
 
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
     RCLCPP_ERROR(
-      this->base_node_->get_logger(), "Robot mode is not enabled");
+      this->node_logging_if_->get_logger(), "Robot mode is not enabled");
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -69,7 +78,7 @@ rclcpp_action::CancelResponse MovJ::handle_cancel(
   const std::shared_ptr<GoalHandle>)
 {
   RCLCPP_INFO(
-    this->base_node_->get_logger(), "Received request to cancel goal");
+    this->node_logging_if_->get_logger(), "Received request to cancel goal");
   // TODO(anyone): Should stop movJ
   return rclcpp_action::CancelResponse::ACCEPT;
 }
@@ -121,7 +130,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto update_pose =
     [&](geometry_msgs::msg::PoseStamped & msg) -> void
     {
-      msg.header.stamp = this->base_node_->get_clock()->now();
+      msg.header.stamp = this->node_clock_if_->get_clock()->now();
       msg.header.frame_id =
         this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
       this->mg400_interface_->realtime_tcp_interface->getCurrentEndPose(msg.pose);
@@ -132,24 +141,24 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   using namespace std::chrono_literals;   // NOLINT
   // TODO(anyone): Should calculate timeout with expectation goal time
   const auto timeout = rclcpp::Duration(5s);
-  const auto start = this->base_node_->get_clock()->now();
+  const auto start = this->node_clock_if_->get_clock()->now();
   update_pose(feedback->current_pose);
 
   while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
     if (!this->mg400_interface_->ok()) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), "MG400 Connection Error");
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "MG400 Connection Error");
       goal_handle->abort(result);
       return;
     }
 
     if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ERROR)) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), "Robot Mode Error");
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot Mode Error");
       goal_handle->abort(result);
       return;
     }
 
-    if (this->base_node_->get_clock()->now() - start > timeout) {
-      RCLCPP_ERROR(this->base_node_->get_logger(), "execution timeout");
+    if (this->node_clock_if_->get_clock()->now() - start > timeout) {
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "execution timeout");
       goal_handle->abort(result);
       return;
     }

@@ -35,9 +35,11 @@ public:
 
 protected:
   typename CommanderT::SharedPtr commander_;
-  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_;
-  rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_;
-  rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services_;
+  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if_;
+  rclcpp::node_interfaces::NodeClockInterface::SharedPtr node_clock_if_;
+  rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_if_;
+  rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services_if_;
+  rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr node_waitable_if_;
   mg400_interface::MG400Interface::SharedPtr
     mg400_interface_;
 
@@ -47,27 +49,36 @@ public:
   virtual void configure(
     const typename CommanderT::SharedPtr,
     const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeClockInterface::SharedPtr,
     const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
     const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr,
     const mg400_interface::MG400Interface::SharedPtr) = 0;
 
 protected:
   bool configure_base(
     const typename CommanderT::SharedPtr commander,
-    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base,
-    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging,
-    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
+    const rclcpp::node_interfaces::NodeClockInterface::SharedPtr node_clock_if,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr node_logging_if,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr node_services_if,
+    const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr node_waitable_if,
     const mg400_interface::MG400Interface::SharedPtr mg400_if)
   {
-    if (this->node_base_ && this->node_logging_ && this->node_services_) {
+    if (this->node_base_if_ && this->node_clock_if_ && this->node_logging_if_
+      && this->node_services_if_ && this->node_waitable_if_) {
       RCLCPP_WARN(
-        this->node_logging_->get_logger(),
+        this->node_logging_if_->get_logger(),
         "Plugin already configured.");
       return false;
     }
 
     this->commander_ = commander;
-    this->node_base_ = node_base;
+    this->node_base_if_ = node_base_if;
+    this->node_clock_if_ = node_clock_if;
+    this->node_logging_if_ = node_logging_if;
+    this->node_services_if_ = node_services_if;
+    this->node_waitable_if_ = node_waitable_if;
 
     if (mg400_if) {
       this->mg400_interface_ = mg400_if;

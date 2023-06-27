@@ -25,6 +25,11 @@ class MoveJog final : public mg400_plugin_base::MotionApiPluginBase
 {
 public:
   using ServiceT = mg400_msgs::srv::MoveJog;
+  using CallbackT = std::function<
+    void (
+      const typename ServiceT::Request::SharedPtr,
+      typename ServiceT::Response::SharedPtr
+    )>;
 
 private:
   rclcpp::Service<ServiceT>::SharedPtr srv_;
@@ -33,8 +38,10 @@ public:
   void configure(
     const mg400_interface::MotionCommander::SharedPtr,
     const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeClockInterface::SharedPtr,
     const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
     const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr,
     const mg400_interface::MG400Interface::SharedPtr) override;
 
 private:
