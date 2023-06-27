@@ -187,13 +187,11 @@ void MG400Node::onErrorTimer()
         ss << "\t" << message << std::endl;
       }
     }
-    for (size_t i = 1; i < error_ids.size(); ++i) {
-      auto ids = mg400_msgs::msg::IDArray();
-      ids.ids = error_ids.at(i);
-      msg->servo.push_back(ids);
+    for (size_t i = 1; i <= msg->servo.size(); ++i) {
       if (error_ids.at(i).empty()) {
         continue;
       }
+      msg->servo.at(i).ids = error_ids.at(i);
       ss << "Servo" << i << ":" << std::endl;
       for (auto error_id : error_ids.at(i)) {
         const auto message =
