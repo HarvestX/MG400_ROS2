@@ -9,14 +9,14 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>rclcpp</depend>
-  <depend>rclcpp_components</depend>
-  <depend>rclcpp_action</depend>
-  <depend>rclcpp_lifecycle</depend>
-  <depend>sensor_msgs</depend>
-  <depend>mg400_msgs</depend>
   <depend>mg400_interface</depend>
+  <depend>mg400_msgs</depend>
   <depend>mg400_plugin_base</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_components</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
 
   <exec_depend>mg400_plugin</exec_depend>
 
