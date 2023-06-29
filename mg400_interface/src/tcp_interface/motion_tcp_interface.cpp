@@ -19,13 +19,15 @@ namespace mg400_interface
 
 MotionTcpInterface::MotionTcpInterface(const std::string & ip)
 {
-  this->is_running_.store(false);
+  this->is_running_ = false;
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
 }
 
 MotionTcpInterface::~MotionTcpInterface()
 {
-  this->disConnect();
+  if (this->is_running_) {
+    this->disConnect();
+  }
 }
 
 rclcpp::Logger MotionTcpInterface::getLogger()
@@ -36,7 +38,7 @@ rclcpp::Logger MotionTcpInterface::getLogger()
 void MotionTcpInterface::init() noexcept
 {
   try {
-    this->is_running_.store(true);
+    this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(&MotionTcpInterface::checkConnection, this);
   } catch (const TcpSocketException & err) {
     RCLCPP_ERROR(this->getLogger(), "%s", err.what());
@@ -46,7 +48,7 @@ void MotionTcpInterface::init() noexcept
 void MotionTcpInterface::checkConnection()
 {
   using namespace std::chrono_literals; // NOLINT
-  while (this->is_running_.load()) {
+  while (this->is_running_) {
     try {
       if (!this->tcp_socket_->isConnected()) {
         this->tcp_socket_->connect(1s);
@@ -69,7 +71,7 @@ bool MotionTcpInterface::isConnected()
 
 void MotionTcpInterface::disConnect()
 {
-  this->is_running_.store(false);
+  this->is_running_ = false;
   if (this->thread_->joinable()) {
     this->thread_->join();
   }
