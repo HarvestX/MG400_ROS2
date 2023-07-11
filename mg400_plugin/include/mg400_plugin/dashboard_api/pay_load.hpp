@@ -15,7 +15,7 @@
 #pragma once
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_msgs/srv/payload.hpp>
+#include <mg400_msgs/srv/pay_load.hpp>
 
 namespace mg400_plugin
 {

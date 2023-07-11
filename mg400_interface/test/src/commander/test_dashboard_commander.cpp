@@ -156,7 +156,7 @@ TEST_F(TestDashboardCommander, PayLoad) {
     mock, recvResponse()).WillOnce(
     Return("0,{},PayLoad(3.000,0.400);"));
 
-  ASSERT_NO_THROW(commander->payload(3, 0.4));
+  ASSERT_NO_THROW(commander->pay_load(3, 0.4));
 }
 
 TEST_F(TestDashboardCommander, DO) {
