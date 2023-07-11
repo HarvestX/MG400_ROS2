@@ -100,7 +100,7 @@ void DashboardCommander::payload(
 {
   static char buf[128];
   const int cx = snprintf(
-    buf, sizeof(buf), "Payload(%.3lf,%.3lf)", weight, inertia);
+    buf, sizeof(buf), "PayLoad(%.3lf,%.3lf)", weight, inertia);
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 

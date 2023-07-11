@@ -17,7 +17,7 @@
 namespace mg400_plugin
 {
 
-void Payload::configure(
+void PayLoad::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
   const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
   const rclcpp::node_interfaces::NodeClockInterface::SharedPtr node_clock_if,
@@ -38,12 +38,12 @@ void Payload::configure(
     this->node_base_if_,
     this->node_services_if_,
     "payload",
-    std::bind(&Payload::onServiceCall, this, _1, _2),
+    std::bind(&PayLoad::onServiceCall, this, _1, _2),
     rclcpp::ServicesQoS().get_rmw_qos_profile(),
     this->node_base_if_->get_default_callback_group());
 }
 
-void Payload::onServiceCall(
+void PayLoad::onServiceCall(
   const ServiceT::Request::SharedPtr req,
   ServiceT::Response::SharedPtr res)
 {
@@ -65,5 +65,5 @@ void Payload::onServiceCall(
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(
-  mg400_plugin::Payload,
+  mg400_plugin::PayLoad,
   mg400_plugin_base::DashboardApiPluginBase)

@@ -148,13 +148,13 @@ TEST_F(TestDashboardCommander, RobotMode) {
     mg400_msgs::msg::RobotMode::ENABLE);
 }
 
-TEST_F(TestDashboardCommander, Payload) {
+TEST_F(TestDashboardCommander, PayLoad) {
   EXPECT_CALL(
     mock, sendCommand(
-      StrEq("Payload(3.000,0.400)"))).Times(1);
+      StrEq("PayLoad(3.000,0.400)"))).Times(1);
   EXPECT_CALL(
     mock, recvResponse()).WillOnce(
-    Return("0,{},Payload(3.000,0.400);"));
+    Return("0,{},PayLoad(3.000,0.400);"));
 
   ASSERT_NO_THROW(commander->payload(3, 0.4));
 }

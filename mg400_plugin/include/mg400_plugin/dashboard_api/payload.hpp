@@ -19,10 +19,10 @@
 
 namespace mg400_plugin
 {
-class Payload final : public mg400_plugin_base::DashboardApiPluginBase
+class PayLoad final : public mg400_plugin_base::DashboardApiPluginBase
 {
 public:
-  using ServiceT = mg400_msgs::srv::Payload;
+  using ServiceT = mg400_msgs::srv::PayLoad;
   using CallbackT = std::function<
     void (
       const typename ServiceT::Request::SharedPtr,
