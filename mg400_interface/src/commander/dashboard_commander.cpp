@@ -94,7 +94,7 @@ uint64_t DashboardCommander::robotMode() const
   return static_cast<uint64_t>(ResponseParser::takeInt(response.ret_val));
 }
 
-void DashboardCommander::pay_load(
+void DashboardCommander::payLoad(
   const double weight,
   const double inertia) const
 {

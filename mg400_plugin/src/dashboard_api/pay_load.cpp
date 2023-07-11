@@ -50,7 +50,7 @@ void PayLoad::onServiceCall(
   res->result = false;
   if (this->mg400_interface_->ok()) {
     try {
-      this->commander_->pay_load(req->weight, req->inertia);
+      this->commander_->payLoad(req->weight, req->inertia);
       res->result = true;
     } catch (const std::runtime_error & ex) {
       RCLCPP_ERROR(this->node_logging_if_->get_logger(), ex.what());
