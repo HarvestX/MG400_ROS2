@@ -11,13 +11,16 @@ The following API interface plugin will be loaded by default
 - Dashboard API
   - `ClearError`
   - `DisableRobot`
+  - `EmergencyStop`
   - `EnableRobot`
+  - `PayLoad`
   - `ResetRobot`
   - `SpeedFactor`
   - `ToolDOExecute`
 - Motion API
   - `MoveJog`
   - `MovJ`
+  - `MovL`
 
 ## Joint State Publisher Gui
 
