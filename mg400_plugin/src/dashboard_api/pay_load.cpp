@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_plugin/dashboard_api/payload.hpp"
+#include "mg400_plugin/dashboard_api/pay_load.hpp"
 
 namespace mg400_plugin
 {
 
-void Payload::configure(
+void PayLoad::configure(
   const mg400_interface::DashboardCommander::SharedPtr commander,
   const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
   const rclcpp::node_interfaces::NodeClockInterface::SharedPtr node_clock_if,
@@ -37,20 +37,20 @@ void Payload::configure(
   this->srv_ = rclcpp::create_service<ServiceT, CallbackT>(
     this->node_base_if_,
     this->node_services_if_,
-    "payload",
-    std::bind(&Payload::onServiceCall, this, _1, _2),
+    "pay_load",
+    std::bind(&PayLoad::onServiceCall, this, _1, _2),
     rclcpp::ServicesQoS().get_rmw_qos_profile(),
     this->node_base_if_->get_default_callback_group());
 }
 
-void Payload::onServiceCall(
+void PayLoad::onServiceCall(
   const ServiceT::Request::SharedPtr req,
   ServiceT::Response::SharedPtr res)
 {
   res->result = false;
   if (this->mg400_interface_->ok()) {
     try {
-      this->commander_->payload(req->weight, req->inertia);
+      this->commander_->payLoad(req->weight, req->inertia);
       res->result = true;
     } catch (const std::runtime_error & ex) {
       RCLCPP_ERROR(this->node_logging_if_->get_logger(), ex.what());
@@ -65,5 +65,5 @@ void Payload::onServiceCall(
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(
-  mg400_plugin::Payload,
+  mg400_plugin::PayLoad,
   mg400_plugin_base::DashboardApiPluginBase)

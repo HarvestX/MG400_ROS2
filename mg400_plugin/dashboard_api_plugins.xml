@@ -60,7 +60,7 @@
     <description>Get pose</description>
   </class>
   <class
-      type="mg400_plugin::Payload"
+      type="mg400_plugin::PayLoad"
       base_class_type="mg400_plugin_base::DashboardApiPluginBase">
     <description>Pay load</description>
   </class>

@@ -82,7 +82,7 @@ public:
 
   uint64_t robotMode() const;
 
-  void payload(const double, const double) const;
+  void payLoad(const double, const double) const;
 
   void DO(
     const DOIndex &,
