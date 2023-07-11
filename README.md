@@ -80,7 +80,7 @@ This command display the robot state with Rviz2.
 MG400 has parallel links, so the custom joint state publisher is used.
 
 ```bash
-ros2 launch mg400_bringup display.launch
+ros2 launch mg400_bringup display.launch.py
 ```
 
 ### Launch main system (MG400 should be connected via LAN cable.)
@@ -88,7 +88,7 @@ ros2 launch mg400_bringup display.launch
 This command will start service server to operate MG400 via ROS2 service.
 
 ```bash
-ros2 launch mg400_bringup main.launch
+ros2 launch mg400_bringup main.launch.py
 ```
 
 Available services are listed [here](./mg400_node/README.md).
