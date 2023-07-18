@@ -32,7 +32,8 @@ namespace mg400_interface
 class MotionCommander
 {
 public:
-  using SharedPtr = std::shared_ptr<MotionCommander>;
+  RCLCPP_SHARED_PTR_DEFINITIONS(MotionCommander)
+  RCLCPP_UNIQUE_PTR_DEFINITIONS(MotionCommander)
 
 private:
   using DistanceMode = mg400_msgs::msg::DistanceMode;

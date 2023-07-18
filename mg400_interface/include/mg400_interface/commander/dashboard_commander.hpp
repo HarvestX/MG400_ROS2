@@ -41,7 +41,8 @@ using namespace std::chrono_literals;  // NOLINT
 class DashboardCommander
 {
 public:
-  using SharedPtr = std::shared_ptr<DashboardCommander>;
+  RCLCPP_SHARED_PTR_DEFINITIONS(DashboardCommander)
+  RCLCPP_UNIQUE_PTR_DEFINITIONS(DashboardCommander)
 
 private:
   using ArchIndex = mg400_msgs::msg::Arch;
