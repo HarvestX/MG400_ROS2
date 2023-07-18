@@ -16,7 +16,7 @@ file(GLOB action_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} action/*.action)
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   ${msg_files} ${srv_files} ${action_files}
-  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs)
+  DEPENDENCIES ${${PROJECT_NAME}_FOUND_BUILD_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
