@@ -103,8 +103,8 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   geometry_msgs::msg::PoseStamped tf_goal;
   tf_handler_->tfHeader2Dist(goal->pose, tf_goal);
 
-  auto feedback = std::make_shared<mg400_msgs::action::MovJ::Feedback>();
-  auto result = std::make_shared<mg400_msgs::action::MovJ::Result>();
+  auto feedback = std::make_shared<ActionT::Feedback>();
+  auto result = std::make_shared<ActionT::Result>();
   result->result = false;
 
   this->commander_->movJ(

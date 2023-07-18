@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <mg400_msgs/action/mov_l.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
