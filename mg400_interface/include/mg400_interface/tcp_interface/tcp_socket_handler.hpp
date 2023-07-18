@@ -39,6 +39,10 @@ public:
 
 class TcpSocketHandler
 {
+public:
+  RCLCPP_SHARED_PTR_DEFINITIONS(TcpSocketHandler)
+  RCLCPP_UNIQUE_PTR_DEFINITIONS(TcpSocketHandler)
+
 private:
   int fd_;
   uint16_t port_;

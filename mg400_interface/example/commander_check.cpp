@@ -52,7 +52,7 @@ public:
 
 int main(int argc, char ** argv)
 {
-  using namespace std::chrono_literals;
+  using namespace std::chrono_literals;  // NOLINT
   rclcpp::init(argc, argv);
 
   rclcpp::NodeOptions options;
@@ -83,7 +83,6 @@ int main(int argc, char ** argv)
     rclcpp::sleep_for(2s);
 
     ck_node->interface->dashboard_commander->disableRobot();
-
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       ck_node->get_logger(),

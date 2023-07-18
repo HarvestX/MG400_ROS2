@@ -30,7 +30,7 @@ setup(
     maintainer='m12watanabe1a',
     maintainer_email='m12watanabe1a@gmail.com',
     description='Dobot MG400 launch file associated packages.',
-    license='Apache License 2.0',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

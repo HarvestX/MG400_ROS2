@@ -6,6 +6,7 @@
     "bringup",
     "colcon",
     "coveragepy",
+    "discnt",
     "dobot",
     "dpad",
     "eigen",
@@ -13,6 +14,8 @@
     "m12watanabe1a",
     "mkdir",
     "modbus",
+    "movj",
+    "movl",
     "nlohmann",
     "pluginlib",
     "rclcpp",
@@ -20,8 +23,6 @@
     "urdf",
     "vcstool",
     "waitables",
-    "xacro",
-    "movj",
-    "movl"
+    "xacro"
   ]
 }

@@ -5,7 +5,7 @@
   <version>1.2.1</version>
   <description>MG400 JoyStick Controller Packege.</description>
   <maintainer email="m12watanabe1a@gmail.com">m12watanabe1a</maintainer>
-  <license>Apache License 2.0</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 

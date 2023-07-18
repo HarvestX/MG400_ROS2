@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
 
   while (!rt_tcp_if->isConnected() || !db_tcp_if->isConnected()) {
     std::cout << "Waiting for the connection..." << std::endl;
-    using namespace std::chrono_literals;
+    using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(1s);
   }
 
@@ -177,7 +177,7 @@ int main(int argc, char ** argv)
     printf(
       "center_z:\t\t\t%.3lf\n",
       data.center_z);
-    using namespace std::chrono_literals;
+    using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(100ms);
   }
 

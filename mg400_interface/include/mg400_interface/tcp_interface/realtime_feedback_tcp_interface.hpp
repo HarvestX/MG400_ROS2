@@ -32,7 +32,9 @@ namespace mg400_interface
 class RealtimeFeedbackTcpInterface
 {
 public:
-  using SharedPtr = std::shared_ptr<RealtimeFeedbackTcpInterface>;
+  RCLCPP_SHARED_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
+  RCLCPP_UNIQUE_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
+
   const std::string frame_id_prefix;
 
 private:
@@ -45,7 +47,7 @@ private:
   std::shared_ptr<RealTimeData> rt_data_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
-  std::shared_ptr<TcpSocketHandler> tcp_socket_;
+  TcpSocketHandler::SharedPtr tcp_socket_;
 
 public:
   RealtimeFeedbackTcpInterface() = delete;

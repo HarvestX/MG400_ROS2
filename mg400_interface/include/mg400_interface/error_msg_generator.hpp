@@ -26,6 +26,10 @@ namespace mg400_interface
 {
 class ErrorMsgGenerator
 {
+public:
+  RCLCPP_SHARED_PTR_DEFINITIONS(ErrorMsgGenerator)
+  RCLCPP_UNIQUE_PTR_DEFINITIONS(ErrorMsgGenerator)
+
 private:
   const rclcpp::Logger logger_;
   const std::string filename_;
