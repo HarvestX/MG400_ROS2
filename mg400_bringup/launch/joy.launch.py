@@ -25,8 +25,8 @@ def generate_launch_description():
     """Launch joy."""
     hw_type_arg = DeclareLaunchArgument(
         'hw_type',
-        default_value=TextSubstitution(text='DualSense')
-    )
+        default_value=TextSubstitution(text='DualSense'),
+        description='Joy controller hardware type.')
 
     joy_container = ComposableNodeContainer(
         name='joy_container',

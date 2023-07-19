@@ -53,7 +53,8 @@ def generate_launch_description():
     """Launch rviz display."""
     this_package_path = get_package_share_path('mg400_bringup')
     ns_arg = DeclareLaunchArgument(
-        'namespace', default_value=TextSubstitution(text='mg400'))
+        'namespace', default_value=TextSubstitution(text='mg400'),
+        description='Set the robot resource namespace.')
     ns = LaunchConfiguration('namespace')
     joy_arg = DeclareLaunchArgument(
         'joy',
@@ -61,7 +62,8 @@ def generate_launch_description():
         description='Determines if joy.launch is called.')
     joy = LaunchConfiguration('joy')
     ip_address_arg = DeclareLaunchArgument(
-        'ip_address', default_value=TextSubstitution(text='192.168.1.6'))
+        'ip_address', default_value=TextSubstitution(text='192.168.1.6'),
+        description='Set the ip address to connect')
     ip_address = LaunchConfiguration('ip_address')
 
     mg400_node = IncludeLaunchDescription(
