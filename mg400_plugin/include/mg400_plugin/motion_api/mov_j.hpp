@@ -19,9 +19,10 @@
 #include <mg400_msgs/action/mov_j.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <h6x_tf_handler/pose_tf_handler.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <tf2/utils.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 namespace mg400_plugin
 {
@@ -33,7 +34,9 @@ public:
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
-  std::shared_ptr<h6x_tf_handler::PoseTfHandler> tf_handler_;
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
 public:
   void configure(

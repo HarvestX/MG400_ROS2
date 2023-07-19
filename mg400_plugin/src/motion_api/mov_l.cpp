@@ -33,13 +33,9 @@ void MovL::configure(
     return;
   }
 
-  // setup for using tf handler
-  tf_handler_ = std::make_shared<h6x_tf_handler::PoseTfHandler>(
-    this->node_clock_if_, this->node_logging_if_);
-  tf_handler_->configure();
-  tf_handler_->setDistFrameId(
-    this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link");
-  tf_handler_->activate();
+  // setup for using tf
+  this->tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_clock_if_->get_clock());
+  this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*this->tf_buffer_);
 
   using namespace std::placeholders;  // NOLINT
 
@@ -101,7 +97,15 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   // tf (from goal->pose to tf_goal)
   geometry_msgs::msg::PoseStamped tf_goal;
-  tf_handler_->tfHeader2Dist(goal->pose, tf_goal);
+  try {
+    const auto transform = this->tf_buffer_->lookupTransform(
+      this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link",
+      goal->pose.header.frame_id, rclcpp::Time(0));
+    tf2::doTransform(goal->pose, tf_goal, transform);
+  } catch (const tf2::TransformException & e) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
+    return;
+  }
 
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
