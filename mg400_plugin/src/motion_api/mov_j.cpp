@@ -97,7 +97,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   // tf (from goal->pose to tf_goal)
   geometry_msgs::msg::PoseStamped tf_goal;
-  try{
+  try {
     const auto transform = this->tf_buffer_->lookupTransform(
       this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link",
       goal->pose.header.frame_id, rclcpp::Time(0));
