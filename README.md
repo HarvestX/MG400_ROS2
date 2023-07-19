@@ -10,14 +10,12 @@ Dobot MG400 ROS2 Repository.
 
 | ROS2 Distro | Branch | Build status |
 | --- | --- | --- |
-| **galactic** | [`galactic`](https://github.com/HarvestX/MG400_ROS2/tree/galactic) | [![Galactic CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_galactic.yml?branch=main)
 | **humble** | [`humble`](https://github.com/HarvestX/MG400_ROS2/tree/humble) | [![Humble CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml?branch=humble)
 
 
 ## Requirements
 
 - ROS 2
-  - Ubuntu20 : [Galactic Geochelone](https://docs.ros.org/en/galactic/Installation.html)
   - Ubuntu22 : [Humble Hawksbill](https://docs.ros.org/en/humble/Installation.html)
 - MG400
   - [Firmware version 1.5.6.0](https://forum.dobot.cc/t/the-mg400-and-m1-pro-1-5-6-0-controller-versions-are-released/5923/2)
