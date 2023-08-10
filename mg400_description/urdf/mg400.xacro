@@ -42,10 +42,16 @@
   <xacro:property
       name="MESH_FLANGE"
       value="${BASE_PATH}/flange.dae" />
+  <xacro:property
+      name="MESH_WORKSPACE"
+      value="${BASE_PATH}/workspace.dae" />
 
   <xacro:macro
       name="mg400"
-      params="prefix parent *origin">
+      params="prefix parent *origin workspace_visible">
+    <material name="${prefix}mg400_workspace_material">
+      <color rgba="0.2 0.0 0.0 0.5" />
+    </material>
     <!-- links -->
     <link name="${prefix}mg400_base_link">
       <inertial>
@@ -389,7 +395,19 @@
         </geometry>
       </collision>
     </link>
-
+    <xacro:if value="${workspace_visible}">
+      <link name="${prefix}mg400_workspace">
+        <visual>
+          <origin
+              xyz="0 0 0"
+              rpy="0 0 0" />
+          <geometry>
+            <mesh filename="package://${MESH_WORKSPACE}" />
+          </geometry>
+          <material name="${prefix}mg400_workspace_material" />
+        </visual>
+      </link>
+    </xacro:if>
 
     <!-- joints -->
     <joint
@@ -399,6 +417,18 @@
       <child link="${prefix}mg400_base_link" />
       <xacro:insert_block name="origin" />
     </joint>
+    <xacro:if value="${workspace_visible}">
+      <joint
+          name="${prefix}workspace_joint"
+          type="fixed">
+        <origin
+            xyz="-0.005 0 0.228"
+            rpy="0 0 0" />
+        <parent link="${prefix}mg400_base_link" />
+        <child link="${prefix}mg400_workspace" />
+      </joint>
+    </xacro:if>
+
     <joint
         name="${prefix}mg400_j0"
         type="fixed">
