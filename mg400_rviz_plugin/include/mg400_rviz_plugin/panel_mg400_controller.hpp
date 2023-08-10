@@ -39,8 +39,8 @@ private:
 
 public:
   explicit MG400InputGroup(const std::string &, const std::string &);
-  void onDisable();
-  void onEnable();
+  void disableLine();
+  void enableLine();
   double getValue();
 };
 
@@ -56,12 +56,11 @@ private:
   using RobotMode = mg400_msgs::msg::RobotMode;
 
 protected:
-  QRadioButton * radio_enable_;
-  QRadioButton * radio_disable_;
+  QLabel * label_mode_;
 
   MG400InputGroup * input_x_, * input_y_, * input_z_, * input_r_;
 
-  QPushButton * button_send_movj_;
+  QPushButton * button_enable_, * button_disable_, * button_send_movj_;
 
   rclcpp::Node::SharedPtr nh_;
 
@@ -86,11 +85,11 @@ public:
 
 public Q_SLOTS:
   void tick();
+  void callbackEnableRobot();
+  void callbackDisableRobot();
   void callbackSendMovJ();
 
 protected:
-  void callEnableRobot();
-  void callDisableRobot();
   void onGoalResponse(const GoalHandle::SharedPtr & goal_handle);
   void onFeedback(GoalHandle::SharedPtr, const ActionT::Feedback::ConstSharedPtr);
   void onResult(const GoalHandle::WrappedResult &);
