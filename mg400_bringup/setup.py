@@ -8,7 +8,7 @@ package_name = 'mg400_bringup'
 
 setup(
     name=package_name,
-    version='1.3.1',
+    version='1.3.2',
     packages=[
         package_name,
     ],
