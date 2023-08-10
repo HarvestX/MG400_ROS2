@@ -157,33 +157,33 @@ void Mg400ControllerPanel::tick()
     this->label_mode_->setStyleSheet("");
   }
 
-  auto robot_mode2str = [&](const RobotMode::_robot_mode_type mode) noexcept->const char *
-  {
-    switch (mode) {
-      case RobotMode::INIT:
-        return "INIT";
-      case RobotMode::BRAKE_OPEN:
-        return "RAKE_OPEN";
-      case RobotMode::DISABLED:
-        return "DISABLED";
-      case RobotMode::ENABLE:
-        return "ENABLE";
-      case RobotMode::BACKDRIVE:
-        return "BACKDRIVE";
-      case RobotMode::RUNNING:
-        return "RUNNING";
-      case RobotMode::RECORDING:
-        return "RECORDING";
-      case RobotMode::ERROR:
-        return "ERROR";
-      case RobotMode::PAUSE:
-        return "PAUSE";
-      case RobotMode::JOG:
-        return "JOG";
-      case RobotMode::INVALID:
-        return "INVALID";
-    }
-  };
+  auto robot_mode2str = [&](const RobotMode::_robot_mode_type mode) -> const char *
+    {
+      switch (mode) {
+        case RobotMode::INIT:
+          return "INIT";
+        case RobotMode::BRAKE_OPEN:
+          return "RAKE_OPEN";
+        case RobotMode::DISABLED:
+          return "DISABLED";
+        case RobotMode::ENABLE:
+          return "ENABLE";
+        case RobotMode::BACKDRIVE:
+          return "BACKDRIVE";
+        case RobotMode::RUNNING:
+          return "RUNNING";
+        case RobotMode::RECORDING:
+          return "RECORDING";
+        case RobotMode::ERROR:
+          return "ERROR";
+        case RobotMode::PAUSE:
+          return "PAUSE";
+        case RobotMode::JOG:
+          return "JOG";
+        case RobotMode::INVALID:
+          return "INVALID";
+      }
+    };
 
   this->button_enable_->setEnabled(this->current_robot_mode_ == RobotMode::DISABLED);
   this->button_disable_->setEnabled(this->current_robot_mode_ == RobotMode::ENABLE);
