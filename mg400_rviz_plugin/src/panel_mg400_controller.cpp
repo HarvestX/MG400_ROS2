@@ -29,14 +29,14 @@ MG400InputGroup::MG400InputGroup(const std::string & prefix, const std::string &
   this->addWidget(this->suffix_);
 }
 
-void MG400InputGroup::onDisable()
+void MG400InputGroup::disableLine()
 {
   this->prefix_->setStyleSheet("color: gray");
   this->suffix_->setStyleSheet("color: gray");
   this->l_edit_->setEnabled(false);
 }
 
-void MG400InputGroup::onEnable()
+void MG400InputGroup::enableLine()
 {
   this->prefix_->setStyleSheet("color: black;");
   this->suffix_->setStyleSheet("color: black;");
@@ -53,16 +53,18 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
 {
   QVBoxLayout * layout = new QVBoxLayout;
 
-  QHBoxLayout * layout_enable = new QHBoxLayout;
-  radio_enable_ = new QRadioButton("Enable");
-  layout_enable->addWidget(radio_enable_);
-  radio_disable_ = new QRadioButton("Disable");
-  layout_enable->addWidget(radio_disable_);
-  radio_disable_->setChecked(true);
-  QButtonGroup * group_enable = new QButtonGroup();
-  group_enable->addButton(radio_enable_);
-  group_enable->addButton(radio_disable_);
-  layout->addLayout(layout_enable);
+  QHBoxLayout * layout_mode = new QHBoxLayout;
+  layout_mode->addWidget(new QLabel("Robot Mode: "));
+  label_mode_ = new QLabel();
+  layout_mode->addWidget(label_mode_);
+
+  QVBoxLayout * layout_mode_buttons = new QVBoxLayout;
+  this->button_enable_ = new QPushButton("Enable");
+  layout_mode_buttons->addWidget(this->button_enable_);
+  this->button_disable_ = new QPushButton("Disable");
+  layout_mode_buttons->addWidget(this->button_disable_);
+  layout_mode->addLayout(layout_mode_buttons);
+  layout->addLayout(layout_mode);
 
   QHBoxLayout * layout_movj = new QHBoxLayout;
   QVBoxLayout * layout_movj_goal = new QVBoxLayout;
@@ -90,6 +92,8 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   QTimer * output_timer = new QTimer(this);
   this->connect(output_timer, SIGNAL(timeout()), this, SLOT(tick()));
   output_timer->start(100);  // Timeout set to 100ms = 0.1s
+  this->connect(this->button_enable_, SIGNAL(clicked()), this, SLOT(callbackEnableRobot()));
+  this->connect(this->button_disable_, SIGNAL(clicked()), this, SLOT(callbackDisableRobot()));
   this->connect(this->button_send_movj_, SIGNAL(clicked()), this, SLOT(callbackSendMovJ()));
 }
 
@@ -133,26 +137,58 @@ void Mg400ControllerPanel::load(const rviz_common::Config & config)
 
 void Mg400ControllerPanel::tick()
 {
-  if (radio_enable_->isChecked()) {
-    this->input_x_->onEnable();
-    this->input_y_->onEnable();
-    this->input_z_->onEnable();
-    this->input_r_->onEnable();
-
-    button_send_movj_->setEnabled(true);
-
-    Mg400ControllerPanel::callEnableRobot();
+  if (this->current_robot_mode_ == RobotMode::ENABLE) {
+    this->input_x_->enableLine();
+    this->input_y_->enableLine();
+    this->input_z_->enableLine();
+    this->input_r_->enableLine();
+    this->label_mode_->setStyleSheet("color: green;");
+  } else if (this->current_robot_mode_ == RobotMode::DISABLED) {
+    this->input_x_->disableLine();
+    this->input_y_->disableLine();
+    this->input_z_->disableLine();
+    this->input_r_->disableLine();
+    this->label_mode_->setStyleSheet("color: blue;");
+  } else {
+    this->input_x_->disableLine();
+    this->input_y_->disableLine();
+    this->input_z_->disableLine();
+    this->input_r_->disableLine();
+    this->label_mode_->setStyleSheet("");
   }
 
-  if (radio_disable_->isChecked()) {
-    this->input_x_->onDisable();
-    this->input_y_->onDisable();
-    this->input_z_->onDisable();
-    this->input_r_->onDisable();
+  auto robot_mode2str = [&](const RobotMode::_robot_mode_type mode) noexcept->const char *
+  {
+    switch (mode) {
+      case RobotMode::INIT:
+        return "INIT";
+      case RobotMode::BRAKE_OPEN:
+        return "RAKE_OPEN";
+      case RobotMode::DISABLED:
+        return "DISABLED";
+      case RobotMode::ENABLE:
+        return "ENABLE";
+      case RobotMode::BACKDRIVE:
+        return "BACKDRIVE";
+      case RobotMode::RUNNING:
+        return "RUNNING";
+      case RobotMode::RECORDING:
+        return "RECORDING";
+      case RobotMode::ERROR:
+        return "ERROR";
+      case RobotMode::PAUSE:
+        return "PAUSE";
+      case RobotMode::JOG:
+        return "JOG";
+      case RobotMode::INVALID:
+        return "INVALID";
+    }
+  };
 
-    button_send_movj_->setEnabled(false);
-    Mg400ControllerPanel::callDisableRobot();
-  }
+  this->button_enable_->setEnabled(this->current_robot_mode_ == RobotMode::DISABLED);
+  this->button_disable_->setEnabled(this->current_robot_mode_ == RobotMode::ENABLE);
+  this->button_send_movj_->setEnabled(this->current_robot_mode_ == RobotMode::ENABLE);
+  this->label_mode_->setText(robot_mode2str(this->current_robot_mode_));
 }
 
 void Mg400ControllerPanel::callbackSendMovJ()
@@ -186,15 +222,8 @@ void Mg400ControllerPanel::callbackSendMovJ()
   mg400_movj_clnt_->async_send_goal(goal_msg, send_goal_option);
 }
 
-void Mg400ControllerPanel::callEnableRobot()
+void Mg400ControllerPanel::callbackEnableRobot()
 {
-  if (this->current_robot_mode_ == RobotMode::ENABLE ||
-    this->current_robot_mode_ == RobotMode::RUNNING)
-  {
-    RCLCPP_WARN(nh_->get_logger(), "robot already enabled");
-    return;
-  }
-
   using namespace std::chrono_literals;  // NOLINT
   if (!mg400_enable_robot_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
@@ -223,13 +252,8 @@ void Mg400ControllerPanel::callEnableRobot()
   }
 }
 
-void Mg400ControllerPanel::callDisableRobot()
+void Mg400ControllerPanel::callbackDisableRobot()
 {
-  if (this->current_robot_mode_ == RobotMode::DISABLED) {
-    RCLCPP_WARN(nh_->get_logger(), "robot already disabled");
-    return;
-  }
-
   using namespace std::chrono_literals;  // NOLINT
   if (!mg400_disable_robot_clnt_->wait_for_service(1s)) {
     RCLCPP_ERROR(
