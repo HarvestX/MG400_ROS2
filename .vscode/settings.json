@@ -1,9 +1,9 @@
 {
   "python.autoComplete.extraPaths": [
-    "/opt/ros/humble/lib/python3.10/site-packages",
+    "/opt/ros/iron/lib/python3.10/site-packages",
   ],
   "python.analysis.extraPaths": [
-    "/opt/ros/humble/lib/python3.10/site-packages"
+    "/opt/ros/iron/lib/python3.10/site-packages"
   ],
   "[jsonc]": {
     "editor.formatOnSave": true,
@@ -22,6 +22,6 @@
   "xml.format.splitAttributes": true,
   "files.associations": {
     ".repos": "yaml",
-    "/usr/include/c++**" : "cpp",
+    "/usr/include/c++**": "cpp",
   },
 }
