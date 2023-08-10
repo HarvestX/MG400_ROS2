@@ -17,7 +17,6 @@ on:
           - mg400_bringup
           - mg400_description
           - mg400_interface
-          - mg400_joy
           - mg400_msgs
           - mg400_node
           - mg400_plugin

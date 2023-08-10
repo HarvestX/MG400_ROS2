@@ -12,7 +12,6 @@
   <depend>mg400_bringup</depend>
   <depend>mg400_description</depend>
   <depend>mg400_interface</depend>
-  <depend>mg400_joy</depend>
   <depend>mg400_msgs</depend>
   <depend>mg400_node</depend>
   <depend>mg400_plugin</depend>
