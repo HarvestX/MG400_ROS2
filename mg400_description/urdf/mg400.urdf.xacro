@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot
-    xmlns:xacro="http://ros.org/wiki/xacro"
-    name="mg400">
-  <xacro:include filename="$(find mg400_description)/urdf/mg400.xacro" />
+        xmlns:xacro="http://ros.org/wiki/xacro"
+        name="mg400">
+    <xacro:include filename="$(find mg400_description)/urdf/mg400.xacro" />
 
-  <!-- arguments -->
-  <xacro:arg
-      name="prefix"
-      default="" />
-  <xacro:arg
-      name="use_arm"
-      default="True" />
+    <!-- arguments -->
+    <xacro:arg
+            name="prefix"
+            default="" />
+    <xacro:arg
+            name="use_arm"
+            default="True" />
+    <xacro:arg
+            name="workspace_visible"
+            default="false" />
 
-  <!-- links -->
-  <link name="$(arg prefix)arm_frame_link_offset" />
+    <!-- links -->
+    <link name="$(arg prefix)arm_frame_link_offset" />
 
-  <xacro:mg400
-      parent="$(arg prefix)arm_frame_link_offset"
-      prefix="$(arg prefix)">
-    <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-  </xacro:mg400>
+    <xacro:mg400
+            parent="$(arg prefix)arm_frame_link_offset"
+            prefix="$(arg prefix)"
+            workspace_visible="$(arg workspace_visible)">
+        <origin
+                xyz="0 0 0"
+                rpy="0 0 0" />
+    </xacro:mg400>
 </robot>
