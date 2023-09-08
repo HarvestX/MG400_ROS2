@@ -150,7 +150,18 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto start = this->node_clock_if_->get_clock()->now();
   update_pose(feedback->current_pose);
 
-  while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
+  while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
+    if (this->node_clock_if_->get_clock()->now() - start > timeout) {
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "execution timeout");
+      goal_handle->abort(result);
+      return;
+    }
+    control_freq.sleep();
+  }
+
+  while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose) ||
+    !this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE))
+  {
     if (!this->mg400_interface_->ok()) {
       RCLCPP_ERROR(this->node_logging_if_->get_logger(), "MG400 Connection Error");
       goal_handle->abort(result);
