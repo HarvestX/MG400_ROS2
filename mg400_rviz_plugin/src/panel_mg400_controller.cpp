@@ -182,6 +182,8 @@ void Mg400ControllerPanel::tick()
           return "JOG";
         case RobotMode::INVALID:
           return "INVALID";
+        default:
+          return "INVALID";
       }
     };
 
