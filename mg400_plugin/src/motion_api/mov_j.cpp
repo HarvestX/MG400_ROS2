@@ -64,8 +64,10 @@ rclcpp_action::GoalResponse MovJ::handle_goal(
 
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
+    uint64_t mode;
+    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
     RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled");
+      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -146,18 +148,27 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   using RobotMode = mg400_msgs::msg::RobotMode;
   using namespace std::chrono_literals;   // NOLINT
   // TODO(anyone): Should calculate timeout with expectation goal time
-  const auto timeout = rclcpp::Duration(5s);
+  const auto timeout = rclcpp::Duration(10s);
   const auto start = this->node_clock_if_->get_clock()->now();
+  RCLCPP_INFO(this->node_logging_if_->get_logger(), "start time obtained");
   update_pose(feedback->current_pose);
 
   while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
-    if (this->node_clock_if_->get_clock()->now() - start > timeout) {
-      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "execution timeout");
+    if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(500ms)) {
+      if (is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
+        RCLCPP_INFO(this->node_logging_if_->get_logger(),
+	  "Arm is already at the goal. Sometimes robot mode doesn't become RUNNING.");
+        break;
+      }
+
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(),
+        "execution timeout: Robot mode did not become RUNNING.");
       goal_handle->abort(result);
       return;
     }
     control_freq.sleep();
   }
+  RCLCPP_INFO(this->node_logging_if_->get_logger(), "Robot Mode has become RUNNING");
 
   while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose) ||
     !this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE))
@@ -185,6 +196,7 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
     control_freq.sleep();
   }
 
+  RCLCPP_INFO(this->node_logging_if_->get_logger(), "Execution succeeded");
   result->result = true;
   goal_handle->succeed(result);
 }

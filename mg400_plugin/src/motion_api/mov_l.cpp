@@ -152,7 +152,9 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
     if (this->node_clock_if_->get_clock()->now() - start > timeout) {
-      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "execution timeout");
+      RCLCPP_ERROR(
+	this->node_logging_if_->get_logger(),
+	"execution timeout: Robot mode did not become RUNNING");
       goal_handle->abort(result);
       return;
     }
