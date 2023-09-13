@@ -146,18 +146,30 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
   using RobotMode = mg400_msgs::msg::RobotMode;
   using namespace std::chrono_literals;   // NOLINT
   // TODO(anyone): Should calculate timeout with expectation goal time
-  const auto timeout = rclcpp::Duration(5s);
+  const auto timeout = rclcpp::Duration(10s);
   const auto start = this->node_clock_if_->get_clock()->now();
   update_pose(feedback->current_pose);
 
   while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
-    if (this->node_clock_if_->get_clock()->now() - start > timeout) {
-      RCLCPP_ERROR(
-	this->node_logging_if_->get_logger(),
-	"execution timeout: Robot mode did not become RUNNING");
+    if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(300ms)) {
+      if (is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
+        RCLCPP_INFO(this->node_logging_if_->get_logger(),
+	  "Arm is already at the goal. Sometimes robot mode doesn't become RUNNING.");
+        break;
+      }
+
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(),
+        "execution timeout: Robot mode did not become RUNNING.");
       goal_handle->abort(result);
       return;
     }
+
+    if(this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ERROR)){
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot Mode Error while checking becoming RUNNING");
+      goal_handle->abort(result);
+      return;
+    }
+
     control_freq.sleep();
   }
 
@@ -171,7 +183,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
     }
 
     if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ERROR)) {
-      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot Mode Error");
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot Mode Error while checking reaching goal");
       goal_handle->abort(result);
       return;
     }
