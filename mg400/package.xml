@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>mg400</name>
-  <version>1.4.2</version>
+  <version>1.5.0</version>
   <description>HarvestX MG400 Packages.</description>
   <maintainer email="40206149+m12watanabe1a@users.noreply.github.com">m12watanabe1a</maintainer>
   <license>Apache-2.0</license>
