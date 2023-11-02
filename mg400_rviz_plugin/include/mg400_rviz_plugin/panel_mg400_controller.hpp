@@ -28,6 +28,8 @@
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/action/mov_j.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <mg400_interface/joint_handler.hpp>
 
 namespace mg400_rviz_plugin
 {
@@ -38,6 +40,7 @@ private:
   QLineEdit * l_edit_;
 
 public:
+  QLabel * joint_state_;
   explicit MG400InputGroup(const std::string &, const std::string &);
   void disableLine();
   void enableLine();
@@ -53,6 +56,7 @@ public:
   using GoalHandle = rclcpp_action::ClientGoalHandle<ActionT>;
 
 private:
+  using JointState = sensor_msgs::msg::JointState;
   using RobotMode = mg400_msgs::msg::RobotMode;
 
 protected:
@@ -66,6 +70,10 @@ protected:
 
   rclcpp::Subscription<RobotMode>::SharedPtr rm_sub_;
   RobotMode::_robot_mode_type current_robot_mode_;
+
+  rclcpp::Subscription<JointState>::SharedPtr js_sub_;
+  geometry_msgs::msg::Pose current_pose_;
+  JointState::_position_type current_joint_state_;
 
   rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr
     mg400_enable_robot_clnt_;

@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>libqt5-widgets</depend>
+  <depend>mg400_interface</depend>
   <depend>mg400_msgs</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp_action</depend>
