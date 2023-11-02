@@ -113,9 +113,33 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   auto result = std::make_shared<ActionT::Result>();
   result->result = false;
 
-  this->commander_->movJ(
-    tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
-    tf2::getYaw(tf_goal.pose.orientation));
+  std::vector<double> tool_vec;
+  tool_vec.push_back(tf_goal.pose.position.x);  // px
+  tool_vec.push_back(tf_goal.pose.position.y);  // py
+  tool_vec.push_back(tf_goal.pose.position.z);  // pz
+  tool_vec.push_back(tf2::getYaw(tf_goal.pose.orientation) * (180 / M_PI));  // r in degree
+  std::vector<double> angles;
+  try {
+    // convert from meter to millimeter
+    tool_vec[0] *= 1000;
+    tool_vec[1] *= 1000;
+    tool_vec[2] *= 1000;
+    angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
+    return;
+  }
+  try {
+    if (this->mg400_ik_util_.InMG400Range(angles)) {
+      this->commander_->movJ(
+        tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
+        tf2::getYaw(tf_goal.pose.orientation));
+    }
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(
+      this->node_logging_if_->get_logger(), "Joint angle error. Target out of MG400 range.");
+    return;
+  }
 
   const auto is_goal_reached = [&](
     const geometry_msgs::msg::Pose & pose,
