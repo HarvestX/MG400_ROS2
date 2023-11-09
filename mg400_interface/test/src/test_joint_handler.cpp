@@ -14,6 +14,7 @@
 
 
 #include <gtest/gtest.h>
+#include <mg400_common/mg400_ik_util.hpp>
 #include <mg400_interface/mg400_interface.hpp>
 
 
@@ -34,9 +35,15 @@ TEST_F(TestJointHandler, getEndPoint)
   geometry_msgs::msg::Pose actual;
   const auto ret = mg400_interface::JointHandler::getEndPose(js, actual);
   ASSERT_TRUE(ret);
-  EXPECT_DOUBLE_EQ(0.284, actual.position.x);
-  EXPECT_DOUBLE_EQ(0.0, actual.position.y);
-  EXPECT_DOUBLE_EQ(0.118, actual.position.z);
+  double eq_x = mg400_common::LINK1_X + mg400_common::LINK2_X + mg400_common::LINK3_X +
+    mg400_common::LINK4_X;
+  double eq_y = mg400_common::LINK1_Y + mg400_common::LINK2_Y + mg400_common::LINK3_Y +
+    mg400_common::LINK4_Y;
+  double eq_z = mg400_common::LINK1_Z + mg400_common::LINK2_Z + mg400_common::LINK3_Z +
+    mg400_common::LINK4_Z;
+  EXPECT_DOUBLE_EQ(eq_x, actual.position.x);
+  EXPECT_DOUBLE_EQ(eq_y, actual.position.y);
+  EXPECT_DOUBLE_EQ(eq_z, actual.position.z);
   EXPECT_DOUBLE_EQ(1.0, actual.orientation.w);
   EXPECT_DOUBLE_EQ(0.0, actual.orientation.x);
   EXPECT_DOUBLE_EQ(0.0, actual.orientation.y);
