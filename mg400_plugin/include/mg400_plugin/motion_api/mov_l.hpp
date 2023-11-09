@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include <mg400_common/mg400_ik_util.hpp>
 #include <mg400_msgs/action/mov_l.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
@@ -35,6 +36,7 @@ public:
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
+  mg400_common::MG400IKUtil mg400_ik_util_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
