@@ -17,10 +17,10 @@
 namespace mg400_common
 {
 MG400IKUtil::MG400IKUtil()
-: LINK1({this->LINK1_X, this->LINK1_Y, this->LINK1_Z}),
-  LINK2({this->LINK2_X, this->LINK2_Y, this->LINK2_Z}),
-  LINK3({this->LINK3_X, this->LINK3_Y, this->LINK3_Z}),
-  LINK4({this->LINK4_X, this->LINK4_Y, this->LINK4_Z})
+: LINK1({LINK1_X, LINK1_Y, LINK1_Z}),
+  LINK2({LINK2_X, LINK2_Y, LINK2_Z}),
+  LINK3({LINK3_X, LINK3_Y, LINK3_Z}),
+  LINK4({LINK4_X, LINK4_Y, LINK4_Z})
 {
 }
 
@@ -65,17 +65,17 @@ std::vector<double> MG400IKUtil::InverseKinematics(
     throw std::runtime_error("Inverse kinematics error");
   }
 
-  double j_3_1 = -asin(val1);
-  double j_2 = -atan2(pp_z, pp_x) + atan2(length2 + length3 * sin(j_3_1), length3 * cos(j_3_1));
+  double j_3_1 = acos(val1);
+  double j_2 = M_PI / 2 - atan2(pp_z, pp_x) - asin(
+    length3 / sqrt(pow(pp_x, 2) + pow(pp_z, 2)) * sin(j_3_1));
 
-  double j_3 = j_2 + j_3_1;
+  double j_3 = j_2 + j_3_1 - M_PI / 2;
   double j_4 = Rx - j_1;
 
   std::vector<double> angles = {j_1, j_2, j_3, j_4, 0.0, 0.0};
   for (auto & angle : angles) {
     angle = round(angle * pow(10, ROUND_DECIMALS)) / pow(10, ROUND_DECIMALS);
   }
-
   if (!this->InMG400Range(angles)) {
     throw std::runtime_error("Outside of workspace.");
   }

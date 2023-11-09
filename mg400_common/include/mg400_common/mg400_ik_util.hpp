@@ -19,40 +19,39 @@
 
 namespace mg400_common
 {
+const double J1_MIN = -160 * M_PI / 180.0;
+const double J1_MAX = 160 * M_PI / 180.0;
+const double J2_MIN = -25 * M_PI / 180.0;
+const double J2_MIN_NO_COLLISION = -19 * M_PI / 180.0;
+const double J2_MAX = 85 * M_PI / 180.0;
+const double J3_MIN = -25 * M_PI / 180.0;
+const double J3_MAX = 105 * M_PI / 180.0;
+const double J31_MIN = -60 * M_PI / 180.0;
+const double J31_MAX = 60 * M_PI / 180.0;
+const double J4_MIN = -180 * M_PI / 180.0;
+const double J4_MAX = 180 * M_PI / 180.0;
+
+const double LINK1_X = 0.0435;
+const double LINK1_Y = 0.0;
+const double LINK1_Z = 0.0;
+
+const double LINK2_X = 0.0;
+const double LINK2_Y = 0.0;
+const double LINK2_Z = 0.175;
+
+const double LINK3_X = 0.175;
+const double LINK3_Y = 0.0;
+const double LINK3_Z = 0.0;
+
+const double LINK4_X = 0.066;
+const double LINK4_Y = 0.0;
+const double LINK4_Z = -0.0538;
 
 class MG400IKUtil
 {
 private:
-  const double MARGIN = 0.5 * M_PI / 180.0;
-
-  const double J1_MIN = -160 * M_PI / 180.0;
-  const double J1_MAX = 160 * M_PI / 180.0;
-  const double J2_MIN = -25 * M_PI / 180.0;
-  const double J2_MIN_NO_COLLISION = -19 * M_PI / 180.0;
-  const double J2_MAX = 85 * M_PI / 180.0;
-  const double J3_MIN = -25 * M_PI / 180.0;
-  const double J3_MAX = 105 * M_PI / 180.0;
-  const double J31_MIN = -60 * M_PI / 180.0;
-  const double J31_MAX = 60 * M_PI / 180.0;
-  const double J4_MIN = -180 * M_PI / 180.0;
-  const double J4_MAX = 180 * M_PI / 180.0;
-  const double ROUND_DECIMALS = 6;
-
-  const double LINK1_X = 0.0435;
-  const double LINK1_Y = 0.0;
-  const double LINK1_Z = 0.0;
-
-  const double LINK2_X = 0.0;
-  const double LINK2_Y = 0.0;
-  const double LINK2_Z = 0.175;
-
-  const double LINK3_X = 0.175;
-  const double LINK3_Y = 0.0;
-  const double LINK3_Z = 0.0;
-
-  const double LINK4_X = 0.066;
-  const double LINK4_Y = 0.0;
-  const double LINK4_Z = -0.0538;
+  const double MARGIN = 1 * M_PI / 180.0;
+  const double ROUND_DECIMALS = 8;
 
   const Eigen::Vector3d LINK1;
   const Eigen::Vector3d LINK2;

@@ -11,6 +11,7 @@
 
   <depend>ament_index_cpp</depend>
   <depend>eigen</depend>
+  <depend>mg400_common</depend>
   <depend>mg400_msgs</depend>
   <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>

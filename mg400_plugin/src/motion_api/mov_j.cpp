@@ -122,21 +122,19 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   try {
     angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
     RCLCPP_INFO(
-      this->node_logging_if_->get_logger(), "angles = {%f, %f, %f, %f", angles[0] * 180.0 / M_PI,
+      this->node_logging_if_->get_logger(), "Joint angles = {%f, %f, %f, %f}", angles[0] * 180.0 / M_PI,
       angles[1] * 180.0 / M_PI, angles[2] * 180.0 / M_PI, angles[3] * 180.0 / M_PI);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
     return;
   }
   try {
-    if (this->mg400_ik_util_.InMG400Range(angles)) {
-      this->commander_->movJ(
-        tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
-        tf2::getYaw(tf_goal.pose.orientation));
-    }
+    this->commander_->movJ(
+      tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
+      tf2::getYaw(tf_goal.pose.orientation));
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Joint angle error. Target out of MG400 range.");
+      this->node_logging_if_->get_logger(), e.what());
     return;
   }
 

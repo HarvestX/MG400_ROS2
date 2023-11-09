@@ -66,10 +66,10 @@ bool JointHandler::getEndPose(const std::array<double, 4> & joints, Pose & pose)
   Eigen::MatrixXd LINK3(3, 1);
   Eigen::MatrixXd LINK4(3, 1);
 
-  LINK1 << 0.043, 0.0, 0.0;
-  LINK2 << 0.0, 0.0, 0.175;
-  LINK3 << 0.175, 0.0, 0.0;
-  LINK4 << 0.066, 0.0, -0.057;
+  LINK1 << mg400_common::LINK1_X, mg400_common::LINK1_Y, mg400_common::LINK1_Z;
+  LINK2 << mg400_common::LINK2_X, mg400_common::LINK2_Y, mg400_common::LINK2_Z;
+  LINK3 << mg400_common::LINK3_X, mg400_common::LINK3_Y, mg400_common::LINK3_Z;
+  LINK4 << mg400_common::LINK4_X, mg400_common::LINK4_Y, mg400_common::LINK4_Z;
 
   pos = LINK1 +
     rotY(LINK2, joints.at(1)) +

@@ -23,6 +23,7 @@
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include <mg400_common/mg400_ik_util.hpp>
 #include "mg400_interface/command_utils.hpp"
 
 namespace mg400_interface
@@ -37,17 +38,6 @@ const char J4_1_NAME[] = "mg400_j4_1";
 const char J4_2_NAME[] = "mg400_j4_2";
 const char J5_NAME[] = "mg400_j5";
 
-constexpr double J1_MIN = -160.0 * TO_RADIAN;
-constexpr double J1_MAX = 160.0 * TO_RADIAN;
-
-constexpr double J2_MIN = -30.0 * TO_RADIAN;
-constexpr double J2_MAX = 90.0 * TO_RADIAN;
-
-constexpr double J3_MIN = 0.0 * TO_RADIAN;
-constexpr double J3_MAX = 90.0 * TO_RADIAN;
-
-constexpr double J4_MIN = -180.0 * TO_RADIAN;
-constexpr double J4_MAX = 180.0 * TO_RADIAN;
 
 class JointHandler
 {
