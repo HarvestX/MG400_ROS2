@@ -16,7 +16,7 @@
 
 #include <memory>
 
-#include <h6x_det_tool/mg400_ik_util.hpp>
+#include <mg400_common/mg400_ik_util.hpp>
 #include <mg400_msgs/action/mov_j.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
@@ -32,11 +32,11 @@ class MovJ final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::MovJ;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
-  h6x_det_tool::MG400IKUtil mg400_ik_util_;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
+  mg400_common::MG400IKUtil mg400_ik_util_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 

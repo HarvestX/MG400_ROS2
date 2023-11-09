@@ -10,7 +10,7 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>geometry_msgs</depend>
-  <depend>h6x_det_tool</depend>
+  <depend>mg400_common</depend>
   <depend>mg400_interface</depend>
   <depend>mg400_msgs</depend>
   <depend>mg400_plugin_base</depend>

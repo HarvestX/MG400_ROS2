@@ -117,14 +117,13 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   tool_vec.push_back(tf_goal.pose.position.x);  // px
   tool_vec.push_back(tf_goal.pose.position.y);  // py
   tool_vec.push_back(tf_goal.pose.position.z);  // pz
-  tool_vec.push_back(tf2::getYaw(tf_goal.pose.orientation) * (180 / M_PI));  // r in degree
+  tool_vec.push_back(tf2::getYaw(tf_goal.pose.orientation));  // r in radian
   std::vector<double> angles;
   try {
-    // convert from meter to millimeter
-    tool_vec[0] *= 1000;
-    tool_vec[1] *= 1000;
-    tool_vec[2] *= 1000;
     angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
+    RCLCPP_INFO(
+      this->node_logging_if_->get_logger(), "angles = {%f, %f, %f, %f", angles[0] * 180.0 / M_PI,
+      angles[1] * 180.0 / M_PI, angles[2] * 180.0 / M_PI, angles[3] * 180.0 / M_PI);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
     return;
@@ -144,16 +143,16 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   const auto is_goal_reached = [&](
     const geometry_msgs::msg::Pose & pose,
     const geometry_msgs::msg::Pose & goal) -> bool {
-      const double tolerance_mm = 5e-3;  // 5 mm
-      const double tolerance_rad = 1.74e-2;  // 1 rad
+      const double tolerance_m = 5e-3;  // 5 mm
+      const double tolerance_rad = 1.74e-2;  // pi/2 *10e-2
       auto is_in_tolerance = [](
         const double val, const double tolerance) -> bool {
           return std::abs(val) < tolerance;
         };
 
-      return is_in_tolerance(pose.position.x - goal.position.x, tolerance_mm) &&
-             is_in_tolerance(pose.position.y - goal.position.y, tolerance_mm) &&
-             is_in_tolerance(pose.position.z - goal.position.z, tolerance_mm) &&
+      return is_in_tolerance(pose.position.x - goal.position.x, tolerance_m) &&
+             is_in_tolerance(pose.position.y - goal.position.y, tolerance_m) &&
+             is_in_tolerance(pose.position.z - goal.position.z, tolerance_m) &&
              is_in_tolerance(
         tf2::getYaw(pose.orientation) - tf2::getYaw(goal.orientation),
         tolerance_rad);
