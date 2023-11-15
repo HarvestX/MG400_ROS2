@@ -133,7 +133,8 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   try {
     this->commander_->movJ(
-      this->tf_goal_.pose.position.x, this->tf_goal_.pose.position.y, this->tf_goal_.pose.position.z,
+      this->tf_goal_.pose.position.x, this->tf_goal_.pose.position.y,
+      this->tf_goal_.pose.position.z,
       tf2::getYaw(this->tf_goal_.pose.orientation));
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
