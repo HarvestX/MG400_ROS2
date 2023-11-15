@@ -40,6 +40,8 @@ private:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
+  geometry_msgs::msg::PoseStamped tf_goal_;
+
 public:
   void configure(
     const mg400_interface::MotionCommander::SharedPtr,

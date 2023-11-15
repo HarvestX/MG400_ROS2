@@ -54,7 +54,7 @@ void MovL::configure(
 }
 
 rclcpp_action::GoalResponse MovL::handle_goal(
-  const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr)
+  const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr goal)
 {
   if (!this->mg400_interface_->ok()) {
     RCLCPP_ERROR(
@@ -68,6 +68,36 @@ rclcpp_action::GoalResponse MovL::handle_goal(
     this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
     RCLCPP_ERROR(
       this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  // tf (from goal->pose to this->tf_goal_)
+  try {
+    const auto transform = this->tf_buffer_->lookupTransform(
+      this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link",
+      goal->pose.header.frame_id, rclcpp::Time(0));
+    tf2::doTransform(goal->pose, this->tf_goal_, transform);
+  } catch (const tf2::TransformException & e) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  std::vector<double> tool_vec;
+  tool_vec.push_back(this->tf_goal_.pose.position.x);  // px
+  tool_vec.push_back(this->tf_goal_.pose.position.y);  // py
+  tool_vec.push_back(this->tf_goal_.pose.position.z);  // pz
+  tool_vec.push_back(tf2::getYaw(this->tf_goal_.pose.orientation));  // r in radian
+
+  // check if the requested goal is inside the mg400 range
+  // by solving inverse kinematics and see the angles of each joints.
+  std::vector<double> angles;
+  try {
+    angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
+    RCLCPP_INFO(
+      this->node_logging_if_->get_logger(), "Joint angles = {%f, %f, %f, %f}", angles[0] * 180.0 / M_PI,
+      angles[1] * 180.0 / M_PI, angles[2] * 180.0 / M_PI, angles[3] * 180.0 / M_PI);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -97,41 +127,14 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   const auto & goal = goal_handle->get_goal();
 
-  // tf (from goal->pose to tf_goal)
-  geometry_msgs::msg::PoseStamped tf_goal;
-  try {
-    const auto transform = this->tf_buffer_->lookupTransform(
-      this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link",
-      goal->pose.header.frame_id, rclcpp::Time(0));
-    tf2::doTransform(goal->pose, tf_goal, transform);
-  } catch (const tf2::TransformException & e) {
-    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
-    return;
-  }
-
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
   result->result = false;
 
-  std::vector<double> tool_vec;
-  tool_vec.push_back(tf_goal.pose.position.x);  // px
-  tool_vec.push_back(tf_goal.pose.position.y);  // py
-  tool_vec.push_back(tf_goal.pose.position.z);  // pz
-  tool_vec.push_back(tf2::getYaw(tf_goal.pose.orientation));  // r in radian
-  std::vector<double> angles;
-  try {
-    angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
-    RCLCPP_INFO(
-      this->node_logging_if_->get_logger(), "Joint angles = {%f, %f, %f, %f}", angles[0] * 180.0 / M_PI,
-      angles[1] * 180.0 / M_PI, angles[2] * 180.0 / M_PI, angles[3] * 180.0 / M_PI);
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
-    return;
-  }
   try {
     this->commander_->movL(
-      tf_goal.pose.position.x, tf_goal.pose.position.y, tf_goal.pose.position.z,
-      tf2::getYaw(tf_goal.pose.orientation));
+      this->tf_goal_.pose.position.x, this->tf_goal_.pose.position.y, this->tf_goal_.pose.position.z,
+      tf2::getYaw(this->tf_goal_.pose.orientation));
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->node_logging_if_->get_logger(), e.what());
@@ -175,7 +178,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
     if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(300ms)) {
-      if (is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
+      if (is_goal_reached(feedback->current_pose.pose, this->tf_goal_.pose)) {
         RCLCPP_INFO(
           this->node_logging_if_->get_logger(),
           "Arm is already at the goal.");
@@ -199,7 +202,7 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
     control_freq.sleep();
   }
 
-  while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose) ||
+  while (!is_goal_reached(feedback->current_pose.pose, this->tf_goal_.pose) ||
     !this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE))
   {
     if (!this->mg400_interface_->ok()) {
