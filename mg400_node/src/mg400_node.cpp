@@ -228,7 +228,7 @@ void MG400Node::onErrorTimer()
       this->interface_->dashboard_commander->getErrorId();
     if (!error_ids.at(0).empty()) {
       msg->controller.ids = error_ids.at(0);
-      ss << "Controller and Algorith:" << std::endl;
+      ss << "Controller and Algorithm:" << std::endl;
       for (auto error_id : error_ids.at(0)) {
         const auto message =
           this->interface_->controller_error_msg_generator->get(error_id);

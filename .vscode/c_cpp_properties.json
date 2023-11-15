@@ -10,7 +10,7 @@
         "/opt/ros/humble/include/**",
         "/opt/ros/humble/src/gmock_vendor/include/**",
         "/opt/ros/humble/opt/rviz_ogre_vendor/include/**",
-        "${workspaceFolder}/mg400_control/include/**",
+        "${workspaceFolder}/mg400_common/include/**",
         "${workspaceFolder}/mg400_interface/include/**",
         "${workspaceFolder}/mg400_joy/include/**",
         "${workspaceFolder}/mg400_node/include/**",

@@ -15,6 +15,7 @@ on:
         options:
           - mg400
           - mg400_bringup
+          - mg400_common
           - mg400_description
           - mg400_interface
           - mg400_joy

@@ -21,25 +21,27 @@ MG400InputGroup::MG400InputGroup(const std::string & prefix, const std::string &
 {
   this->prefix_ = new QLabel(prefix.data());
   this->addWidget(this->prefix_);
+  this->suffix_ = new QLabel(suffix.data());
+  this->addWidget(this->suffix_);
+  this->joint_state_ = new QLabel("");
+  this->addWidget(this->joint_state_);
   this->l_edit_ = new QLineEdit("");
   this->l_edit_->setMaximumWidth(60);
   this->l_edit_->setPlaceholderText("0.0");
   this->addWidget(this->l_edit_);
-  this->suffix_ = new QLabel(suffix.data());
-  this->addWidget(this->suffix_);
 }
 
 void MG400InputGroup::disableLine()
 {
-  this->prefix_->setStyleSheet("color: gray");
-  this->suffix_->setStyleSheet("color: gray");
+  // this->prefix_->setStyleSheet("color: gray");
+  // this->suffix_->setStyleSheet("color: gray");
   this->l_edit_->setEnabled(false);
 }
 
 void MG400InputGroup::enableLine()
 {
-  this->prefix_->setStyleSheet("color: black;");
-  this->suffix_->setStyleSheet("color: black;");
+  // this->prefix_->setStyleSheet("color: black;");
+  // this->suffix_->setStyleSheet("color: black;");
   this->l_edit_->setEnabled(true);
 }
 
@@ -65,6 +67,10 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   layout_mode_buttons->addWidget(this->button_disable_);
   layout_mode->addLayout(layout_mode_buttons);
   layout->addLayout(layout_mode);
+
+  QHBoxLayout * layout_pose_index = new QHBoxLayout;
+  layout_pose_index->addWidget(new QLabel("Robot Pose / MovJ Goal Pose"));
+  layout->addLayout(layout_pose_index);
 
   QHBoxLayout * layout_movj = new QHBoxLayout;
   QVBoxLayout * layout_movj_goal = new QVBoxLayout;
@@ -112,6 +118,11 @@ void Mg400ControllerPanel::onInitialize()
     "/mg400/robot_mode", rclcpp::SensorDataQoS().keep_last(1),
     [&](const mg400_msgs::msg::RobotMode::ConstSharedPtr msg) {
       this->current_robot_mode_ = msg->robot_mode;
+    });
+  js_sub_ = nh_->create_subscription<JointState>(
+    "/mg400/joint_states", rclcpp::SensorDataQoS().keep_last(1),
+    [&](const JointState::ConstSharedPtr msg) {
+      mg400_interface::JointHandler::getEndPose(msg, this->current_pose_);
     });
 
   mg400_enable_robot_clnt_ =
@@ -191,6 +202,17 @@ void Mg400ControllerPanel::tick()
   this->button_disable_->setEnabled(this->current_robot_mode_ == RobotMode::ENABLE);
   this->button_send_movj_->setEnabled(this->current_robot_mode_ == RobotMode::ENABLE);
   this->label_mode_->setText(robot_mode2str(this->current_robot_mode_));
+  this->input_x_->joint_state_->setText(QString::number(this->current_pose_.position.x * 1e3));
+  this->input_y_->joint_state_->setText(QString::number(this->current_pose_.position.y * 1e3));
+  this->input_z_->joint_state_->setText(QString::number(this->current_pose_.position.z * 1e3));
+  tf2::Quaternion q(
+    this->current_pose_.orientation.x,
+    this->current_pose_.orientation.y,
+    this->current_pose_.orientation.z,
+    this->current_pose_.orientation.w);
+  double roll, pitch, yaw;
+  tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+  this->input_r_->joint_state_->setText(QString::number(yaw * 180.0 / M_PI));
 }
 
 void Mg400ControllerPanel::callbackSendMovJ()
