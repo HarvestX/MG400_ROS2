@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_TCP_INTERFACE_REALTIME_DATA_HPP__
+#define __MG400_INTERFACE_TCP_INTERFACE_REALTIME_DATA_HPP__
 
 #include <inttypes.h>
 
@@ -74,3 +75,4 @@ struct RealTimeData
 #pragma pack(pop)
 
 }  // namespace mg400_interface
+#endif

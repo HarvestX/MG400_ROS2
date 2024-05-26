@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_JOINT_HANDLER_HPP__
+#define __MG400_INTERFACE_JOINT_HANDLER_HPP__
 
 #include <eigen3/Eigen/Core>
 
@@ -61,3 +62,4 @@ private:
   static Eigen::MatrixXd rotZ(const Eigen::MatrixXd &, const double &);
 };
 }  // namespace mg400_interface
+#endif

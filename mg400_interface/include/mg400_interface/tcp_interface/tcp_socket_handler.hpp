@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_TCP_INTERFACE_TCP_SOCKET_HANDLER_HPP__
+#define __MG400_INTERFACE_TCP_INTERFACE_TCP_SOCKET_HANDLER_HPP__
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -63,3 +64,4 @@ public:
   std::string toString();
 };
 }  // namespace mg400_interface
+#endif

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_PLUGIN_MOTION_API_MOV_J_HPP__
+#define __MG400_PLUGIN_MOTION_API_MOV_J_HPP__
 
 #include <memory>
 
@@ -62,3 +63,4 @@ private:
   void execute(const std::shared_ptr<GoalHandle>);
 };
 }  // namespace mg400_plugin
+#endif

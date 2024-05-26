@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_COMMAND_UTILS_HPP__
+#define __MG400_INTERFACE_COMMAND_UTILS_HPP__
 
 #include <cmath>
 
@@ -52,3 +53,4 @@ inline si_m mm2m(const si_mm val)
 }
 
 }  // namespace mg400_interface
+#endif

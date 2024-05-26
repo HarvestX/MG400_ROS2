@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_TCP_INTERFACE_MOTION_TCP_INTERFACE_HPP__
+#define __MG400_INTERFACE_TCP_INTERFACE_MOTION_TCP_INTERFACE_HPP__
 
 #include <cstdlib>
 
@@ -64,3 +65,4 @@ private:
   void checkConnection();
 };
 }  // namespace mg400_interface
+#endif

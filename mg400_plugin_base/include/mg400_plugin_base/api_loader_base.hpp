@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_PLUGIN_BASE_API_LOADER_BASE_HPP__
+#define __MG400_PLUGIN_BASE_API_LOADER_BASE_HPP__
 
 #include <string>
 #include <memory>
@@ -112,3 +113,4 @@ public:
   {}
 };
 }  // namespace mg400_plugin_base
+#endif

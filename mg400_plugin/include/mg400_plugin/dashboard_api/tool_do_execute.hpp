@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_PLUGIN_DASHBOARD_API_TOOL_DO_EXECUTE_HPP__
+#define __MG400_PLUGIN_DASHBOARD_API_TOOL_DO_EXECUTE_HPP__
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <mg400_msgs/srv/tool_do_execute.hpp>
@@ -48,3 +49,4 @@ private:
     const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
 };
 }  // namespace mg400_plugin
+#endif

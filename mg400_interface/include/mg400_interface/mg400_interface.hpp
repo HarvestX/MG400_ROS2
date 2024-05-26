@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_MG400_INTERFACE_HPP__
+#define __MG400_INTERFACE_MG400_INTERFACE_HPP__
 
 #include <string>
 #include <memory>
@@ -66,3 +67,4 @@ private:
   bool isConnected();
 };
 }  // namespace mg400_interface
+#endif

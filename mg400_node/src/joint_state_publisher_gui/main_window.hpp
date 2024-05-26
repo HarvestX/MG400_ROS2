@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_NODE_JOINT_STATE_PUBLISHER_GUI_MAIN_WINDOW_HPP__
+#define __MG400_NODE_JOINT_STATE_PUBLISHER_GUI_MAIN_WINDOW_HPP__
 
 #include <QWidget>
 
@@ -63,3 +64,5 @@ private:
   void j4ValueChange(int);
   void publishJointStates();
 };
+
+#endif

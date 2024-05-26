@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_RVIZ_PLUGIN_PANEL_MG400_CONTROLLER_HPP__
+#define __MG400_RVIZ_PLUGIN_PANEL_MG400_CONTROLLER_HPP__
 
 #include <string>
 
@@ -103,3 +104,4 @@ protected:
   void onResult(const GoalHandle::WrappedResult &);
 };
 }  // namespace mg400_rviz_plugin
+#endif

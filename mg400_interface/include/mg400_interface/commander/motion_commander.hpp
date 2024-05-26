@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
+#define __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 
 #include <memory>
 #include <string>
@@ -124,3 +125,4 @@ public:
   // End DOBOT MG400 Official Command -----------------------------------------
 };
 }  // namespace mg400_interface
+#endif

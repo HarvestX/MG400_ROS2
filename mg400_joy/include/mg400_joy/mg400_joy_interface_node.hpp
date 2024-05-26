@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_JOY_MG400_JOY_INTERFACE_NODE_HPP__
+#define __MG400_JOY_MG400_JOY_INTERFACE_NODE_HPP__
 
 #include <functional>
 #include <future>
@@ -89,3 +90,4 @@ private:
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(mg400_joy::MG400JoyInterfaceNode)
+#endif

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_NODE_MG400_NODE_HPP__
+#define __MG400_NODE_MG400_NODE_HPP__
 
 #include <string>
 #include <unordered_map>
@@ -97,3 +98,4 @@ private:
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)
+#endif

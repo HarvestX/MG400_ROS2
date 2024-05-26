@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_COMMON_MG400_IK_UTIL_HPP__
+#define __MG400_COMMON_MG400_IK_UTIL_HPP__
 
 #include <vector>
 #include <eigen3/Eigen/Dense>
@@ -68,3 +69,4 @@ public:
 };
 
 }  // namespace mg400_common
+#endif

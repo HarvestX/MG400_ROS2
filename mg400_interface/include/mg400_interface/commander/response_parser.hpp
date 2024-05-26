@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_COMMANDER_RESPONSE_PARSER_HPP__
+#define __MG400_INTERFACE_COMMANDER_RESPONSE_PARSER_HPP__
 
 
 #include <array>
@@ -41,3 +42,4 @@ public:
   static int takeInt(const std::string &);
 };
 }  // namespace mg400_interface
+#endif

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef __MG400_INTERFACE_TCP_INTERFACE_REALTIME_FEEDBACK_TCP_INTERFACE_HPP__
+#define __MG400_INTERFACE_TCP_INTERFACE_REALTIME_FEEDBACK_TCP_INTERFACE_HPP__
 
 
 #include <string>
@@ -71,3 +72,4 @@ private:
   void recvData();
 };
 }  // namespace mg400_interface
+#endif
