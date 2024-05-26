@@ -10,7 +10,7 @@ Dobot MG400 ROS2 Repository.
 
 | ROS2 Distro | Branch | Build status |
 | --- | --- | --- |
-| **humble** | [`humble`](https://github.com/HarvestX/MG400_ROS2/tree/humble) | [![Humble CI](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml/badge.svg?branch=main)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml?branch=humble)
+| **humble** | [`humble`](https://github.com/HarvestX/MG400_ROS2/tree/humble) | [![ci_humble](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml/badge.svg?branch=humble)](https://github.com/HarvestX/MG400_ROS2/actions/workflows/ci_humble.yml)
 
 
 ## Requirements
