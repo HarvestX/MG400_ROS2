@@ -76,11 +76,11 @@ public:
   explicit MG400Node(const rclcpp::NodeOptions &);
   ~MG400Node();
 
-  void onInit();
-  void onJointStateTimer();
-  void onRobotModeTimer();
-  void onErrorTimer();
-  void onInterfaceCheckTimer();
+  void onInit(void);
+  void onJointStateTimer(void);
+  void onRobotModeTimer(void);
+  void onErrorTimer(void);
+  void onInterfaceCheckTimer(void);
 
 private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;
@@ -90,8 +90,8 @@ private:
   CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override;
   CallbackReturn on_error(const rclcpp_lifecycle::State &) override;
 
-  void runTimer();
-  void cancelTimer();
+  void runTimer(void);
+  void cancelTimer(void);
 };
 }  // namespace mg400_node
 

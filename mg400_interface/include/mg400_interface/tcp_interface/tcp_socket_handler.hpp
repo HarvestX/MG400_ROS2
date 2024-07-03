@@ -55,13 +55,13 @@ public:
 
   ~TcpSocketHandler();
 
-  void close();
+  void close(void);
   void connect(const std::chrono::nanoseconds &);
-  void disConnect();
-  bool isConnected() const;
+  void disConnect(void);
+  bool isConnected(void) const;
   void send(const void *, uint32_t);
   bool recv(void *, uint32_t, const std::chrono::nanoseconds &);
-  std::string toString();
+  std::string toString(void);
 };
 }  // namespace mg400_interface
 #endif

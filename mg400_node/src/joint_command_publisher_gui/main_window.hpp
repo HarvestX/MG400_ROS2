@@ -56,13 +56,13 @@ public:
   ~MainWindow() override;
 
 private:
-  void randomBtn();
-  void centerBtn();
+  void randomBtn(void);
+  void centerBtn(void);
   void j1ValueChange(int);
   void j2ValueChange(int);
   void j3ValueChange(int);
   void j4ValueChange(int);
-  void publishJointStates();
+  void publishJointStates(void);
 };
 
 #endif

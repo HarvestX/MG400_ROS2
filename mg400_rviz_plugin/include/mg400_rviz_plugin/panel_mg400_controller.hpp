@@ -43,9 +43,9 @@ private:
 public:
   QLabel * joint_state_;
   explicit MG400InputGroup(const std::string &, const std::string &);
-  void disableLine();
-  void enableLine();
-  double getValue();
+  void disableLine(void);
+  void enableLine(void);
+  double getValue(void);
 };
 
 class Mg400ControllerPanel : public rviz_common::Panel
@@ -88,15 +88,15 @@ protected:
 public:
   explicit Mg400ControllerPanel(QWidget * parent = nullptr);
 
-  virtual void onInitialize();
+  virtual void onInitialize(void);
   virtual void load(const rviz_common::Config & config);
   virtual void save(rviz_common::Config config) const;
 
 public Q_SLOTS:
-  void tick();
-  void callbackEnableRobot();
-  void callbackDisableRobot();
-  void callbackSendMovJ();
+  void tick(void);
+  void callbackEnableRobot(void);
+  void callbackDisableRobot(void);
+  void callbackSendMovJ(void);
 
 protected:
   void onGoalResponse(const GoalHandle::SharedPtr & goal_handle);

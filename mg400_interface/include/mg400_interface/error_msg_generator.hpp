@@ -41,7 +41,7 @@ public:
   explicit ErrorMsgGenerator(const std::string &);
 
   std::string get(const int);
-  bool loadJsonFile();
+  bool loadJsonFile(void);
 };
 }  // namespace mg400_interface
 #endif

@@ -84,7 +84,7 @@ MainWindow::~MainWindow()
 }
 
 
-void MainWindow::randomBtn()
+void MainWindow::randomBtn(void)
 {
   int32_t val;
 
@@ -105,7 +105,7 @@ void MainWindow::randomBtn()
   this->ui_->j4_slider->setValue(val);
 }
 
-void MainWindow::centerBtn()
+void MainWindow::centerBtn(void)
 {
   auto get_center = [](const double & min, const double & max) -> double {
       return std::abs(min) / (max - min) * 1000;
@@ -163,7 +163,7 @@ void MainWindow::j4ValueChange(int value)
   ui_->j4_txt->setText(txt);
 }
 
-void MainWindow::publishJointStates()
+void MainWindow::publishJointStates(void)
 {
   this->joint_state_pub_->publish(
     mg400_interface::JointHandler::getJointState(

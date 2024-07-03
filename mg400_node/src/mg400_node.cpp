@@ -180,7 +180,7 @@ CallbackReturn MG400Node::on_error(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-void MG400Node::onJointStateTimer()
+void MG400Node::onJointStateTimer(void)
 {
   if (!this->interface_->ok()) {
     return;
@@ -195,7 +195,7 @@ void MG400Node::onJointStateTimer()
       this->interface_->realtime_tcp_interface->frame_id_prefix));
 }
 
-void MG400Node::onRobotModeTimer()
+void MG400Node::onRobotModeTimer(void)
 {
   if (!this->interface_->ok()) {
     return;
@@ -209,7 +209,7 @@ void MG400Node::onRobotModeTimer()
   }
 }
 
-void MG400Node::onErrorTimer()
+void MG400Node::onErrorTimer(void)
 {
   if (!this->interface_->ok()) {
     return;
@@ -258,14 +258,14 @@ void MG400Node::onErrorTimer()
   }
 }
 
-void MG400Node::onInterfaceCheckTimer()
+void MG400Node::onInterfaceCheckTimer(void)
 {
   if (!this->interface_->ok()) {
     this->deactivate();
   }
 }
 
-void MG400Node::runTimer()
+void MG400Node::runTimer(void)
 {
   this->joint_state_timer_ = this->create_wall_timer(
     10ms, std::bind(&MG400Node::onJointStateTimer, this));
@@ -277,7 +277,7 @@ void MG400Node::runTimer()
     100ms, std::bind(&MG400Node::onInterfaceCheckTimer, this));
 }
 
-void MG400Node::cancelTimer()
+void MG400Node::cancelTimer(void)
 {
   this->joint_state_timer_.reset();
   this->robot_mode_timer_.reset();

@@ -97,7 +97,7 @@ public:
   void moveJog(const MoveJog::SharedPtr &);
   void moveJog(const MoveJog::_jog_mode_type &);
 
-  void sync();
+  void sync(void);
 
   void relMovJUser(
     const si_m, const si_m, const si_m,

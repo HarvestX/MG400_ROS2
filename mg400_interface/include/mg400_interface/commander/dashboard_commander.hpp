@@ -66,13 +66,13 @@ public:
     const std::chrono::nanoseconds = 5s);
 
   // DOBOT MG400 Official Command ---------------------------------------------
-  void enableRobot() const;
+  void enableRobot(void) const;
 
-  void disableRobot() const;
+  void disableRobot(void) const;
 
-  void clearError() const;
+  void clearError(void) const;
 
-  void resetRobot() const;
+  void resetRobot(void) const;
 
   void speedFactor(const int) const;
 
@@ -82,7 +82,7 @@ public:
   void tool(const Tool &) const;
   void tool(const Tool::_tool_type &) const;
 
-  uint64_t robotMode() const;
+  uint64_t robotMode(void) const;
 
   void payLoad(const double, const double) const;
 
@@ -115,20 +115,20 @@ public:
 /*
   void runScript(const std::string &);
 
-  void stopScript();
+  void stopScript(void);
 
-  void pauseScript();
+  void pauseScript(void);
 
-  void continueScript();
+  void continueScript(void);
 */
   void setCollisionLevel(const CollisionLevel &);
   void setCollisionLevel(const CollisionLevel::_level_type &);
 
-  std::vector<double> getAngle();
+  std::vector<double> getAngle(void);
 
-  std::vector<double> getPose();
+  std::vector<double> getPose(void);
 
-  void emergencyStop();
+  void emergencyStop(void);
 /*
   int modbusCreate(const std::string &, const int, const int, const int);
 
@@ -146,7 +146,7 @@ public:
 
   int setHoldRegs(const int, const int, const int, const std::string &, const std::string &);
 */
-  std::array<std::vector<int>, 6> getErrorId() const;
+  std::array<std::vector<int>, 6> getErrorId(void) const;
 
   int DI(const DIIndex &) const;
   int DI(const DIIndex::_index_type &) const;
@@ -154,7 +154,7 @@ public:
   // --------------------------------------------------------------------------
 
 private:
-  static const rclcpp::Logger getLogger();
+  static const rclcpp::Logger getLogger(void);
   std::string sendAndWaitResponse(const std::string &) const;
   void evaluateResponse(const std::string &) const;
 };

@@ -151,7 +151,7 @@ void MotionCommander::moveJog(const MoveJog::_jog_mode_type & jog_mode)
 }
 
 
-void MotionCommander::sync()
+void MotionCommander::sync(void)
 {
   char buf[100];
   snprintf(buf, sizeof(buf), "Sync()");

@@ -39,7 +39,7 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
 }
 
 
-bool MG400Interface::activate()
+bool MG400Interface::activate(void)
 {
   using namespace std::chrono_literals;  // NOLINT
   this->dashboard_tcp_if_->init();
@@ -73,7 +73,7 @@ bool MG400Interface::activate()
   return true;
 }
 
-bool MG400Interface::deactivate()
+bool MG400Interface::deactivate(void)
 {
   this->dashboard_commander.reset();
   this->motion_commander.reset();
@@ -89,7 +89,7 @@ bool MG400Interface::deactivate()
   return true;
 }
 
-bool MG400Interface::ok()
+bool MG400Interface::ok(void)
 {
   // When MG400 is being initialized when booting up, realtime tcp interface
   // will be connected but not active yet.
@@ -98,12 +98,12 @@ bool MG400Interface::ok()
          this->realtime_tcp_interface->isActive();
 }
 
-const rclcpp::Logger MG400Interface::getLogger() noexcept
+const rclcpp::Logger MG400Interface::getLogger(void) noexcept
 {
   return rclcpp::get_logger("MG400Interface");
 }
 
-bool MG400Interface::isConnected()
+bool MG400Interface::isConnected(void)
 {
   return this->dashboard_tcp_if_->isConnected() &&
          this->realtime_tcp_interface->isConnected() &&

@@ -34,7 +34,7 @@ std::string ErrorMsgGenerator::get(const int id)
   return this->error_map_.at(id);
 }
 
-bool ErrorMsgGenerator::loadJsonFile()
+bool ErrorMsgGenerator::loadJsonFile(void)
 {
   std::ifstream json_file(this->filename_);
   nlohmann::json json_data;

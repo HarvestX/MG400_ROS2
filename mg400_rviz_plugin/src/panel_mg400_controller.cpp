@@ -31,21 +31,21 @@ MG400InputGroup::MG400InputGroup(const std::string & prefix, const std::string &
   this->addWidget(this->l_edit_);
 }
 
-void MG400InputGroup::disableLine()
+void MG400InputGroup::disableLine(void)
 {
   // this->prefix_->setStyleSheet("color: gray");
   // this->suffix_->setStyleSheet("color: gray");
   this->l_edit_->setEnabled(false);
 }
 
-void MG400InputGroup::enableLine()
+void MG400InputGroup::enableLine(void)
 {
   // this->prefix_->setStyleSheet("color: black;");
   // this->suffix_->setStyleSheet("color: black;");
   this->l_edit_->setEnabled(true);
 }
 
-double MG400InputGroup::getValue()
+double MG400InputGroup::getValue(void)
 {
   return this->l_edit_->text().toDouble();
 }
@@ -103,7 +103,7 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   this->connect(this->button_send_movj_, SIGNAL(clicked()), this, SLOT(callbackSendMovJ()));
 }
 
-void Mg400ControllerPanel::onInitialize()
+void Mg400ControllerPanel::onInitialize(void)
 {
   nh_ = this->getDisplayContext()->getRosNodeAbstraction().lock()->get_raw_node();
 
@@ -146,7 +146,7 @@ void Mg400ControllerPanel::load(const rviz_common::Config & config)
   rviz_common::Panel::load(config);
 }
 
-void Mg400ControllerPanel::tick()
+void Mg400ControllerPanel::tick(void)
 {
   if (this->current_robot_mode_ == RobotMode::ENABLE) {
     this->input_x_->enableLine();
@@ -215,7 +215,7 @@ void Mg400ControllerPanel::tick()
   this->input_r_->joint_state_->setText(QString::number(yaw * 180.0 / M_PI));
 }
 
-void Mg400ControllerPanel::callbackSendMovJ()
+void Mg400ControllerPanel::callbackSendMovJ(void)
 {
   auto goal_msg = ActionT::Goal();
   goal_msg.pose.header.frame_id = "mg400_origin_link";
@@ -246,7 +246,7 @@ void Mg400ControllerPanel::callbackSendMovJ()
   mg400_movj_clnt_->async_send_goal(goal_msg, send_goal_option);
 }
 
-void Mg400ControllerPanel::callbackEnableRobot()
+void Mg400ControllerPanel::callbackEnableRobot(void)
 {
   using namespace std::chrono_literals;  // NOLINT
   if (!mg400_enable_robot_clnt_->wait_for_service(1s)) {
@@ -276,7 +276,7 @@ void Mg400ControllerPanel::callbackEnableRobot()
   }
 }
 
-void Mg400ControllerPanel::callbackDisableRobot()
+void Mg400ControllerPanel::callbackDisableRobot(void)
 {
   using namespace std::chrono_literals;  // NOLINT
   if (!mg400_disable_robot_clnt_->wait_for_service(1s)) {

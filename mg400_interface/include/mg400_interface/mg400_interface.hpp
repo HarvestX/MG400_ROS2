@@ -58,13 +58,13 @@ public:
 
   bool configure(const std::string & = "");
 
-  bool activate();
-  bool deactivate();
-  bool ok();
+  bool activate(void);
+  bool deactivate(void);
+  bool ok(void);
 
 private:
-  static const rclcpp::Logger getLogger() noexcept;
-  bool isConnected();
+  static const rclcpp::Logger getLogger(void) noexcept;
+  bool isConnected(void);
 };
 }  // namespace mg400_interface
 #endif

@@ -119,7 +119,7 @@ void MG400JoyInterfaceNode::onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr jo
   }
 }
 
-bool MG400JoyInterfaceNode::isEnabled()
+bool MG400JoyInterfaceNode::isEnabled(void)
 {
   if (this->current_robot_mode_->robot_mode != RobotMode::ENABLE) {
     RCLCPP_WARN(this->get_logger(), "Please enable robot. Press Start.");
@@ -129,7 +129,7 @@ bool MG400JoyInterfaceNode::isEnabled()
   return true;
 }
 
-void MG400JoyInterfaceNode::callResetRobot()
+void MG400JoyInterfaceNode::callResetRobot(void)
 {
   auto req = std::make_shared<mg400_msgs::srv::ResetRobot::Request>();
   if (!this->mg400_reset_robot_clnt_->wait_for_service(1s)) {
@@ -160,7 +160,7 @@ void MG400JoyInterfaceNode::callResetRobot()
   }
 }
 
-void MG400JoyInterfaceNode::callEnableRobot()
+void MG400JoyInterfaceNode::callEnableRobot(void)
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::ENABLE) {
     RCLCPP_WARN(
@@ -199,7 +199,7 @@ void MG400JoyInterfaceNode::callEnableRobot()
   }
 }
 
-void MG400JoyInterfaceNode::callDisableRobot()
+void MG400JoyInterfaceNode::callDisableRobot(void)
 {
   if (this->current_robot_mode_->robot_mode == RobotMode::DISABLED) {
     RCLCPP_WARN(

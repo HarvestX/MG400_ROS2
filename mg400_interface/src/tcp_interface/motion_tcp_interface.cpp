@@ -30,12 +30,12 @@ MotionTcpInterface::~MotionTcpInterface()
   }
 }
 
-rclcpp::Logger MotionTcpInterface::getLogger()
+rclcpp::Logger MotionTcpInterface::getLogger(void)
 {
   return rclcpp::get_logger("Motion Tcp Interface");
 }
 
-void MotionTcpInterface::init() noexcept
+void MotionTcpInterface::init(void) noexcept
 {
   try {
     this->is_running_ = true;
@@ -45,7 +45,7 @@ void MotionTcpInterface::init() noexcept
   }
 }
 
-void MotionTcpInterface::checkConnection()
+void MotionTcpInterface::checkConnection(void)
 {
   using namespace std::chrono_literals; // NOLINT
   while (this->is_running_) {
@@ -64,12 +64,12 @@ void MotionTcpInterface::checkConnection()
   }
 }
 
-bool MotionTcpInterface::isConnected()
+bool MotionTcpInterface::isConnected(void)
 {
   return this->tcp_socket_->isConnected();
 }
 
-void MotionTcpInterface::disConnect()
+void MotionTcpInterface::disConnect(void)
 {
   this->is_running_ = false;
   if (this->thread_->joinable()) {

@@ -31,7 +31,7 @@ TcpSocketHandler::~TcpSocketHandler()
   this->close();
 }
 
-void TcpSocketHandler::close()
+void TcpSocketHandler::close(void)
 {
   if (this->fd_ < 0) {
     // TcpClient not connected
@@ -86,7 +86,7 @@ void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
   RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
 }
 
-void TcpSocketHandler::disConnect()
+void TcpSocketHandler::disConnect(void)
 {
   if (this->is_connected_.load()) {
     ::close(this->fd_);
@@ -95,7 +95,7 @@ void TcpSocketHandler::disConnect()
   }
 }
 
-bool TcpSocketHandler::isConnected() const
+bool TcpSocketHandler::isConnected(void) const
 {
   return this->is_connected_.load();
 }
@@ -153,7 +153,7 @@ bool TcpSocketHandler::recv(void * buf, uint32_t len, const std::chrono::nanosec
   return true;
 }
 
-std::string TcpSocketHandler::toString()
+std::string TcpSocketHandler::toString(void)
 {
   return this->ip_ + ":" + std::to_string(this->port_);
 }

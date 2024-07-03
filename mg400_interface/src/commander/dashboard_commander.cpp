@@ -28,25 +28,25 @@ DashboardCommander::DashboardCommander(
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
-void DashboardCommander::enableRobot() const
+void DashboardCommander::enableRobot(void) const
 {
   this->evaluateResponse(
     this->sendAndWaitResponse("EnableRobot()"));
 }
 
-void DashboardCommander::disableRobot() const
+void DashboardCommander::disableRobot(void) const
 {
   this->evaluateResponse(
     this->sendAndWaitResponse("DisableRobot()"));
 }
 
-void DashboardCommander::clearError() const
+void DashboardCommander::clearError(void) const
 {
   this->evaluateResponse(
     this->sendAndWaitResponse("ClearError()"));
 }
 
-void DashboardCommander::resetRobot() const
+void DashboardCommander::resetRobot(void) const
 {
   this->evaluateResponse(
     this->sendAndWaitResponse("ResetRobot()"));
@@ -83,7 +83,7 @@ void DashboardCommander::tool(const Tool::_tool_type & index) const
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-uint64_t DashboardCommander::robotMode() const
+uint64_t DashboardCommander::robotMode(void) const
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -190,17 +190,17 @@ bool DashboardCommander::runScript(const std::string & name)
   return this->sendCommand(buf);
 }
 
-bool DashboardCommander::stopScript()
+bool DashboardCommander::stopScript(void)
 {
   return this->sendCommand("StopScript()");
 }
 
-bool DashboardCommander::pauseScript()
+bool DashboardCommander::pauseScript(void)
 {
   return this->sendCommand("PauseScript()");
 }
 
-bool DashboardCommander::continueScript()
+bool DashboardCommander::continueScript(void)
 {
   return this->sendCommand("ContinueScript()");
 }
@@ -218,7 +218,7 @@ void DashboardCommander::setCollisionLevel(
   this->evaluateResponse(this->sendAndWaitResponse(std::string(buf, cx)));
 }
 
-std::vector<double> DashboardCommander::getAngle()
+std::vector<double> DashboardCommander::getAngle(void)
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -229,7 +229,7 @@ std::vector<double> DashboardCommander::getAngle()
   return ResponseParser::takeAngleArray(response.ret_val);
 }
 
-std::vector<double> DashboardCommander::getPose()
+std::vector<double> DashboardCommander::getPose(void)
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -240,7 +240,7 @@ std::vector<double> DashboardCommander::getPose()
   return ResponseParser::takePoseArray(response.ret_val);
 }
 
-void DashboardCommander::emergencyStop()
+void DashboardCommander::emergencyStop(void)
 {
   this->evaluateResponse(this->sendAndWaitResponse("EmergencyStop()"));
 }
@@ -346,7 +346,7 @@ int DashboardCommander::setHoldRegs(
 }
 */
 
-std::array<std::vector<int>, 6> DashboardCommander::getErrorId() const
+std::array<std::vector<int>, 6> DashboardCommander::getErrorId(void) const
 {
   static DashboardResponse response;
   ResponseParser::parseResponse(
@@ -376,7 +376,7 @@ int DashboardCommander::DI(const DIIndex::_index_type & di_index) const
 }
 // End DOBOT MG400 Official Command -----------------------------------------
 
-const rclcpp::Logger DashboardCommander::getLogger()
+const rclcpp::Logger DashboardCommander::getLogger(void)
 {
   return rclcpp::get_logger("DashboardCommander");
 }

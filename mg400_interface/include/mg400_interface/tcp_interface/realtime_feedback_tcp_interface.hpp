@@ -55,21 +55,21 @@ public:
   explicit RealtimeFeedbackTcpInterface(
     const std::string &, const std::string & = "");
   ~RealtimeFeedbackTcpInterface();
-  void init() noexcept;
+  void init(void) noexcept;
 
-  static rclcpp::Logger getLogger();
-  bool isConnected();
-  bool isActive();
+  static rclcpp::Logger getLogger(void);
+  bool isConnected(void);
+  bool isActive(void);
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
-  void disConnect();
+  void disConnect(void);
 
 private:
-  void recvData();
+  void recvData(void);
 };
 }  // namespace mg400_interface
 #endif

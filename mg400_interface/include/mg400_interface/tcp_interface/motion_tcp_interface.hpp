@@ -54,15 +54,15 @@ public:
   MotionTcpInterface() = delete;
   explicit MotionTcpInterface(const std::string &);
   ~MotionTcpInterface();
-  void init() noexcept;
+  void init(void) noexcept;
 
-  static rclcpp::Logger getLogger();
-  bool isConnected();
+  static rclcpp::Logger getLogger(void);
+  bool isConnected(void);
   void sendCommand(const std::string &) override;
-  void disConnect();
+  void disConnect(void);
 
 private:
-  void checkConnection();
+  void checkConnection(void);
 };
 }  // namespace mg400_interface
 #endif

@@ -31,12 +31,12 @@ DashboardTcpInterface::~DashboardTcpInterface()
   }
 }
 
-rclcpp::Logger DashboardTcpInterface::getLogger()
+rclcpp::Logger DashboardTcpInterface::getLogger(void)
 {
   return rclcpp::get_logger("Dashboard Tcp Interface");
 }
 
-void DashboardTcpInterface::init() noexcept
+void DashboardTcpInterface::init(void) noexcept
 {
   try {
     this->is_running_ = true;
@@ -46,7 +46,7 @@ void DashboardTcpInterface::init() noexcept
   }
 }
 
-void DashboardTcpInterface::checkConnection()
+void DashboardTcpInterface::checkConnection(void)
 {
   while (this->is_running_) {
     try {
@@ -64,7 +64,7 @@ void DashboardTcpInterface::checkConnection()
   }
 }
 
-bool DashboardTcpInterface::isConnected()
+bool DashboardTcpInterface::isConnected(void)
 {
   return this->tcp_socket_->isConnected();
 }
@@ -74,7 +74,7 @@ void DashboardTcpInterface::sendCommand(const std::string & cmd)
   this->tcp_socket_->send(cmd.data(), cmd.size());
 }
 
-void DashboardTcpInterface::disConnect()
+void DashboardTcpInterface::disConnect(void)
 {
   this->is_running_ = false;
   if (this->thread_->joinable()) {
@@ -84,7 +84,7 @@ void DashboardTcpInterface::disConnect()
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
-std::string DashboardTcpInterface::recvResponse()
+std::string DashboardTcpInterface::recvResponse(void)
 {
   char buf[100];
   this->tcp_socket_->recv(buf, sizeof(buf), 500ms);

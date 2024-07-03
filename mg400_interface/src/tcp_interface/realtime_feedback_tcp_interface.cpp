@@ -33,7 +33,7 @@ RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
   }
 }
 
-void RealtimeFeedbackTcpInterface::init() noexcept
+void RealtimeFeedbackTcpInterface::init(void) noexcept
 {
   try {
     this->is_running_ = true;
@@ -43,17 +43,17 @@ void RealtimeFeedbackTcpInterface::init() noexcept
   }
 }
 
-rclcpp::Logger RealtimeFeedbackTcpInterface::getLogger()
+rclcpp::Logger RealtimeFeedbackTcpInterface::getLogger(void)
 {
   return rclcpp::get_logger("Realtime Feedback Tcp Interface");
 }
 
-bool RealtimeFeedbackTcpInterface::isConnected()
+bool RealtimeFeedbackTcpInterface::isConnected(void)
 {
   return this->tcp_socket_->isConnected();
 }
 
-bool RealtimeFeedbackTcpInterface::isActive()
+bool RealtimeFeedbackTcpInterface::isActive(void)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
   return this->rt_data_ != nullptr;
@@ -103,7 +103,7 @@ bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
   }
 }
 
-void RealtimeFeedbackTcpInterface::disConnect()
+void RealtimeFeedbackTcpInterface::disConnect(void)
 {
   this->is_running_ = false;
   if (this->thread_->joinable()) {
@@ -113,7 +113,7 @@ void RealtimeFeedbackTcpInterface::disConnect()
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
-void RealtimeFeedbackTcpInterface::recvData()
+void RealtimeFeedbackTcpInterface::recvData(void)
 {
   using namespace std::chrono_literals;  // NOLINT
   while (this->is_running_) {

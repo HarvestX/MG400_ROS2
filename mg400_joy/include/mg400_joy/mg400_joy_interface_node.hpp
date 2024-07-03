@@ -78,11 +78,11 @@ public:
 
 private:
   void onJoy(const sensor_msgs::msg::Joy::ConstSharedPtr);
-  bool isEnabled();
+  bool isEnabled(void);
 
-  void callResetRobot();
-  void callEnableRobot();
-  void callDisableRobot();
+  void callResetRobot(void);
+  void callEnableRobot(void);
+  void callDisableRobot(void);
   void callMoveJog(const std::string &);
   bool tiltedStick2JogAxis(std::string &) const;
 };
