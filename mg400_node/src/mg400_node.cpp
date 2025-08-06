@@ -94,7 +94,7 @@ CallbackReturn MG400Node::on_configure(const State &)
   this->robot_mode_pub_ = this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
-    "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+    "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
 
   this->connection_interrupted_ = false;
 
