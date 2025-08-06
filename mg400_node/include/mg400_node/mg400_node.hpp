@@ -78,6 +78,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
 
   bool connection_interrupted_;
+  bool allow_publish_empty_error_id_;
 
 public:
   MG400Node() = delete;

@@ -30,6 +30,9 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
 
+  // Allow empty error IDs to be delivered when errors are resolved.
+  this->declare_parameter<bool>("allow_publish_empty_error_id", true);
+
   if (this->get_parameter("auto_connect").as_bool()) {
     RCLCPP_INFO(this->get_logger(), "Auto connect is enabled");
     this->configure();
@@ -97,6 +100,12 @@ CallbackReturn MG400Node::on_configure(const State &)
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
 
   this->connection_interrupted_ = false;
+
+  this->allow_publish_empty_error_id_ =
+    this->get_parameter("allow_publish_empty_error_id").as_bool();
+  if (this->allow_publish_empty_error_id_) {
+    RCLCPP_INFO(this->get_logger(), "Allow publishing empty error IDs when errors are resolved.");
+  }
 
   if (this->get_parameter("auto_connect").as_bool()) {
     RCLCPP_INFO(this->get_logger(), "Try connecting to MG400 at %s ...", this->ip_address_.c_str());
@@ -215,6 +224,8 @@ void MG400Node::onRobotModeTimer()
 
 void MG400Node::onErrorTimer()
 {
+  static bool error_occurred_one_cycle_ago = false;
+
   if (!this->interface_->ok()) {
     return;
   }
@@ -222,6 +233,14 @@ void MG400Node::onErrorTimer()
   if (!this->interface_->realtime_tcp_interface->isRobotMode(
       mg400_msgs::msg::RobotMode::ERROR))
   {
+    if (this->allow_publish_empty_error_id_ && error_occurred_one_cycle_ago) {
+      auto msg = std::make_unique<mg400_msgs::msg::ErrorID>();
+      this->error_id_pub_->publish(std::move(msg));
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Published empty error ID message because the robot is resolved from error state.");
+    }
+    error_occurred_one_cycle_ago = false;
     return;
   }
 
@@ -253,6 +272,7 @@ void MG400Node::onErrorTimer()
     }
     RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
     this->error_id_pub_->publish(std::move(msg));
+    error_occurred_one_cycle_ago = true;
   } catch (const std::runtime_error & ex) {
     RCLCPP_ERROR(this->get_logger(), ex.what());
     msg->controller.ids.emplace_back(-1);
