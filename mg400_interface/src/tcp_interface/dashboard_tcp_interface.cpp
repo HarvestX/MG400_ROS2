@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
+#include <cctype>
 
 namespace mg400_interface
 {
@@ -69,9 +70,16 @@ bool DashboardTcpInterface::isConnected()
   return this->tcp_socket_->isConnected();
 }
 
-void DashboardTcpInterface::sendCommand(const std::string & cmd)
+bool DashboardTcpInterface::sendCommand(const std::string & cmd)
 {
+  if (!isValidMessageFormat(cmd)) {
+    RCLCPP_ERROR(this->getLogger(), "Invalid message format: %s", cmd.c_str());
+    RCLCPP_ERROR(this->getLogger(), "Expected format: MessageName(Param1,Param2,...,Paramn)");
+    return false;
+  }
+
   this->tcp_socket_->send(cmd.data(), cmd.size());
+  return true;
 }
 
 void DashboardTcpInterface::disConnect()
@@ -87,53 +95,73 @@ void DashboardTcpInterface::disConnect()
 std::string DashboardTcpInterface::recvResponse()
 {
   std::string response;
-  constexpr int kChunkSize = 128;  // Larger chunk for better efficiency
-  constexpr int kMaxResponseSize = 4096;  // Maximum response size limit
+  if (!this->tcp_socket_->recvDelimited(response, ';', 3s)) {
+    RCLCPP_WARN(this->getLogger(), "recv timeout or error");
+    return "TIMEOUT ERROR";
+  }
+  RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
+  return response;
+}
 
-  response.reserve(256);  // Pre-allocate memory to reduce reallocations
+bool DashboardTcpInterface::isValidMessageFormat(const std::string & cmd) const
+{
+  // Check if command is empty
+  if (cmd.empty()) {
+    return false;
+  }
 
-  while (response.size() < kMaxResponseSize) {
-    try {
-      // Use stack buffer for temporary storage
-      std::array<char, kChunkSize> buffer{};
-
-      uint32_t bytes_received = 0;
-      this->tcp_socket_->recv(buffer.data(), kChunkSize, bytes_received, 500ms);
-
-      if (bytes_received == 0) {
-        // No data received, break the loop
-        break;
-      }
-
-      // Find semicolon using efficient search
-      auto * semicolon_pos = std::find(buffer.begin(), buffer.end(), ';');
-
-      if (bytes_received > 0) {
-        if (semicolon_pos != buffer.end()) {
-          // Found terminator - append up to and including semicolon
-          size_t bytes_to_copy = std::distance(buffer.begin(), semicolon_pos) + 1;
-          response.append(buffer.data(), bytes_to_copy);
-
-          RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
-          return response;
-        } else {
-          // No terminator found - append entire buffer
-          response.append(buffer.data(), bytes_received);
-        }
-      }
-
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->getLogger(), "Error receiving data: %s", e.what());
-      break;
+  // Check if command contains only ASCII characters (0-127)
+  for (char c : cmd) {
+    if (static_cast<unsigned char>(c) > 127) {
+      return false;
     }
   }
 
-  if (response.size() >= kMaxResponseSize) {
-    RCLCPP_ERROR(this->getLogger(), "Response size exceeded maximum limit");
+  // Find opening and closing parentheses
+  size_t open_paren = cmd.find('(');
+  if (open_paren == std::string::npos || open_paren == 0) {
+    return false;
   }
 
-  RCLCPP_DEBUG(this->getLogger(), "recv (incomplete): %s", response.c_str());
-  return response;
+  // Must end with closing parenthesis
+  if (cmd.back() != ')') {
+    return false;
+  }
+
+  size_t close_paren = cmd.length() - 1;
+  if (close_paren <= open_paren) {
+    return false;
+  }
+
+  // Validate message name
+  std::string message_name = cmd.substr(0, open_paren);
+  if (!std::isalpha(message_name[0]) && message_name[0] != '_') {
+    return false;
+  }
+
+  for (char c : message_name) {
+    if (!std::isalnum(c) && c != '_') {
+      return false;
+    }
+  }
+
+  // Extract and validate parameters
+  std::string params = cmd.substr(open_paren + 1, close_paren - open_paren - 1);
+
+  // Parameters can be empty
+  if (params.empty()) {
+    return true;
+  }
+
+  // Check for invalid parameter format
+  if (params.front() == ',' || params.back() == ',' ||
+    params.find(",,") != std::string::npos ||
+    params.find('(') != std::string::npos || params.find(')') != std::string::npos)
+  {
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace mg400_interface

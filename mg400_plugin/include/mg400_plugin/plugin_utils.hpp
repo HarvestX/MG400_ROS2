@@ -16,6 +16,7 @@
 #define __MG400_PLUGIN_PLUGIN_UTILS_HPP__
 
 #include <string>
+#include <mg400_interface/mg400_interface.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace mg400_plugin
@@ -85,6 +86,40 @@ inline int8_t clampAccL(bool should_set, int8_t value, rclcpp::Logger logger)
 inline int8_t clampCP(bool should_set, int8_t value, rclcpp::Logger logger)
 {
   return clampParam(should_set, value, plugin_utils::CP_MIN, plugin_utils::CP_MAX, logger, "cp");
+}
+
+inline bool rejectMotionCommandDuringServoMode(
+  const mg400_interface::MG400Interface::SharedPtr & interface,
+  const rclcpp::Logger & logger,
+  const std::string & command_name)
+{
+  if (interface && interface->isServoModeActive()) {
+    RCLCPP_ERROR(
+      logger,
+      "%s rejected because ServoMode is active",
+      command_name.c_str());
+    return true;
+  }
+  return false;
+}
+
+inline void exitServoModeBeforeDashboardStopCommand(
+  const mg400_interface::MG400Interface::SharedPtr & interface,
+  const rclcpp::Logger & logger,
+  const std::string & command_name)
+{
+  if (!interface ||
+    !interface->shouldExitServoModeOnDashboardStopCommand() ||
+    !interface->isServoModeActive())
+  {
+    return;
+  }
+
+  RCLCPP_WARN(
+    logger,
+    "Exiting ServoMode before %s",
+    command_name.c_str());
+  interface->requestServoModeExit(command_name + " command requested", true);
 }
 
 

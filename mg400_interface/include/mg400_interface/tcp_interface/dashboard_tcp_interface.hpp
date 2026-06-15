@@ -31,7 +31,7 @@ class DashboardTcpInterfaceBase
 {
 public:
   DashboardTcpInterfaceBase() {}
-  virtual void sendCommand(const std::string &) = 0;
+  virtual bool sendCommand(const std::string &) = 0;
   virtual std::string recvResponse() = 0;
 };
 
@@ -56,12 +56,13 @@ public:
 
   static rclcpp::Logger getLogger();
   bool isConnected();
-  void sendCommand(const std::string &) override;
+  bool sendCommand(const std::string &) override;
   std::string recvResponse(void) override;
   void disConnect();
 
 private:
   void checkConnection();
+  bool isValidMessageFormat(const std::string & cmd) const;
 };
 }  // namespace mg400_interface
 #endif

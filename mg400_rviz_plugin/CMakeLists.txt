@@ -11,7 +11,10 @@ ament_auto_find_build_dependencies()
 set(CMAKE_AUTOMOC ON)
 
 set(include_files
-  include/mg400_rviz_plugin/panel_mg400_controller.hpp)
+  include/mg400_rviz_plugin/panel_base.hpp
+  include/mg400_rviz_plugin/panel_mg400_controller.hpp
+  include/mg400_rviz_plugin/panel_mg400_monitor.hpp
+  include/mg400_rviz_plugin/panel_mg400_servo.hpp)
 
 foreach(header "${include_files}")
   qt5_wrap_cpp(include_wrapped "${header}")

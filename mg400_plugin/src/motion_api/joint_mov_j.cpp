@@ -57,6 +57,11 @@ rclcpp_action::GoalResponse JointMovJ::handle_goal(
       this->node_logging_if_->get_logger(), "MG400 is not connected");
     return rclcpp_action::GoalResponse::REJECT;
   }
+  if (plugin_utils::rejectMotionCommandDuringServoMode(
+      this->mg400_interface_, this->node_logging_if_->get_logger(), "JointMovJ"))
+  {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
 
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
@@ -136,6 +141,12 @@ void JointMovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
       cp = plugin_utils::clampWithWarning(
         goal->cp, plugin_utils::CP_MIN, plugin_utils::CP_MAX,
         this->node_logging_if_->get_logger(), "cp");
+    }
+    if (plugin_utils::rejectMotionCommandDuringServoMode(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "JointMovJ"))
+    {
+      goal_handle->abort(result);
+      return;
     }
     this->commander_->jointMovJ(
       goal_angles[0], goal_angles[1], goal_angles[2], goal_angles[3], speed_j, acc_j, cp);

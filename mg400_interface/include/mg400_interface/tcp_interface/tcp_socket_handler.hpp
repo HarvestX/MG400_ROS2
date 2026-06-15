@@ -62,6 +62,8 @@ public:
   void send(const void *, uint32_t);
   bool recv(void *, uint32_t, const std::chrono::nanoseconds &);
   bool recv(void *, uint32_t, uint32_t &, const std::chrono::nanoseconds &);
+  bool recvDelimited(
+    std::string & message, char delimiter, const std::chrono::nanoseconds & timeout);
   std::string toString();
 };
 }  // namespace mg400_interface

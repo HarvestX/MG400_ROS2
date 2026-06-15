@@ -28,22 +28,14 @@ JointHandler::getJointState(const std::array<double, 4> & joint_states, const st
   msg->name = {
     prefix + J1_NAME,
     prefix + J2_1_NAME,
-    prefix + J2_2_NAME,
     prefix + J3_1_NAME,
-    prefix + J3_2_NAME,
-    prefix + J4_1_NAME,
-    prefix + J4_2_NAME,
     prefix + J5_NAME
   };
 
   msg->position = {
     joint_states[0],                    // j1
     joint_states[1],                    // j2_1
-    joint_states[1],                    // j2_2
     joint_states[2] - joint_states[1],  // j3_1
-    -joint_states[1],                   // j3_2
-    -joint_states[2],                   // j4_1
-    joint_states[2],                    // j4_2
     joint_states[3]                     // j5
   };
 

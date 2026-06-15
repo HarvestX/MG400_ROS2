@@ -14,6 +14,7 @@
 
 #include "mg400_plugin/dashboard_api/emergency_stop.hpp"
 
+#include "mg400_plugin/plugin_utils.hpp"
 
 namespace mg400_plugin
 {
@@ -52,6 +53,8 @@ void EmergencyStop::onServiceCall(
   res->error_id = -1;
   if (this->mg400_interface_->ok()) {
     try {
+      plugin_utils::exitServoModeBeforeDashboardStopCommand(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "EmergencyStop");
       this->commander_->emergencyStop();
       res->result = true;
       res->error_id = 0;

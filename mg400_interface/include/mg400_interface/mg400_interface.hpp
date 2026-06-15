@@ -15,8 +15,10 @@
 #ifndef __MG400_INTERFACE_MG400_INTERFACE_HPP__
 #define __MG400_INTERFACE_MG400_INTERFACE_HPP__
 
-#include <string>
+#include <functional>
 #include <memory>
+#include <mutex>
+#include <string>
 
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
 #include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
@@ -38,6 +40,7 @@ class MG400Interface
 public:
   using UniquePtr = std::unique_ptr<MG400Interface>;
   using SharedPtr = std::shared_ptr<MG400Interface>;
+  using ServoModeExitCallback = std::function<void (const std::string &, bool)>;
 
   DashboardCommander::SharedPtr dashboard_commander;
   MotionCommander::SharedPtr motion_commander;
@@ -51,6 +54,10 @@ private:
 
   DashboardTcpInterface::UniquePtr dashboard_tcp_if_;
   MotionTcpInterface::UniquePtr motion_tcp_if_;
+  mutable std::mutex servo_mode_mutex_;
+  bool servo_mode_active_;
+  bool servo_exit_on_dashboard_stop_command_;
+  ServoModeExitCallback servo_mode_exit_callback_;
 
 public:
   MG400Interface() = delete;
@@ -61,6 +68,12 @@ public:
   bool activate();
   bool deactivate();
   bool ok();
+  void setServoModeActive(bool);
+  bool isServoModeActive() const;
+  void setServoModeExitCallback(ServoModeExitCallback);
+  void requestServoModeExit(const std::string &, bool = false);
+  void setServoExitOnDashboardStopCommand(bool);
+  bool shouldExitServoModeOnDashboardStopCommand() const;
 
 private:
   static const rclcpp::Logger getLogger() noexcept;

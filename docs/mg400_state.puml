@@ -1,0 +1,50 @@
+@startuml mg400_state_diagram
+
+title MG400 Robot State Transition Diagram
+
+state "ID 1: ROBOT_MODE_INIT" as Init
+state "ID 4: ROBOT_MODE_DISABLED" as Disabled
+state "ID 5: ROBOT_MODE_ENABLE" as Enable
+state "ID 6: ROBOT_MODE_BACKDRIVE" as Backdrive
+state "ID 7: ROBOT_MODE_RUNNING" as Running
+state "ID 9: ROBOT_MODE_ERROR" as Error
+
+[*] --> Init : Power On
+
+Init --> Disabled : Initialization Complete
+
+Disabled --> Enable : EnableRobot()
+
+Enable --> Running : Start Motion
+Enable --> Disabled : DisableRobot()
+Enable --> Backdrive : Push unlock button
+Enable --> Error : Occur errors
+
+Running --> Enable : Motion Complete
+Running --> Error : Motion Error
+
+Backdrive --> Enable : Exit Drag Mode
+Backdrive --> Error : Drag Error
+
+Error --> Enable : Error Cleared
+
+' state "MG400のTCP/IP では通常使用しない状態" as UnusedStates #lightgray {
+'   state "ID 2: ROBOT_MODE_BRAKE_OPEN" as BrakeOpen
+'   state "ID 8: ROBOT_MODE_RECORDING" as Recording
+'   state "ID 10: ROBOT_MODE_PAUSE" as Pause
+'   state "ID 11: ROBOT_MODE_JOG" as Jog
+
+'   BrakeOpen -[hidden]down-> Recording
+'   Recording -[hidden]down-> Pause
+'   Pause -[hidden]down-> Jog
+' }
+
+note as N1
+  MG400のTCP/IP操作では基本的に不使用な状態:
+  - ID 2: ROBOT_MODE_BRAKE_OPEN
+  - ID 8: ROBOT_MODE_RECORDING
+  - ID 10: ROBOT_MODE_PAUSE
+  - ID 11: ROBOT_MODE_JOG
+end note
+
+@enduml

@@ -14,11 +14,16 @@
 
 #include "mg400_interface/mg400_interface.hpp"
 
+#include <thread>
+#include <utility>
+
 namespace mg400_interface
 {
 
 MG400Interface::MG400Interface(const std::string & ip_address)
 : IP(ip_address)
+  , servo_mode_active_(false)
+  , servo_exit_on_dashboard_stop_command_(true)
 {
 }
 
@@ -87,6 +92,8 @@ bool MG400Interface::activate()
 
 bool MG400Interface::deactivate()
 {
+  this->setServoModeActive(false);
+
   // disconnect each interface in parallel because it takes time sometimes.
   std::thread discnt_dashboard_tcp_if_([this]() {this->dashboard_tcp_if_->disConnect();});
   std::thread discnt_realtime_tcp_if_([this]() {this->realtime_tcp_interface->disConnect();});
@@ -105,6 +112,53 @@ bool MG400Interface::ok()
   // We assume MG400Interface is ok when realtime tcp interface is active.
   return this->isConnected() &&
          this->realtime_tcp_interface->isActive();
+}
+
+void MG400Interface::setServoModeActive(const bool active)
+{
+  std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+  this->servo_mode_active_ = active;
+}
+
+bool MG400Interface::isServoModeActive() const
+{
+  std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+  return this->servo_mode_active_;
+}
+
+void MG400Interface::setServoModeExitCallback(ServoModeExitCallback callback)
+{
+  std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+  this->servo_mode_exit_callback_ = std::move(callback);
+}
+
+void MG400Interface::requestServoModeExit(
+  const std::string & reason, const bool warn)
+{
+  ServoModeExitCallback callback;
+  {
+    std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+    callback = this->servo_mode_exit_callback_;
+  }
+
+  if (callback) {
+    callback(reason, warn);
+    return;
+  }
+
+  this->setServoModeActive(false);
+}
+
+void MG400Interface::setServoExitOnDashboardStopCommand(const bool enabled)
+{
+  std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+  this->servo_exit_on_dashboard_stop_command_ = enabled;
+}
+
+bool MG400Interface::shouldExitServoModeOnDashboardStopCommand() const
+{
+  std::lock_guard<std::mutex> lock(this->servo_mode_mutex_);
+  return this->servo_exit_on_dashboard_stop_command_;
 }
 
 const rclcpp::Logger MG400Interface::getLogger() noexcept

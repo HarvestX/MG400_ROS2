@@ -16,6 +16,7 @@
 
 namespace mg400_interface
 {
+using namespace std::chrono_literals; // NOLINT
 
 MotionTcpInterface::MotionTcpInterface(const std::string & ip)
 {
@@ -79,8 +80,88 @@ void MotionTcpInterface::disConnect()
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
-void MotionTcpInterface::sendCommand(const std::string & cmd)
+bool MotionTcpInterface::sendCommand(const std::string & cmd)
 {
+  if (!isValidMessageFormat(cmd)) {
+    RCLCPP_ERROR(this->getLogger(), "Invalid message format: %s", cmd.c_str());
+    RCLCPP_ERROR(this->getLogger(), "Expected format: MessageName(Param1,Param2,...,Paramn)");
+    return false;
+  }
+
   this->tcp_socket_->send(cmd.data(), cmd.size());
+  return true;
 }
+
+std::string MotionTcpInterface::recvResponse()
+{
+  std::string response;
+  if (!this->tcp_socket_->recvDelimited(response, ';', 3s)) {
+    RCLCPP_WARN(this->getLogger(), "recv timeout or error");
+    return "TIMEOUT ERROR";
+  }
+  RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
+  return response;
+}
+
+bool MotionTcpInterface::isValidMessageFormat(const std::string & cmd) const
+{
+  // Check if command is empty
+  if (cmd.empty()) {
+    return false;
+  }
+
+  // Check if command contains only ASCII characters (0-127)
+  for (char c : cmd) {
+    if (static_cast<unsigned char>(c) > 127) {
+      return false;
+    }
+  }
+
+  // Find opening and closing parentheses
+  size_t open_paren = cmd.find('(');
+  if (open_paren == std::string::npos || open_paren == 0) {
+    return false;
+  }
+
+  // Must end with closing parenthesis
+  if (cmd.back() != ')') {
+    return false;
+  }
+
+  size_t close_paren = cmd.length() - 1;
+  if (close_paren <= open_paren) {
+    return false;
+  }
+
+  // Validate message name
+  std::string message_name = cmd.substr(0, open_paren);
+  if (!std::isalpha(message_name[0]) && message_name[0] != '_') {
+    return false;
+  }
+
+  for (char c : message_name) {
+    if (!std::isalnum(c) && c != '_') {
+      return false;
+    }
+  }
+
+  // Extract and validate parameters
+  std::string params = cmd.substr(open_paren + 1, close_paren - open_paren - 1);
+
+  // Parameters can be empty
+  if (params.empty()) {
+    return true;
+  }
+
+  // Check for invalid parameter format
+  if (params.front() == ',' || params.back() == ',' ||
+    params.find(",,") != std::string::npos ||
+    params.find('(') != std::string::npos || params.find(')') != std::string::npos)
+  {
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace mg400_interface

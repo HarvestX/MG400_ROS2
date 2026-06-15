@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file is based on MG400_ROS2's URDF file, and with some modifications related to mimic joints
+to enable MoveIt2 to handle the parallel link arm. Also, joint limits are set to avoid hitting unit
+frame.
+-->
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- constants -->
   <xacro:include
@@ -271,6 +276,7 @@
         </geometry>
       </collision>
     </link>
+    <link name="${prefix}mg400_link4_1_virtual"></link>
     <link name="${prefix}mg400_link4_2">
       <inertial>
         <origin
@@ -302,6 +308,7 @@
         </geometry>
       </collision>
     </link>
+    <link name="${prefix}mg400_link4_2_virtual"></link>
     <link name="${prefix}mg400_link4_3">
       <inertial>
         <origin
@@ -482,6 +489,9 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j2_1"
+        multiplier="1.0" />
     </joint>
     <joint
         name="${prefix}mg400_j3_1"
@@ -512,6 +522,9 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j2_1"
+        multiplier="-1.0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_1"
@@ -520,6 +533,24 @@
           xyz="0.175 -0.017 0.00325"
           rpy="0 0 0" />
       <parent link="${prefix}mg400_link3_1" />
+      <child link="${prefix}mg400_link4_1_virtual" />
+      <axis xyz="0 1 0" />
+      <limit
+          lower="-3.14"
+          upper="3.14"
+          effort="0"
+          velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j2_1"
+        multiplier="-1.0" />
+    </joint>
+    <joint
+        name="${prefix}mg400_j4_1_virtual"
+        type="revolute">
+      <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+      <parent link="${prefix}mg400_link4_1_virtual" />
       <child link="${prefix}mg400_link4_1" />
       <axis xyz="0 1 0" />
       <limit
@@ -527,6 +558,9 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j3_1"
+        multiplier="-1.0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_2"
@@ -535,6 +569,24 @@
           xyz="0.0679 0.0005 0.011972"
           rpy="0 0 0" />
       <parent link="${prefix}mg400_link3_2" />
+      <child link="${prefix}mg400_link4_2_virtual" />
+      <axis xyz="0 1 0" />
+      <limit
+          lower="-3.14"
+          upper="3.14"
+          effort="0"
+          velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j2_1"
+        multiplier="1.0" />
+    </joint>
+    <joint
+        name="${prefix}mg400_j4_2_virtual"
+        type="revolute">
+      <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+      <parent link="${prefix}mg400_link4_2_virtual" />
       <child link="${prefix}mg400_link4_2" />
       <axis xyz="0 1 0" />
       <limit
@@ -542,6 +594,9 @@
           upper="3.14"
           effort="0"
           velocity="0" />
+      <mimic
+        joint="${prefix}mg400_j3_1"
+        multiplier="1.0" />
     </joint>
     <joint
         name="${prefix}mg400_j4_3"

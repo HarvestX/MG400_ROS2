@@ -40,6 +40,30 @@ def generate_launch_description():
         'joy', default_value='false', description='Determines if joy.launch is called.'
     )
 
+    mapping_file_arg = DeclareLaunchArgument(
+        'mapping_file',
+        default_value=TextSubstitution(text=''),
+        description='Optional joy YAML mapping file used when joy:=true.',
+    )
+
+    servo_control_type_arg = DeclareLaunchArgument(
+        'servo_control_type',
+        default_value=TextSubstitution(text='ServoJ'),
+        description='Initial joy ServoMode command type: ServoJ or ServoP.',
+    )
+
+    controller_check_timeout_arg = DeclareLaunchArgument(
+        'controller_check_timeout_sec',
+        default_value=TextSubstitution(text='60.0'),
+        description='Joy startup controller mapping check timeout in seconds.',
+    )
+
+    service_timeout_arg = DeclareLaunchArgument(
+        'service_timeout_ms',
+        default_value=TextSubstitution(text='5000'),
+        description='Joy service wait and response timeout in milliseconds.',
+    )
+
     ip_address_arg = DeclareLaunchArgument(
         'ip_address',
         default_value=TextSubstitution(text='192.168.1.6'),
@@ -55,6 +79,10 @@ def generate_launch_description():
     # Set launch configurations
     ns = LaunchConfiguration('namespace')
     joy = LaunchConfiguration('joy')
+    mapping_file = LaunchConfiguration('mapping_file')
+    servo_control_type = LaunchConfiguration('servo_control_type')
+    controller_check_timeout_sec = LaunchConfiguration('controller_check_timeout_sec')
+    service_timeout_ms = LaunchConfiguration('service_timeout_ms')
     ip_address = LaunchConfiguration('ip_address')
     workspace_visible = LaunchConfiguration('workspace_visible')
 
@@ -74,7 +102,13 @@ def generate_launch_description():
             [PathJoinSubstitution([this_package_path, 'launch', 'joy.launch.py'])]
         ),
         condition=IfCondition(joy),
-        launch_arguments=[('namespace', ns)],
+        launch_arguments=[
+            ('namespace', ns),
+            ('mapping_file', mapping_file),
+            ('servo_control_type', servo_control_type),
+            ('controller_check_timeout_sec', controller_check_timeout_sec),
+            ('service_timeout_ms', service_timeout_ms),
+        ],
     )
 
     rsp_node = IncludeLaunchDescription(
@@ -100,6 +134,10 @@ def generate_launch_description():
     # Add arguments
     ld.add_action(ns_arg)
     ld.add_action(joy_arg)
+    ld.add_action(mapping_file_arg)
+    ld.add_action(servo_control_type_arg)
+    ld.add_action(controller_check_timeout_arg)
+    ld.add_action(service_timeout_arg)
     ld.add_action(ip_address_arg)
     ld.add_action(workspace_visible_arg)
     # Add nodes

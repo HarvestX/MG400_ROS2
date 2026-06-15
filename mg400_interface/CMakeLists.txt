@@ -16,6 +16,7 @@ ament_auto_add_library(
       ./src/commander/dashboard_commander.cpp
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp
+      ./src/command_builder.cpp
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
@@ -51,7 +52,8 @@ if(BUILD_TESTING)
 
   set(TEST_TARGETS
     test_error_msg_generator
-    test_joint_handler)
+    test_joint_handler
+    test_mg400_interface)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

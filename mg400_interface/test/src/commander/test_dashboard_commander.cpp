@@ -104,7 +104,7 @@ public:
   MockTcpInterface()
   : mg400_interface::DashboardTcpInterfaceBase() {}
 
-  MOCK_METHOD(void, sendCommand, (const std::string &), (override));
+  MOCK_METHOD(bool, sendCommand, (const std::string &), (override));
   MOCK_METHOD(std::string, recvResponse, (), (override));
 };
 

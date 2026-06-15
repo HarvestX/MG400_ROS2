@@ -14,6 +14,8 @@
 
 #include "mg400_plugin/motion_api/move_jog.hpp"
 
+#include "mg400_plugin/plugin_utils.hpp"
+
 namespace mg400_plugin
 {
 void MoveJog::configure(
@@ -45,11 +47,20 @@ void MoveJog::configure(
 
 void MoveJog::onServiceCall(
   const ServiceT::Request::SharedPtr req,
-  ServiceT::Response::SharedPtr)
+  ServiceT::Response::SharedPtr res)
 {
+  res->error_id = -1;
   if (this->mg400_interface_->ok()) {
+    if (plugin_utils::rejectMotionCommandDuringServoMode(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "MoveJog"))
+    {
+      res->error_id = -2;
+      return;
+    }
+
     try {
       this->commander_->moveJog(req->jog.jog_mode);
+      res->error_id = 0;
     } catch (const std::runtime_error & ex) {
       RCLCPP_ERROR(this->node_logging_if_->get_logger(), ex.what());
     } catch (...) {

@@ -14,6 +14,8 @@
 
 #include "mg400_plugin/dashboard_api/disable_robot.hpp"
 
+#include "mg400_plugin/plugin_utils.hpp"
+
 namespace mg400_plugin
 {
 void DisableRobot::configure(
@@ -50,6 +52,8 @@ void DisableRobot::onServiceCall(
   res->error_id = -1;
   if (this->mg400_interface_->ok()) {
     try {
+      plugin_utils::exitServoModeBeforeDashboardStopCommand(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "DisableRobot");
       this->commander_->disableRobot();
       res->result = true;
       res->error_id = 0;

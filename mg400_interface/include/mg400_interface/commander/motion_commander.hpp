@@ -51,6 +51,15 @@ public:
   explicit MotionCommander(MotionTcpInterfaceBase *);
 
   // DOBOT MG400 Official Command ---------------------------------------------
+  void servoJ(
+    const si_rad, const si_rad, const si_rad,
+    const si_rad, const double, const double, const double);
+
+  void servoP(
+    const si_m, const si_m, const si_m,
+    const si_rad, const si_rad, const si_rad,
+    const double, const double, const double);
+
   void movJ(
     const si_m, const si_m, const si_m, const si_rad,
     const int8_t = -1, const int8_t = -1, const int8_t = -1);

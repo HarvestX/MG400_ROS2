@@ -65,6 +65,11 @@ rclcpp_action::GoalResponse CommandQueue::handle_goal(
       this->node_logging_if_->get_logger(), "MG400 is not connected");
     return rclcpp_action::GoalResponse::REJECT;
   }
+  if (plugin_utils::rejectMotionCommandDuringServoMode(
+      this->mg400_interface_, this->node_logging_if_->get_logger(), "CommandQueue"))
+  {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
 
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
@@ -110,6 +115,21 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
   result->result = false;
+
+  const auto abort_if_servo_mode_active = [&]() -> bool
+    {
+      if (plugin_utils::rejectMotionCommandDuringServoMode(
+          this->mg400_interface_, this->node_logging_if_->get_logger(), "CommandQueue"))
+      {
+        goal_handle->abort(result);
+        return true;
+      }
+      return false;
+    };
+
+  if (abort_if_servo_mode_active()) {
+    return;
+  }
 
   const auto update_pose_and_angles =
     [&](geometry_msgs::msg::PoseStamped & pose, std::array<double, 4> & angles) -> void
@@ -283,7 +303,14 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
     batch_start += enable_sync_every)
   {
     const size_t batch_end = std::min(batch_start + enable_sync_every, goal->commands.size());
+    if (abort_if_servo_mode_active()) {
+      return;
+    }
     const int sent_in_batch = this->sendCommand(goal->commands, batch_start, batch_end);
+    if (sent_in_batch < 0) {
+      goal_handle->abort(result);
+      return;
+    }
     sent_command_count += sent_in_batch;
     if (sent_in_batch > 0 && !wait_until_running_and_enable()) {
       goal_handle->abort(result);
@@ -436,6 +463,11 @@ int CommandQueue::sendCommand(
 {
   int sent_command_count = 0;
   for (size_t i = start_index; i < end_index; ++i) {
+    if (plugin_utils::rejectMotionCommandDuringServoMode(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "CommandQueue"))
+    {
+      return -1;
+    }
     const auto & command = commands[i];
     switch (command.command_type) {
       case mg400_msgs::msg::Command::CT_MOV_J:

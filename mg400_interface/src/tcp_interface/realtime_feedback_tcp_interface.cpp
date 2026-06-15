@@ -133,7 +133,7 @@ void RealtimeFeedbackTcpInterface::recvData()
         continue;
       }
 
-      if (recvd_data->len != sizeof(RealTimeData)) {
+      if (recvd_data->message_size != sizeof(RealTimeData)) {
         // Error: Invalid size
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
@@ -144,10 +144,11 @@ void RealtimeFeedbackTcpInterface::recvData()
         this->rt_data_ = std::move(recvd_data);
       }
 
+      auto deg2rad = M_PI / 180.;
       std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
       std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
       for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
-        this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
+        this->current_joints_[i] = this->rt_data_->q_actual[i] * deg2rad;
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();

@@ -63,6 +63,11 @@ rclcpp_action::GoalResponse MovL::handle_goal(
       this->node_logging_if_->get_logger(), "MG400 is not connected");
     return rclcpp_action::GoalResponse::REJECT;
   }
+  if (plugin_utils::rejectMotionCommandDuringServoMode(
+      this->mg400_interface_, this->node_logging_if_->get_logger(), "MovL"))
+  {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
 
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
@@ -159,6 +164,12 @@ void MovL::execute(const std::shared_ptr<GoalHandle> goal_handle)
         plugin_utils::clampWithWarning(
         goal->cp, plugin_utils::CP_MIN, plugin_utils::CP_MAX,
         this->node_logging_if_->get_logger(), "cp");
+    }
+    if (plugin_utils::rejectMotionCommandDuringServoMode(
+        this->mg400_interface_, this->node_logging_if_->get_logger(), "MovL"))
+    {
+      goal_handle->abort(result);
+      return;
     }
     this->commander_->movL(
       this->tf_goal_.pose.position.x, this->tf_goal_.pose.position.y,

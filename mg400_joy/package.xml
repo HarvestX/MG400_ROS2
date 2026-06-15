@@ -11,9 +11,11 @@
 
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
-  <depend>p9n_interface</depend>
+  <depend>geometry_msgs</depend>
   <depend>mg400_msgs</depend>
-  <depend>mg400_interface</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>yaml-cpp</depend>
 
   <exec_depend>joy</exec_depend>
 

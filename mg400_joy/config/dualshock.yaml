@@ -1,0 +1,23 @@
+buttons:
+  cross: 0
+  l1: 4
+  r1: 5
+  select: 8
+  start: 9
+  ps: 10
+axes:
+  stick_lx:
+    index: 0
+    positive_value: -1.0
+  stick_ly:
+    index: 1
+    positive_value: -1.0
+  stick_rx:
+    index: 3
+    positive_value: -1.0
+  stick_ry:
+    index: 4
+    positive_value: -1.0
+dpad_up:
+  axis: 7
+  axis_value: 1.0

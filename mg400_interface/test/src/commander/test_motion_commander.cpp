@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include <gmock/gmock.h>
+#include <limits>
+#include <stdexcept>
+#include <mg400_interface/command_builder.hpp>
 #include <mg400_interface/commander/motion_commander.hpp>
 
 using ::testing::_;
@@ -29,7 +32,8 @@ public:
   MockTcpInterface()
   : mg400_interface::MotionTcpInterfaceBase() {}
 
-  MOCK_METHOD(void, sendCommand, (const std::string &), (override));
+  MOCK_METHOD(bool, sendCommand, (const std::string &), (override));
+  MOCK_METHOD(std::string, recvResponse, (), (override));
 };
 
 
@@ -46,6 +50,71 @@ protected:
 
   virtual void TearDown() {}
 };
+
+TEST(TestCommandBuilder, ServoJ) {
+  ASSERT_EQ(
+    mg400_interface::CommandBuilder::buildServoJ(
+      M_PI_2, M_PI_2, M_PI_2, M_PI_2,
+      0.1, 50.0, 500.0),
+    "ServoJ(90.000,90.000,90.000,90.000,0.000,0.000)");
+}
+
+TEST(TestCommandBuilder, ServoP) {
+  ASSERT_EQ(
+    mg400_interface::CommandBuilder::buildServoP(
+      1.0e-3, 2.0e-3, 3.0e-3, M_PI_2, 0.0, 0.0,
+      0.1, 50.0, 500.0),
+    "ServoP(1.000,2.000,3.000,90.000,0.000,0.000)");
+}
+
+TEST_F(TestMotionCommander, ServoJ) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "ServoJ(90.000,90.000,90.000,90.000,0.000,0.000)"))).Times(1);
+  commander->servoJ(
+    M_PI_2, M_PI_2, M_PI_2, M_PI_2,
+    0.1, 50.0, 500.0);
+}
+
+TEST_F(TestMotionCommander, ServoP) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "ServoP(1.000,2.000,3.000,90.000,0.000,0.000)"))).Times(1);
+  commander->servoP(
+    1.0e-3, 2.0e-3, 3.0e-3, M_PI_2, 0.0, 0.0,
+    0.1, 50.0, 500.0);
+}
+
+TEST_F(TestMotionCommander, ServoJIgnoresOptionFields) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "ServoJ(90.000,90.000,90.000,90.000,0.000,0.000)"))).Times(1);
+  commander->servoJ(
+    M_PI_2, M_PI_2, M_PI_2, M_PI_2,
+    std::numeric_limits<double>::quiet_NaN(), 19.0, 1000.1);
+}
+
+TEST_F(TestMotionCommander, ServoPIgnoresOptionFields) {
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq(
+        "ServoP(1.000,2.000,3.000,90.000,0.000,0.000)"))).Times(1);
+  commander->servoP(
+    1.0e-3, 2.0e-3, 3.0e-3, M_PI_2, 0.0, 0.0,
+    std::numeric_limits<double>::quiet_NaN(), 19.0, 1000.1);
+}
+
+TEST_F(TestMotionCommander, ServoJRejectsNonFiniteJointAngle) {
+  EXPECT_CALL(mock, sendCommand(_)).Times(0);
+  EXPECT_THROW(
+    commander->servoJ(
+      M_PI_2, M_PI_2, std::numeric_limits<double>::quiet_NaN(), M_PI_2,
+      0.0, 0.0, 0.0),
+    std::invalid_argument);
+}
 
 TEST_F(TestMotionCommander, MovJ) {
   EXPECT_CALL(

@@ -1,0 +1,4 @@
+bool enable
+---
+int32 error_id
+string message

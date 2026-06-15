@@ -14,14 +14,64 @@
 
 #include "mg400_interface/commander/motion_commander.hpp"
 
+#include <cmath>
+#include <stdexcept>
+#include <string>
+
+#include "mg400_interface/command_builder.hpp"
+
 namespace mg400_interface
 {
+namespace
+{
+void validateFinite(const double value, const char * name)
+{
+  if (!std::isfinite(value)) {
+    throw std::invalid_argument(std::string(name) + " must be finite");
+  }
+}
+}  // namespace
+
 MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
+void MotionCommander::servoJ(
+  const si_rad j1, const si_rad j2, const si_rad j3,
+  const si_rad j4, const double t, const double aheadtime,
+  const double gain)
+{
+  validateFinite(j1, "j1");
+  validateFinite(j2, "j2");
+  validateFinite(j3, "j3");
+  validateFinite(j4, "j4");
+  const auto command = CommandBuilder::buildServoJ(
+    j1, j2, j3, j4, t, aheadtime, gain);
+
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
+  this->tcp_if_->sendCommand(command);
+}
+
+void MotionCommander::servoP(
+  const si_m x, const si_m y, const si_m z,
+  const si_rad rx, const si_rad ry, const si_rad rz,
+  const double t, const double aheadtime, const double gain)
+{
+  validateFinite(x, "x");
+  validateFinite(y, "y");
+  validateFinite(z, "z");
+  validateFinite(rx, "rx");
+  validateFinite(ry, "ry");
+  validateFinite(rz, "rz");
+  const auto command = CommandBuilder::buildServoP(
+    x, y, z, rx, ry, rz, t, aheadtime, gain);
+
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
+  this->tcp_if_->sendCommand(command);
+}
+
 void MotionCommander::movJ(
   const si_m x, const si_m y, const si_m z,
   const double r, const int8_t speed_j, const int8_t acc_j, const int8_t cp)

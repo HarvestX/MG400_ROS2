@@ -190,6 +190,53 @@ bool TcpSocketHandler::recv(
   return true;
 }
 
+bool TcpSocketHandler::recvDelimited(
+  std::string & message, char delimiter,
+  const std::chrono::nanoseconds & timeout)
+{
+  message.clear();
+  char buffer[1024];
+  auto start_time = std::chrono::steady_clock::now();
+
+  while (true) {
+    // calculate remaining time
+    auto elapsed = std::chrono::steady_clock::now() - start_time;
+    if (elapsed >= timeout) {return false;}
+    auto remaining = timeout - elapsed;
+
+    // wait date
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(this->fd_, &read_fds);
+
+    auto remaining_sec = std::chrono::duration_cast<std::chrono::seconds>(remaining);
+    auto remaining_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+      remaining - remaining_sec);
+
+    timeval tv;
+    tv.tv_sec = static_cast<time_t>(remaining_sec.count());
+    tv.tv_usec = static_cast<suseconds_t>(remaining_usec.count());
+
+    int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
+    if (err <= 0) {return false;}
+
+    // read data
+    ssize_t bytes_read = ::read(this->fd_, buffer, sizeof(buffer));
+    if (bytes_read <= 0) {
+      this->disConnect();
+      throw TcpSocketException(this->toString() + " connection lost");
+    }
+
+    // search deliminate
+    for (ssize_t i = 0; i < bytes_read; i++) {
+      message += buffer[i];
+      if (buffer[i] == delimiter) {
+        return true;
+      }
+    }
+  }
+}
+
 std::string TcpSocketHandler::toString()
 {
   return this->ip_ + ":" + std::to_string(this->port_);

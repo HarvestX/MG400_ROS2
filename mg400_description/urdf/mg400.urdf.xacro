@@ -9,17 +9,17 @@
             name="prefix"
             default="" />
     <xacro:arg
-            name="use_arm"
+            name="use_single_path_arm"
             default="True" />
     <xacro:arg
             name="workspace_visible"
             default="false" />
 
     <!-- links -->
-    <link name="$(arg prefix)arm_frame_link_offset" />
+    <link name="$(arg prefix)base_link" />
 
     <xacro:mg400
-            parent="$(arg prefix)arm_frame_link_offset"
+            parent="$(arg prefix)base_link"
             prefix="$(arg prefix)"
             workspace_visible="$(arg workspace_visible)">
         <origin

@@ -7,4 +7,20 @@
       Make a MG400 control panel
     </description>
   </class>
+  <class
+      name="mg400_rviz_plugin/Mg400Monitor"
+      type="mg400_rviz_plugin::Mg400MonitorPanel"
+      base_class_type="rviz_common::Panel">
+    <description>
+      Monitor MG400 real-time feedback
+    </description>
+  </class>
+  <class
+      name="mg400_rviz_plugin/Mg400Servo"
+      type="mg400_rviz_plugin::Mg400ServoPanel"
+      base_class_type="rviz_common::Panel">
+    <description>
+      Control MG400 ServoMode, ServoP target, and ServoJ target
+    </description>
+  </class>
 </library>
