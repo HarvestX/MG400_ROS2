@@ -22,6 +22,7 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "mg400_interface/external_force_estimator.hpp"
 #include "mg400_interface/joint_handler.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
@@ -68,8 +69,15 @@ public:
   bool isRobotMode(const uint64_t &);
   void disConnect();
 
+  void setExternalForceEstimator(
+    ExternalForceEstimator::SharedPtr estimator,
+    bool use_estimated = true);
+
 private:
   void recvData();
+
+  ExternalForceEstimator::SharedPtr estimator_;
+  bool use_estimated_tcp_force_{false};
 };
 }  // namespace mg400_interface
 #endif

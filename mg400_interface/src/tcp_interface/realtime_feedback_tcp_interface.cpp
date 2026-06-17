@@ -113,6 +113,15 @@ void RealtimeFeedbackTcpInterface::disConnect()
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
+void RealtimeFeedbackTcpInterface::setExternalForceEstimator(
+  ExternalForceEstimator::SharedPtr estimator,
+  const bool use_estimated)
+{
+  std::lock_guard<std::mutex> lock(this->mutex_rt_data_);
+  this->estimator_ = std::move(estimator);
+  this->use_estimated_tcp_force_ = use_estimated;
+}
+
 void RealtimeFeedbackTcpInterface::recvData()
 {
   using namespace std::chrono_literals;  // NOLINT
@@ -142,6 +151,17 @@ void RealtimeFeedbackTcpInterface::recvData()
         // Success
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = std::move(recvd_data);
+
+        // If an external force estimator is registered and the override flag is set,
+        // run the estimator and overwrite TCP_Force with the estimated values.
+        if (this->use_estimated_tcp_force_ && this->estimator_) {
+          if (this->estimator_->update(*this->rt_data_)) {
+            const auto & force = this->estimator_->getEstimatedTCPForce();
+            for (std::size_t i = 0; i < force.size(); ++i) {
+              this->rt_data_->TCP_force[i] = force[i];
+            }
+          }
+        }
       }
 
       std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
