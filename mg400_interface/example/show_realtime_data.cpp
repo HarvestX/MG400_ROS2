@@ -21,16 +21,30 @@
 int main(int argc, char ** argv)
 {
   std::string ip = "127.0.0.1";
-  if (argc == 2) {
-    ip = argv[1];
+  bool use_estimator = false;
+
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg(argv[i]);
+    if (arg == "--estimate" || arg == "-e") {
+      use_estimator = true;
+    } else {
+      ip = arg;
+    }
   }
 
   std::cout << "Connecting to: " << ip << std::endl;
+  std::cout << "External force estimator: " << (use_estimator ? "enabled" : "disabled")
+            << std::endl;
 
   auto rt_tcp_if =
     std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip);
   auto db_tcp_if =
     std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
+
+  if (use_estimator) {
+    auto estimator = std::make_shared<mg400_interface::ExternalForceEstimator>();
+    rt_tcp_if->setExternalForceEstimator(estimator);
+  }
 
   rt_tcp_if->init();
   db_tcp_if->init();
