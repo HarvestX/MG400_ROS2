@@ -38,8 +38,6 @@ int main(int argc, char ** argv)
 
   auto rt_tcp_if =
     std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip);
-  auto db_tcp_if =
-    std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
 
   if (use_estimator) {
     auto estimator = std::make_shared<mg400_interface::ExternalForceEstimator>();
@@ -47,9 +45,8 @@ int main(int argc, char ** argv)
   }
 
   rt_tcp_if->init();
-  db_tcp_if->init();
 
-  while (!rt_tcp_if->isConnected() || !db_tcp_if->isConnected()) {
+  while (!rt_tcp_if->isConnected()) {
     std::cout << "Waiting for the connection..." << std::endl;
     using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(1s);
