@@ -153,9 +153,15 @@ void RealtimeFeedbackTcpInterface::recvData()
         this->rt_data_ = std::move(recvd_data);
 
         // If an external force estimator is registered and the override flag is set,
-        // run the estimator and overwrite TCP_Force with the estimated values.
+        // run the estimator and overwrite TCP_force with the estimated values.
+        // When the robot is disabled, force the TCP_force to zero to avoid
+        // spurious estimates from un-powered actuators.
         if (this->use_estimated_tcp_force_ && this->estimator_) {
-          if (this->estimator_->update(*this->rt_data_)) {
+          if (this->rt_data_->robot_mode == kRobotModeDisabled) {
+            for (double & v : this->rt_data_->TCP_force) {
+              v = 0.0;
+            }
+          } else if (this->estimator_->update(*this->rt_data_)) {
             const auto & force = this->estimator_->getEstimatedTCPForce();
             for (std::size_t i = 0; i < force.size(); ++i) {
               this->rt_data_->TCP_force[i] = force[i];
