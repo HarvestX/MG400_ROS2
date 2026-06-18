@@ -68,6 +68,7 @@ public:
   void getCurrentEndPose(Pose &);
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
+  bool getTCPForce(std::array<double, 6> &);
   bool isRobotMode(const uint64_t &);
   void disConnect();
 

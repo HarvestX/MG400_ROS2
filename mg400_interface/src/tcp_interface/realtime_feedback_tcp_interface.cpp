@@ -93,6 +93,18 @@ bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
   }
 }
 
+bool RealtimeFeedbackTcpInterface::getTCPForce(std::array<double, 6> & force)
+{
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  if (this->rt_data_ != nullptr) {
+    for (std::size_t i = 0; i < force.size(); ++i) {
+      force[i] = this->rt_data_->TCP_force[i];
+    }
+    return true;
+  }
+  return false;
+}
+
 bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
