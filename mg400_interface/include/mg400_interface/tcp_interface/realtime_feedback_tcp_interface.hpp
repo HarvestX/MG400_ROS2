@@ -66,9 +66,9 @@ public:
 
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
+  bool getExternalForce(std::array<double, 6> &);
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
-  bool getTCPForce(std::array<double, 6> &);
   bool isRobotMode(const uint64_t &);
   void disConnect();
 
@@ -80,7 +80,10 @@ private:
   void recvData();
 
   ExternalForceEstimator::SharedPtr estimator_;
-  bool use_estimated_tcp_force_{false};
+  std::array<double, 6> external_force_{};
+  bool has_external_force_{false};
+  bool use_estimated_external_force_{false};
+
 };
 }  // namespace mg400_interface
 #endif

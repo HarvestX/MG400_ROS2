@@ -71,6 +71,16 @@ void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
   JointHandler::getEndPose(this->current_joints_, pose);
 }
 
+bool RealtimeFeedbackTcpInterface::getExternalForce(std::array<double, 6> & force)
+{
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  if (!this->has_external_force_) {
+    return false;
+  }
+  force = this->external_force_;
+  return true;
+}
+
 bool RealtimeFeedbackTcpInterface::getRealtimeData(RealTimeData & data)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
@@ -91,18 +101,6 @@ bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
   } else {
     return false;
   }
-}
-
-bool RealtimeFeedbackTcpInterface::getTCPForce(std::array<double, 6> & force)
-{
-  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  if (this->rt_data_ != nullptr) {
-    for (std::size_t i = 0; i < force.size(); ++i) {
-      force[i] = this->rt_data_->TCP_force[i];
-    }
-    return true;
-  }
-  return false;
 }
 
 bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
@@ -131,7 +129,7 @@ void RealtimeFeedbackTcpInterface::setExternalForceEstimator(
 {
   std::lock_guard<std::mutex> lock(this->mutex_rt_data_);
   this->estimator_ = std::move(estimator);
-  this->use_estimated_tcp_force_ = use_estimated;
+  this->use_estimated_external_force_ = use_estimated;
 }
 
 void RealtimeFeedbackTcpInterface::recvData()
@@ -164,20 +162,17 @@ void RealtimeFeedbackTcpInterface::recvData()
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = std::move(recvd_data);
 
-        // If an external force estimator is registered and the override flag is set,
-        // run the estimator and overwrite TCP_force with the estimated values.
-        // When the robot is disabled, force the TCP_force to zero to avoid
-        // spurious estimates from un-powered actuators.
-        if (this->use_estimated_tcp_force_ && this->estimator_) {
+        // If an external force estimator is registered and enabled, run it
+        // and store the result in the separate external_force_ member.
+        // When the robot is disabled, zero out external_force_ to avoid spurious
+        // estimates from un-powered actuators.
+        if (this->use_estimated_external_force_ && this->estimator_) {
           if (this->rt_data_->robot_mode == kRobotModeDisabled) {
-            for (double & v : this->rt_data_->TCP_force) {
-              v = 0.0;
-            }
+            this->external_force_.fill(0.0);
+            this->has_external_force_ = true;
           } else if (this->estimator_->update(*this->rt_data_)) {
-            const auto & force = this->estimator_->getEstimatedTCPForce();
-            for (std::size_t i = 0; i < force.size(); ++i) {
-              this->rt_data_->TCP_force[i] = force[i];
-            }
+            this->external_force_ = this->estimator_->getEstimatedExternalForce();
+            this->has_external_force_ = true;
           }
         }
       }
