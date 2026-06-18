@@ -146,7 +146,7 @@ public:
   static constexpr double kDefaultOutputTorqueDeadband = 1.0;
 
   /// Nominal update rate used to scale rate-of-change limits [Hz].
-  static constexpr double kDefaultUpdateRateHz = 50.0;
+  static constexpr double kDefaultUpdateRateHz = 125.0;
 
   // ---------------------------------------------------------------------------
   // Configuration structure
