@@ -25,7 +25,7 @@ int main(int argc, char ** argv)
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg(argv[i]);
-    if (arg == "--estimate" || arg == "-e") {
+    if (arg == "--use-external-force-estimator") {
       use_estimator = true;
     } else {
       ip = arg;
