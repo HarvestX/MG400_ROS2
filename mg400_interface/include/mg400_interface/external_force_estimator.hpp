@@ -198,14 +198,13 @@ public:
   /// Process one realtime data sample and update the estimated wrench.
   ///
   /// Returns false while the auto-bias calibration phase is still ongoing;
-  /// getEstimatedTCPForce() is not meaningful until this method returns true.
+  /// getEstimatedExternalForce() is not meaningful until this method returns true.
   bool update(const RealTimeData & data);
 
-  /// Most recently computed estimated TCP force / torque as a six-element array
-  /// [Fx, Fy, Fz, 0, 0, Tz] in N / Nm, ready to be written into
-  /// RealTimeData::TCP_Force.  Output-frame conversion, EMA filtering, and
+  /// Most recently computed estimated external force / torque as a six-element array
+  /// [Fx, Fy, Fz, 0, 0, Tz] in N / Nm.  Output-frame conversion, EMA filtering, and
   /// output deadband are already applied.
-  const std::array<double, 6> & getEstimatedTCPForce() const;
+  const std::array<double, 6> & getEstimatedExternalForce() const;
 
   /// Returns true once the auto-bias calibration phase has completed.
   bool isReady() const;
@@ -260,8 +259,8 @@ private:
   Eigen::Vector4d filtered_wrench_;
   bool has_filtered_wrench_;
 
-  /// Last result returned by getEstimatedTCPForce().
-  std::array<double, 6> last_tcp_force_;
+  /// Last result returned by getEstimatedExternalForce().
+  std::array<double, 6> last_external_force_;
 
   /// Steady clock used for rate-throttled log messages.
   rclcpp::Clock steady_clock_;

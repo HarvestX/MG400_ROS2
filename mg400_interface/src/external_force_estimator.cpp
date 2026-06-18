@@ -37,7 +37,7 @@ ExternalForceEstimator::ExternalForceEstimator(const Config & config)
   has_prev_wrench_(false),
   filtered_wrench_(Eigen::Vector4d::Zero()),
   has_filtered_wrench_(false),
-  last_tcp_force_{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+  last_external_force_{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
   steady_clock_(RCL_STEADY_TIME)
 {
   for (std::size_t joint = 0; joint < kJointDim; ++joint) {
@@ -60,9 +60,9 @@ bool ExternalForceEstimator::isReady() const
          this->auto_bias_samples_collected_ >= this->config_.auto_bias_sample_count;
 }
 
-const std::array<double, 6> & ExternalForceEstimator::getEstimatedTCPForce() const
+const std::array<double, 6> & ExternalForceEstimator::getEstimatedExternalForce() const
 {
-  return this->last_tcp_force_;
+  return this->last_external_force_;
 }
 
 bool ExternalForceEstimator::update(const RealTimeData & data)
@@ -103,7 +103,7 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
   output_wrench = this->applyOutputDeadband(output_wrench);
 
   // Store as TCP_Force-compatible array: [Fx, Fy, Fz, 0, 0, Tz].
-  this->last_tcp_force_ = {
+  this->last_external_force_ = {
     output_wrench(0), output_wrench(1), output_wrench(2),
     0.0, 0.0, output_wrench(3)};
 
