@@ -188,6 +188,18 @@ int main(int argc, char ** argv)
     printf(
       "center_z:\t\t\t%.3lf\n",
       data.center_z);
+
+    if (use_estimator) {
+      std::array<double, 6> ext_force;
+      if (rt_tcp_if->getExternalForce(ext_force)) {
+        printf(
+          "external_force:\t\t\t"
+          "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
+          ext_force[0], ext_force[1], ext_force[2],
+          ext_force[3], ext_force[4], ext_force[5]);
+      }
+    }
+
     using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(100ms);
   }
