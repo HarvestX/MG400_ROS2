@@ -46,8 +46,8 @@ def generate_launch_description():
         description='Set the ip address to connect',
     )
 
-    enable_external_force_pub_arg = DeclareLaunchArgument(
-        'enable_external_force_pub', default_value=TextSubstitution(text='false')
+    enable_external_force_estimator_arg = DeclareLaunchArgument(
+        'enable_external_force_estimator', default_value=TextSubstitution(text='false')
     )
 
     workspace_visible_arg = DeclareLaunchArgument(
@@ -60,7 +60,7 @@ def generate_launch_description():
     ns = LaunchConfiguration('namespace')
     joy = LaunchConfiguration('joy')
     ip_address = LaunchConfiguration('ip_address')
-    enable_external_force_pub = LaunchConfiguration('enable_external_force_pub')
+    enable_external_force_estimator = LaunchConfiguration('enable_external_force_estimator')
     workspace_visible = LaunchConfiguration('workspace_visible')
 
     # Create nodes
@@ -71,7 +71,7 @@ def generate_launch_description():
         launch_arguments=[
             ('namespace', ns),
             ('ip_address', ip_address),
-            ('enable_external_force_pub', enable_external_force_pub),
+            ('enable_external_force_estimator', enable_external_force_estimator),
         ],
     )
 
@@ -107,7 +107,7 @@ def generate_launch_description():
     ld.add_action(ns_arg)
     ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
-    ld.add_action(enable_external_force_pub_arg)
+    ld.add_action(enable_external_force_estimator_arg)
     ld.add_action(workspace_visible_arg)
     # Add nodes
     ld.add_action(mg400_node)
