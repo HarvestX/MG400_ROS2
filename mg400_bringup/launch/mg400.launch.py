@@ -26,9 +26,11 @@ def generate_launch_description():
     """Launch rviz display."""
     # DeclareLaunchArguments
     ns_arg = DeclareLaunchArgument('namespace', default_value=TextSubstitution(text=''))
+
     ip_address_arg = DeclareLaunchArgument(
         'ip_address', default_value=TextSubstitution(text='192.168.1.6')
     )
+
     enable_external_force_pub_arg = DeclareLaunchArgument(
         'enable_external_force_pub', default_value=TextSubstitution(text='false')
     )
