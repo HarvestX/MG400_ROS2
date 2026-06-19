@@ -162,7 +162,7 @@ CallbackReturn MG400Node::on_configure(const State &)
       std::bind(
         &MG400Node::onGetExternalForce, this,
         std::placeholders::_1, std::placeholders::_2));
-    RCLCPP_INFO(this->get_logger(), "External force publishing enabled.");
+    RCLCPP_INFO(this->get_logger(), "External force estimator is enabled.");
   }
 
   this->connection_interrupted_ = false;
