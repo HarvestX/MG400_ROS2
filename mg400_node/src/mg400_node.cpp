@@ -155,7 +155,7 @@ CallbackReturn MG400Node::on_configure(const State &)
       std::make_shared<mg400_interface::ExternalForceEstimator>();
     this->interface_->realtime_tcp_interface->setExternalForceEstimator(
       this->external_force_estimator_);
-    RCLCPP_INFO(this->get_logger(), "External force publishing enabled.");
+    RCLCPP_INFO(this->get_logger(), "External force estimator is enabled.");
   }
 
   this->connection_interrupted_ = false;
