@@ -107,7 +107,7 @@ def generate_launch_description():
     ld.add_action(ns_arg)
     ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
-    ld.add_action(enable_external_force_pub_arg
+    ld.add_action(enable_external_force_pub_arg)
     ld.add_action(workspace_visible_arg)
     # Add nodes
     ld.add_action(mg400_node)
