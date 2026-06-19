@@ -26,7 +26,9 @@ def generate_launch_description():
     """Launch rviz display."""
     # DeclareLaunchArguments
     ns_arg = DeclareLaunchArgument('namespace', default_value=TextSubstitution(text=''))
-
+    enable_external_force_pub_arg = DeclareLaunchArgument(
+        'enable_external_force_pub', default_value=TextSubstitution(text='false')
+    )
     ip_address_arg = DeclareLaunchArgument(
         'ip_address', default_value=TextSubstitution(text='192.168.1.6')
     )
@@ -34,6 +36,7 @@ def generate_launch_description():
     # Set launch configurations
     ns = LaunchConfiguration('namespace')
     ip_address = LaunchConfiguration('ip_address')
+    enable_external_force_pub = LaunchConfiguration('enable_external_force_pub')
 
     # Create nodes
     mg400_node = Node(
@@ -44,6 +47,7 @@ def generate_launch_description():
         parameters=[
             {
                 'ip_address': ip_address,
+                'enable_external_force_pub': enable_external_force_pub,
             }
         ],
         on_exit=Shutdown(),
@@ -54,6 +58,7 @@ def generate_launch_description():
     # Add arguments
     ld.add_action(ns_arg)
     ld.add_action(ip_address_arg)
+    ld.add_action(enable_external_force_pub_arg)
     # Add nodes
     ld.add_action(mg400_node)
 
