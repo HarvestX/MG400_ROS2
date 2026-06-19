@@ -24,6 +24,7 @@
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_msgs/srv/get_external_force.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include "mg400_interface/external_force_estimator.hpp"
 #include <mg400_plugin_base/api_loader_base.hpp>
@@ -85,6 +86,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
   rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr external_force_pub_;
 
+  rclcpp::Service<mg400_msgs::srv::GetExternalForce>::SharedPtr get_external_force_srv_;
+
   mg400_interface::ExternalForceEstimator::SharedPtr external_force_estimator_;
   bool external_force_estimator_enabled_;
   bool connection_interrupted_;
@@ -103,6 +106,11 @@ public:
   void onErrorTimer();
   void onInterfaceCheckTimer();
   void onExternalForceTimer();
+
+private:
+  void onGetExternalForce(
+    mg400_msgs::srv::GetExternalForce::Request::SharedPtr request,
+    mg400_msgs::srv::GetExternalForce::Response::SharedPtr response);
 
 private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;

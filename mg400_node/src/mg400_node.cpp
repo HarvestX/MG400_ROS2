@@ -15,6 +15,7 @@
 #include "mg400_node/mg400_node.hpp"
 
 #include <geometry_msgs/msg/wrench_stamped.hpp>
+#include <mg400_msgs/srv/get_external_force.hpp>
 
 
 namespace mg400_node
@@ -155,6 +156,12 @@ CallbackReturn MG400Node::on_configure(const State &)
       std::make_shared<mg400_interface::ExternalForceEstimator>();
     this->interface_->realtime_tcp_interface->setExternalForceEstimator(
       this->external_force_estimator_);
+    this->get_external_force_srv_ =
+      this->create_service<mg400_msgs::srv::GetExternalForce>(
+      "get_external_force",
+      std::bind(
+        &MG400Node::onGetExternalForce, this,
+        std::placeholders::_1, std::placeholders::_2));
     RCLCPP_INFO(this->get_logger(), "External force publishing enabled.");
   }
 
@@ -215,6 +222,7 @@ CallbackReturn MG400Node::on_cleanup(const State &)
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
   this->external_force_estimator_.reset();
+  this->get_external_force_srv_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
@@ -230,6 +238,7 @@ CallbackReturn MG400Node::on_shutdown(const State &)
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
   this->external_force_estimator_.reset();
+  this->get_external_force_srv_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
@@ -246,6 +255,7 @@ CallbackReturn MG400Node::on_error(const State &)
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
   this->external_force_estimator_.reset();
+  this->get_external_force_srv_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
@@ -301,6 +311,28 @@ void MG400Node::onExternalForceTimer()
   msg.wrench.force.z = force[2];
   msg.wrench.torque.z = force[5];
   this->external_force_pub_->publish(std::move(msg));
+}
+
+void MG400Node::onGetExternalForce(
+  mg400_msgs::srv::GetExternalForce::Request::SharedPtr /*request*/,
+  mg400_msgs::srv::GetExternalForce::Response::SharedPtr response)
+{
+  std::array<double, 6> force;
+  if (!this->interface_ || !this->interface_->ok() ||
+    !this->interface_->realtime_tcp_interface->getExternalForce(force))
+  {
+    response->success = false;
+    return;
+  }
+
+  response->success = true;
+  response->wrench.header.stamp = this->now();
+  response->wrench.header.frame_id =
+    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
+  response->wrench.wrench.force.x = force[0];
+  response->wrench.wrench.force.y = force[1];
+  response->wrench.wrench.force.z = force[2];
+  response->wrench.wrench.torque.z = force[5];
 }
 
 void MG400Node::onErrorTimer()
