@@ -33,8 +33,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
-  this->declare_parameter<bool>("enable_external_force_pub", false);
-  external_force_pub_enabled_ = false;
+  this->declare_parameter<bool>("enable_external_force_estimator", false);
+  external_force_estimator_enabled_ = false;
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(
@@ -145,9 +145,9 @@ CallbackReturn MG400Node::on_configure(const State &)
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
 
-  this->external_force_pub_enabled_ =
-    this->get_parameter("enable_external_force_pub").as_bool();
-  if (this->external_force_pub_enabled_) {
+  this->external_force_estimator_enabled_ =
+    this->get_parameter("enable_external_force_estimator").as_bool();
+  if (this->external_force_estimator_enabled_) {
     this->external_force_pub_ =
       this->create_publisher<geometry_msgs::msg::WrenchStamped>(
       "external_force", rclcpp::SensorDataQoS());
@@ -377,7 +377,7 @@ void MG400Node::runTimer()
     500ms, std::bind(&MG400Node::onErrorTimer, this));
   this->interface_check_timer_ = this->create_wall_timer(
     100ms, std::bind(&MG400Node::onInterfaceCheckTimer, this));
-  if (this->external_force_pub_enabled_) {
+  if (this->external_force_estimator_enabled_) {
     this->external_force_timer_ = this->create_wall_timer(
       20ms, std::bind(&MG400Node::onExternalForceTimer, this));
   }

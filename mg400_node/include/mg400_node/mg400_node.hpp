@@ -86,7 +86,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr external_force_pub_;
 
   mg400_interface::ExternalForceEstimator::SharedPtr external_force_estimator_;
-  bool external_force_pub_enabled_;
+  bool external_force_estimator_enabled_;
   bool connection_interrupted_;
 
   rclcpp::TimerBase::SharedPtr autoconfigure_timer_;
