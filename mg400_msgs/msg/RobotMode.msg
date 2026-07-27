@@ -1,5 +1,6 @@
 uint64 INIT = 1
 uint64 BRAKE_OPEN = 2
+uint64 POWER_STATUS = 3
 uint64 DISABLED = 4
 uint64 ENABLE = 5
 uint64 BACKDRIVE = 6
