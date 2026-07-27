@@ -136,6 +136,17 @@ TEST(TestControlStateManager, RejectsDirectServoModeSwitch)
   EXPECT_EQ(started.lease_id, switched.lease_id);
 }
 
+TEST(TestControlStateManager, ServoStartRequiresZeroLeaseId)
+{
+  Manager manager;
+  manager.updateRobotStatus(true, RobotMode::ENABLE);
+
+  const auto rejected = manager.requestControlState(Manager::State::SERVO_J, 42);
+  EXPECT_FALSE(rejected.success);
+  EXPECT_EQ(Manager::State::IDLE, rejected.current_state);
+  EXPECT_EQ(Manager::MotionOwner::NONE, manager.getSnapshot().motion_owner);
+}
+
 TEST(TestControlStateManager, WatchdogReleasesServoOwnership)
 {
   Manager manager;

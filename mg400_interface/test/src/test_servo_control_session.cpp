@@ -1,0 +1,520 @@
+// Copyright 2026 HarvestX Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <deque>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include <mg400_msgs/msg/robot_mode.hpp>
+
+#include "mg400_interface/servo_control_session.hpp"
+#include "mg400_interface/servo_stop_strategy.hpp"
+
+namespace
+{
+using namespace std::chrono_literals;  // NOLINT
+using Manager = mg400_interface::ControlStateManager;
+using MotionResponse = mg400_interface::MotionResponse;
+using MotionResponseResult = mg400_interface::MotionResponseResult;
+using ResetRobotStopStrategy = mg400_interface::ResetRobotStopStrategy;
+using ServoControlSession = mg400_interface::ServoControlSession;
+using ServoStopStrategy = mg400_interface::ServoStopStrategy;
+using RobotMode = mg400_msgs::msg::RobotMode;
+
+template<typename Predicate>
+bool waitUntil(Predicate predicate, const std::chrono::milliseconds timeout = 500ms)
+{
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  while (std::chrono::steady_clock::now() < deadline) {
+    if (predicate()) {
+      return true;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return predicate();
+}
+
+class FakeMotionTcpInterface : public mg400_interface::MotionTcpInterfaceBase
+{
+public:
+  void sendCommand(const std::string & command) override
+  {
+    bool block = false;
+    bool enqueue_response = false;
+    MotionResponseResult response_result = MotionResponseResult::SUCCESS;
+    int error_code = 0;
+    {
+      std::lock_guard<std::mutex> lock(this->mutex_);
+      this->commands_.push_back(command);
+      block = this->block_first_send_ && this->commands_.size() == 1;
+      enqueue_response = this->auto_response_;
+      response_result = this->auto_response_result_;
+      error_code = this->auto_error_code_;
+    }
+    this->cv_.notify_all();
+
+    if (block) {
+      std::unique_lock<std::mutex> lock(this->mutex_block_);
+      this->cv_block_.wait(lock, [this]() {return this->release_first_send_;});
+    }
+
+    if (enqueue_response) {
+      MotionResponse response;
+      response.command = command;
+      response.result = response_result;
+      response.error_code = error_code;
+      std::lock_guard<std::mutex> lock(this->mutex_);
+      this->responses_.push_back(response);
+    }
+  }
+
+  bool tryTakeResponse(MotionResponse & response) override
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    if (this->responses_.empty()) {
+      return false;
+    }
+    response = this->responses_.front();
+    this->responses_.pop_front();
+    return true;
+  }
+
+  std::uint64_t getDroppedCompletedResponseCount() const override
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    return this->dropped_response_count_;
+  }
+
+  void setAutoResponse(MotionResponseResult result, int error_code = 0)
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->auto_response_ = true;
+    this->auto_response_result_ = result;
+    this->auto_error_code_ = error_code;
+  }
+
+  void blockFirstSend()
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->block_first_send_ = true;
+  }
+
+  void releaseFirstSend()
+  {
+    {
+      std::lock_guard<std::mutex> lock(this->mutex_block_);
+      this->release_first_send_ = true;
+    }
+    this->cv_block_.notify_all();
+  }
+
+  bool waitForCommandCount(
+    const std::size_t count, const std::chrono::milliseconds timeout = 500ms)
+  {
+    std::unique_lock<std::mutex> lock(this->mutex_);
+    return this->cv_.wait_for(
+      lock, timeout, [this, count]() {return this->commands_.size() >= count;});
+  }
+
+  std::vector<std::string> commands() const
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    return this->commands_;
+  }
+
+private:
+  mutable std::mutex mutex_;
+  std::condition_variable cv_;
+  std::vector<std::string> commands_;
+  std::deque<MotionResponse> responses_;
+  bool auto_response_{false};
+  MotionResponseResult auto_response_result_{MotionResponseResult::SUCCESS};
+  int auto_error_code_{0};
+  bool block_first_send_{false};
+  std::uint64_t dropped_response_count_{0};
+
+  std::mutex mutex_block_;
+  std::condition_variable cv_block_;
+  bool release_first_send_{false};
+};
+
+class FakeStopStrategy : public ServoStopStrategy
+{
+public:
+  Result stop(const Clock::time_point &) override
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    ++this->call_count_;
+    if (this->results_.empty()) {
+      return Result{Status::SUCCESS, "fake stop confirmed"};
+    }
+    const auto result = this->results_.front();
+    this->results_.pop_front();
+    return result;
+  }
+
+  void addResult(Status status, const std::string & message)
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->results_.push_back(Result{status, message});
+  }
+
+  std::size_t callCount() const
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    return this->call_count_;
+  }
+
+private:
+  mutable std::mutex mutex_;
+  std::deque<Result> results_;
+  std::size_t call_count_{0};
+};
+
+class FunctionStopStrategy : public ServoStopStrategy
+{
+public:
+  explicit FunctionStopStrategy(std::function<Result()> function)
+  : function_(std::move(function)) {}
+
+  Result stop(const Clock::time_point &) override
+  {
+    return this->function_();
+  }
+
+private:
+  std::function<Result()> function_;
+};
+
+struct SessionFixture
+{
+  FakeMotionTcpInterface tcp;
+  Manager::SharedPtr manager{std::make_shared<Manager>()};
+  mg400_interface::MotionCommander::SharedPtr commander{
+    std::make_shared<mg400_interface::MotionCommander>(&tcp)};
+  std::shared_ptr<FakeStopStrategy> stop_strategy{std::make_shared<FakeStopStrategy>()};
+
+  SessionFixture()
+  {
+    manager->updateRobotStatus(true, RobotMode::ENABLE);
+  }
+
+  std::unique_ptr<ServoControlSession> makeSession(
+    const ServoControlSession::Options & options)
+  {
+    return std::unique_ptr<ServoControlSession>(
+      new ServoControlSession(manager, commander, stop_strategy, options));
+  }
+};
+
+ServoControlSession::Options quietOptions()
+{
+  ServoControlSession::Options options;
+  options.send_period = 30ms;
+  options.target_watchdog_timeout = 1s;
+  options.response_poll_period = 2ms;
+  options.stop_confirmation_timeout = 50ms;
+  return options;
+}
+
+TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongKindLeaseAndNonFiniteValues)
+{
+  SessionFixture fixture;
+  auto session = fixture.makeSession(quietOptions());
+  const auto started = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(started.success) << started.message;
+
+  EXPECT_FALSE(session->updateServoPTarget(started.lease_id, 0.1, 0.2, 0.3, 0.4));
+  EXPECT_FALSE(
+    session->updateServoJTarget(
+      started.lease_id + 1, {{0.1, 0.2, 0.3, 0.4}}));
+  EXPECT_FALSE(
+    session->updateServoJTarget(
+      started.lease_id,
+      {{0.1, std::numeric_limits<double>::quiet_NaN(), 0.3, 0.4}}));
+  EXPECT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
+
+  const auto snapshot = session->getSnapshot();
+  EXPECT_EQ(ServoControlSession::State::ACTIVE, snapshot.state);
+  EXPECT_EQ(1U, snapshot.accepted_target_count);
+  EXPECT_EQ(3U, snapshot.rejected_target_count);
+  EXPECT_TRUE(session->stop(started.lease_id).success);
+}
+
+TEST(ServoControlSession, SendsOnlyTheLatestTargetAtThePeriodicDeadline)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 50ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(started.success) << started.message;
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.0, 0.0, 0.0, 0.0}}));
+  ASSERT_TRUE(
+    session->updateServoJTarget(
+      started.lease_id, {{M_PI_2, -M_PI_2, M_PI, 0.0}}));
+
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  const auto commands = fixture.tcp.commands();
+  ASSERT_FALSE(commands.empty());
+  EXPECT_EQ("ServoJ(90.000,-90.000,180.000,0.000)", commands.front());
+  EXPECT_TRUE(session->stop(started.lease_id).success);
+}
+
+TEST(ServoControlSession, ADelayedSendDoesNotCauseCatchUpBurst)
+{
+  SessionFixture fixture;
+  fixture.tcp.blockFirstSend();
+  auto options = quietOptions();
+  options.send_period = 10ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start(Manager::State::SERVO_P);
+  ASSERT_TRUE(started.success) << started.message;
+  ASSERT_TRUE(session->updateServoPTarget(started.lease_id, 0.1, 0.2, 0.3, 0.4));
+
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  std::this_thread::sleep_for(50ms);
+  fixture.tcp.releaseFirstSend();
+  std::this_thread::sleep_for(4ms);
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
+  EXPECT_TRUE(session->stop(started.lease_id).success);
+}
+
+TEST(ServoControlSession, TargetAfterAnElapsedWatchdogCannotReviveABlockedWorker)
+{
+  SessionFixture fixture;
+  fixture.tcp.blockFirstSend();
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.target_watchdog_timeout = 20ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(started.success) << started.message;
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+
+  std::this_thread::sleep_for(25ms);
+  EXPECT_FALSE(session->updateServoJTarget(started.lease_id, {{0.5, 0.6, 0.7, 0.8}}));
+  fixture.tcp.releaseFirstSend();
+
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+  EXPECT_TRUE(session->getSnapshot().watchdog_triggered);
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+}
+
+TEST(ServoControlSession, MissingFirstTargetTriggersWatchdogAndReleasesOnlyAfterConfirmedStop)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.target_watchdog_timeout = 25ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(started.success) << started.message;
+
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+  const auto snapshot = session->getSnapshot();
+  EXPECT_TRUE(snapshot.watchdog_triggered);
+  EXPECT_EQ(ServoControlSession::StopCause::WATCHDOG, snapshot.stop_cause);
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
+  EXPECT_TRUE(fixture.tcp.commands().empty());
+}
+
+TEST(ServoControlSession, FailedWatchdogStopRetainsLeaseAndSameLeaseCanRetry)
+{
+  SessionFixture fixture;
+  fixture.stop_strategy->addResult(
+    ServoStopStrategy::Status::CONFIRMATION_TIMEOUT, "mode confirmation failed");
+  fixture.stop_strategy->addResult(ServoStopStrategy::Status::SUCCESS, "retry confirmed");
+  auto options = quietOptions();
+  options.target_watchdog_timeout = 20ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start(Manager::State::SERVO_P);
+  ASSERT_TRUE(started.success) << started.message;
+
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::FAULTED;
+      }));
+  auto manager_snapshot = fixture.manager->getSnapshot();
+  EXPECT_EQ(started.lease_id, manager_snapshot.lease_id);
+  EXPECT_FALSE(manager_snapshot.accepting_servo_targets);
+
+  const auto retried = session->stop(started.lease_id);
+  EXPECT_TRUE(retried.success) << retried.message;
+  EXPECT_EQ(
+    ServoControlSession::StopCause::WATCHDOG,
+    session->getSnapshot().stop_cause);
+  EXPECT_EQ(2U, fixture.stop_strategy->callCount());
+  EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
+}
+
+TEST(ServoControlSession, EveryServoResponseFailureUsesTheFaultStopPath)
+{
+  const std::vector<MotionResponseResult> failures{
+    MotionResponseResult::CONTROLLER_ERROR,
+    MotionResponseResult::TIMEOUT,
+    MotionResponseResult::DISCONNECTED,
+    MotionResponseResult::PARSE_ERROR};
+
+  for (const auto failure : failures) {
+    SessionFixture fixture;
+    fixture.tcp.setAutoResponse(
+      failure,
+      failure == MotionResponseResult::CONTROLLER_ERROR ? 17 : 0);
+    auto options = quietOptions();
+    options.send_period = 5ms;
+    auto session = fixture.makeSession(options);
+    const auto started = session->start(Manager::State::SERVO_J);
+    ASSERT_TRUE(started.success) << started.message;
+    ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
+
+    ASSERT_TRUE(
+      waitUntil(
+        [&session]() {
+          return session->getSnapshot().state == ServoControlSession::State::IDLE;
+        })) << "failure enum " << static_cast<int>(failure);
+    const auto snapshot = session->getSnapshot();
+    EXPECT_EQ(ServoControlSession::StopCause::FAULT, snapshot.stop_cause);
+    ASSERT_TRUE(snapshot.has_latest_response);
+    EXPECT_EQ(failure, snapshot.latest_response.result);
+    EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  }
+}
+
+TEST(ServoControlSession, ForeignAndStaleStopCannotAffectANewerLease)
+{
+  SessionFixture fixture;
+  auto session = fixture.makeSession(quietOptions());
+  const auto old = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(old.success) << old.message;
+
+  fixture.manager->updateRobotStatus(false, RobotMode::INVALID);
+  fixture.manager->updateRobotStatus(true, RobotMode::ENABLE);
+  const auto current = fixture.manager->requestControlState(Manager::State::SERVO_P);
+  ASSERT_TRUE(current.success) << current.message;
+  ASSERT_NE(old.lease_id, current.lease_id);
+
+  const auto stale_stop = session->stop(old.lease_id);
+  EXPECT_FALSE(stale_stop.success);
+  const auto snapshot = fixture.manager->getSnapshot();
+  EXPECT_EQ(current.lease_id, snapshot.lease_id);
+  EXPECT_EQ(Manager::MotionOwner::SERVO_P, snapshot.motion_owner);
+  EXPECT_EQ(0U, fixture.stop_strategy->callCount());
+
+  ASSERT_TRUE(fixture.manager->beginServoStop(current.lease_id).success);
+  ASSERT_TRUE(fixture.manager->handleServoWatchdogTimeout(current.lease_id).success);
+}
+
+TEST(ServoControlSession, StaleStopCompletionCannotReleaseLeaseAcquiredDuringStrategy)
+{
+  FakeMotionTcpInterface tcp;
+  auto manager = std::make_shared<Manager>();
+  manager->updateRobotStatus(true, RobotMode::ENABLE);
+  auto commander = std::make_shared<mg400_interface::MotionCommander>(&tcp);
+  Manager::LeaseId newer_lease = Manager::NO_LEASE;
+  auto strategy = std::make_shared<FunctionStopStrategy>(
+    [manager, &newer_lease]() {
+      manager->updateRobotStatus(false, RobotMode::INVALID);
+      manager->updateRobotStatus(true, RobotMode::ENABLE);
+      const auto acquired = manager->requestControlState(Manager::State::SERVO_P);
+      if (acquired.success) {
+        newer_lease = acquired.lease_id;
+      }
+      return ServoStopStrategy::Result{
+        ServoStopStrategy::Status::SUCCESS, "old ResetRobot completion"};
+    });
+  ServoControlSession session(manager, commander, strategy, quietOptions());
+  const auto old = session.start(Manager::State::SERVO_J);
+  ASSERT_TRUE(old.success) << old.message;
+
+  const auto stopped = session.stop(old.lease_id);
+  EXPECT_FALSE(stopped.success);
+  ASSERT_NE(Manager::NO_LEASE, newer_lease);
+  const auto snapshot = manager->getSnapshot();
+  EXPECT_EQ(newer_lease, snapshot.lease_id);
+  EXPECT_EQ(Manager::MotionOwner::SERVO_P, snapshot.motion_owner);
+
+  ASSERT_TRUE(manager->beginServoStop(newer_lease).success);
+  ASSERT_TRUE(manager->handleServoWatchdogTimeout(newer_lease).success);
+}
+
+TEST(ResetRobotStopStrategy, RequiresResetSuccessAndEnableConfirmation)
+{
+  std::atomic<int> reset_count{0};
+  std::atomic<int> read_count{0};
+  ResetRobotStopStrategy strategy(
+    [&reset_count]() {++reset_count;},
+    [&read_count](std::uint64_t & mode) {
+      mode = ++read_count >= 2 ? RobotMode::ENABLE : RobotMode::RUNNING;
+      return true;
+    });
+
+  const auto result = strategy.stop(std::chrono::steady_clock::now() + 100ms);
+  EXPECT_TRUE(result.success()) << result.message;
+  EXPECT_EQ(1, reset_count.load());
+  EXPECT_GE(read_count.load(), 2);
+}
+
+TEST(ResetRobotStopStrategy, ResetFailureIsNotReportedAsStopped)
+{
+  ResetRobotStopStrategy strategy(
+    []() {throw std::runtime_error("controller rejected ResetRobot");},
+    [](std::uint64_t &) {return true;});
+
+  const auto result = strategy.stop(std::chrono::steady_clock::now() + 100ms);
+  EXPECT_EQ(ServoStopStrategy::Status::RESET_FAILED, result.status);
+  EXPECT_FALSE(result.success());
+}
+
+TEST(ResetRobotStopStrategy, EnableConfirmationUsesTheProvidedSteadyDeadline)
+{
+  ResetRobotStopStrategy::Options options;
+  options.confirmation_poll_period = 1ms;
+  ResetRobotStopStrategy strategy(
+    []() {},
+    [](std::uint64_t & mode) {
+      mode = RobotMode::RUNNING;
+      return true;
+    }, options);
+
+  const auto result = strategy.stop(std::chrono::steady_clock::now() + 10ms);
+  EXPECT_EQ(ServoStopStrategy::Status::CONFIRMATION_TIMEOUT, result.status);
+  EXPECT_FALSE(result.success());
+}
+
+}  // namespace

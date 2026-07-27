@@ -136,6 +136,9 @@ ControlStateManager::Result ControlStateManager::requestControlState(
   if (!isServoState(target_state)) {
     return this->makeResultLocked(false, "Unknown control state");
   }
+  if (lease_id != NO_LEASE) {
+    return this->makeResultLocked(false, "A Servo start request must use lease ID zero");
+  }
   if (!this->connected_) {
     return this->makeResultLocked(false, "MG400 is not connected");
   }

@@ -17,6 +17,8 @@ ament_auto_add_library(
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp
       ./src/control_state_manager.cpp
+      ./src/servo_control_session.cpp
+      ./src/servo_stop_strategy.cpp
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
@@ -54,7 +56,8 @@ if(BUILD_TESTING)
     test_control_state_manager
     test_error_msg_generator
     test_joint_handler
-    test_motion_tcp_interface)
+    test_motion_tcp_interface
+    test_servo_control_session)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

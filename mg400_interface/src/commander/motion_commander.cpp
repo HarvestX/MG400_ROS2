@@ -52,6 +52,28 @@ uint64_t MotionCommander::getDroppedCompletedResponseCount() const
   return this->tcp_if_->getDroppedCompletedResponseCount();
 }
 
+void MotionCommander::servoJ(
+  const si_rad j1, const si_rad j2, const si_rad j3, const si_rad j4)
+{
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf), "ServoJ(%.3lf,%.3lf,%.3lf,%.3lf)",
+    rad2degree(j1), rad2degree(j2), rad2degree(j3), rad2degree(j4));
+  this->tcp_if_->sendCommand(buf);
+}
+
+void MotionCommander::servoP(
+  const si_m x, const si_m y, const si_m z, const si_rad yaw)
+{
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
+  char buf[100];
+  snprintf(
+    buf, sizeof(buf), "ServoP(%.3lf,%.3lf,%.3lf,%.3lf)",
+    m2mm(x), m2mm(y), m2mm(z), rad2degree(yaw));
+  this->tcp_if_->sendCommand(buf);
+}
+
 // DOBOT MG400 Official Command ---------------------------------------------
 void MotionCommander::movJ(
   const si_m x, const si_m y, const si_m z,

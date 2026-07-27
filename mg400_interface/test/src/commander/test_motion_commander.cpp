@@ -97,6 +97,22 @@ TEST_F(TestMotionCommander, JointMovJ2)
   commander->jointMovJ(M_PI_2, M_PI_2, M_PI_2, M_PI_2, 100, 50, 10);
 }
 
+TEST_F(TestMotionCommander, ServoJUsesDegreesWithoutOptionalArguments)
+{
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("ServoJ(90.000,-90.000,180.000,0.000)"))).Times(1);
+  commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
+}
+
+TEST_F(TestMotionCommander, ServoPUsesMillimetersAndDegreesWithoutOptionalArguments)
+{
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("ServoP(100.000,-200.000,300.000,-45.000)"))).Times(1);
+  commander->servoP(0.1, -0.2, 0.3, -M_PI_4);
+}
+
 TEST_F(TestMotionCommander, MovLIO) {
   EXPECT_CALL(
     mock, sendCommand(
