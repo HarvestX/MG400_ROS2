@@ -2,6 +2,7 @@
   "version": "0.2",
   "language": "en",
   "words": [
+    "aheadtime",
     "backdrive",
     "bringup",
     "colcon",
@@ -23,6 +24,7 @@
     "pluginlib",
     "rclcpp",
     "rviz",
+    "unconfigured",
     "urdf",
     "vcstool",
     "waitables",

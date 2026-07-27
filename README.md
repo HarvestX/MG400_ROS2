@@ -110,6 +110,10 @@ ros2 run mg400_interface show_realtime_data
 
 ## References
 
+### Design documents
+
+- [MG400 embedded states and ROS 2 Servo control-state design](./doc/MG400StateMachine.md)
+
 ### Official ROS1 package
 
 - [Official ROS1 package](https://github.com/Dobot-Arm/MG400_ROS)
