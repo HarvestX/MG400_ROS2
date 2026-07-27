@@ -18,7 +18,8 @@ namespace mg400_interface
 {
 
 MG400Interface::MG400Interface(const std::string & ip_address)
-: IP(ip_address)
+: IP(ip_address),
+  control_state_manager_(std::make_shared<ControlStateManager>())
 {
 }
 
@@ -87,7 +88,7 @@ bool MG400Interface::activate()
 
 bool MG400Interface::deactivate()
 {
-  this->control_state_manager_.updateRobotStatus(false, 0);
+  this->control_state_manager_->updateRobotStatus(false, 0);
 
   // disconnect each interface in parallel because it takes time sometimes.
   std::thread discnt_dashboard_tcp_if_([this]() {this->dashboard_tcp_if_->disConnect();});
@@ -110,17 +111,22 @@ bool MG400Interface::ok()
   uint64_t robot_mode = 0;
   const bool robot_mode_available = active &&
     this->realtime_tcp_interface->getRobotMode(robot_mode);
-  this->control_state_manager_.updateRobotStatus(
+  this->control_state_manager_->updateRobotStatus(
     robot_mode_available, robot_mode);
   return robot_mode_available;
 }
 
 ControlStateManager & MG400Interface::getControlStateManager() noexcept
 {
-  return this->control_state_manager_;
+  return *this->control_state_manager_;
 }
 
 const ControlStateManager & MG400Interface::getControlStateManager() const noexcept
+{
+  return *this->control_state_manager_;
+}
+
+ControlStateManager::SharedPtr MG400Interface::getControlStateManagerShared() noexcept
 {
   return this->control_state_manager_;
 }

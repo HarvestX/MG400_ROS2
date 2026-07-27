@@ -35,13 +35,15 @@ class MovJIO final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::MovJIO;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+    std::string, geometry_msgs::msg::PoseStamped>;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
   mg400_common::MG400IKUtil mg400_ik_util_;
 
-  geometry_msgs::msg::PoseStamped tf_goal_;
+  GoalReservations goal_reservations_;
 
 public:
   void configure(
@@ -60,7 +62,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>);
+  void execute(const std::shared_ptr<GoalHandle>, const GoalReservations::Entry &);
 };
 }  // namespace mg400_plugin
 #endif

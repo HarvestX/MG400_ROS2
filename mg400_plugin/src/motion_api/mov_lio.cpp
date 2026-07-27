@@ -56,7 +56,7 @@ void MovLIO::configure(
 }
 
 rclcpp_action::GoalResponse MovLIO::handle_goal(
-  const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr goal)
+  const rclcpp_action::GoalUUID & uuid, ActionT::Goal::ConstSharedPtr goal)
 {
   if (!this->mg400_interface_->ok()) {
     RCLCPP_ERROR(
@@ -64,25 +64,29 @@ rclcpp_action::GoalResponse MovLIO::handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-    uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+  auto lease = this->tryAcquireRegularMotionLease();
+  if (!lease) {
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  // tf (from goal->pose to this->tf_goal_)
+  geometry_msgs::msg::PoseStamped tf_goal;
   try {
     TFManager & tf_manager = TFManager::getInstance();
     auto tf_buffer = tf_manager.getBuffer();
     const auto transform = tf_buffer->lookupTransform(
       this->mg400_interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link",
       goal->pose.header.frame_id, rclcpp::Time(0));
-    tf2::doTransform(goal->pose, this->tf_goal_, transform);
+    tf2::doTransform(goal->pose, tf_goal, transform);
   } catch (const tf2::TransformException & e) {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), e.what());
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  GoalReservations::Entry reservation{std::move(*lease), std::move(tf_goal)};
+  if (!this->goal_reservations_.reserve(
+      mg400_plugin_base::makeGoalReservationKey(uuid), std::move(reservation)))
+  {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Duplicate Action goal UUID");
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -94,19 +98,56 @@ rclcpp_action::CancelResponse MovLIO::handle_cancel(
 {
   RCLCPP_INFO(
     this->node_logging_if_->get_logger(), "Received request to cancel goal");
-  // TODO(anyone): Should stop movLIO
+  // No verified safe-stop command exists here. Execution therefore keeps the
+  // lease until the robot reaches its terminal state even after cancellation.
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
 void MovLIO::handle_accepted(
   const std::shared_ptr<GoalHandle> goal_handle)
 {
-  using namespace std::placeholders;  // NOLINT
-  std::thread{std::bind(&MovLIO::execute, this, _1), goal_handle}.detach();
+  auto reservation = this->goal_reservations_.take(
+    mg400_plugin_base::makeGoalReservationKey(goal_handle->get_goal_id()));
+  if (!reservation) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Accepted goal has no motion lease");
+    auto result = std::make_shared<ActionT::Result>();
+    result->result = false;
+    goal_handle->abort(result);
+    return;
+  }
+
+  auto context = std::make_shared<GoalReservations::Entry>(std::move(*reservation));
+  try {
+    std::thread{
+      [this, goal_handle, context]() {
+        try {
+          this->execute(goal_handle, *context);
+        } catch (const std::exception & error) {
+          RCLCPP_ERROR(this->node_logging_if_->get_logger(), "%s", error.what());
+          auto result = std::make_shared<ActionT::Result>();
+          result->result = false;
+          goal_handle->abort(result);
+        } catch (...) {
+          RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Unhandled motion execution error");
+          auto result = std::make_shared<ActionT::Result>();
+          result->result = false;
+          goal_handle->abort(result);
+        }
+      }}.detach();
+  } catch (const std::exception & error) {
+    RCLCPP_ERROR(
+      this->node_logging_if_->get_logger(), "Failed to start execution: %s",
+      error.what());
+    auto result = std::make_shared<ActionT::Result>();
+    result->result = false;
+    goal_handle->abort(result);
+  }
 }
 
 
-void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
+void MovLIO::execute(
+  const std::shared_ptr<GoalHandle> goal_handle,
+  const GoalReservations::Entry & reservation)
 {
   rclcpp::Rate control_freq(10);  // Hz
 
@@ -115,14 +156,15 @@ void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
   result->result = false;
+  const auto & tf_goal = reservation.context;
 
   // check if the requested goal is inside the mg400 range
   // by solving inverse kinematics and see the angles of each joints.
   std::vector<double> tool_vec;
-  tool_vec.push_back(this->tf_goal_.pose.position.x);  // px
-  tool_vec.push_back(this->tf_goal_.pose.position.y);  // py
-  tool_vec.push_back(this->tf_goal_.pose.position.z);  // pz
-  tool_vec.push_back(tf2::getYaw(this->tf_goal_.pose.orientation));  // r in radian
+  tool_vec.push_back(tf_goal.pose.position.x);  // px
+  tool_vec.push_back(tf_goal.pose.position.y);  // py
+  tool_vec.push_back(tf_goal.pose.position.z);  // pz
+  tool_vec.push_back(tf2::getYaw(tf_goal.pose.orientation));  // r in radian
   std::vector<double> angles;
   try {
     angles = this->mg400_ik_util_.InverseKinematics(tool_vec);
@@ -161,14 +203,15 @@ void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
         this->node_logging_if_->get_logger(), "cp");
     }
     this->commander_->movLIO(
-      this->tf_goal_.pose.position.x, this->tf_goal_.pose.position.y,
-      this->tf_goal_.pose.position.z,
-      tf2::getYaw(this->tf_goal_.pose.orientation),
+      tf_goal.pose.position.x, tf_goal.pose.position.y,
+      tf_goal.pose.position.z,
+      tf2::getYaw(tf_goal.pose.orientation),
       goal->mode, goal->distance, goal->index, goal->status,
       speed_l, acc_l, cp);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->node_logging_if_->get_logger(), e.what());
+    goal_handle->abort(result);
     return;
   }
 
@@ -209,7 +252,7 @@ void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
     if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(300ms)) {
-      if (is_goal_reached(feedback->current_pose.pose, this->tf_goal_.pose)) {
+      if (is_goal_reached(feedback->current_pose.pose, tf_goal.pose)) {
         RCLCPP_INFO(
           this->node_logging_if_->get_logger(),
           "Arm is already at the goal.");
@@ -250,7 +293,7 @@ void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
     control_freq.sleep();
   }
 
-  while (!is_goal_reached(feedback->current_pose.pose, this->tf_goal_.pose) ||
+  while (!is_goal_reached(feedback->current_pose.pose, tf_goal.pose) ||
     !this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE))
   {
     if (!this->mg400_interface_->ok()) {
@@ -303,7 +346,11 @@ void MovLIO::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   RCLCPP_INFO(this->node_logging_if_->get_logger(), "Execution succeeded");
   result->result = true;
-  goal_handle->succeed(result);
+  if (goal_handle->is_canceling()) {
+    goal_handle->canceled(result);
+  } else {
+    goal_handle->succeed(result);
+  }
 }
 }  // namespace mg400_plugin
 

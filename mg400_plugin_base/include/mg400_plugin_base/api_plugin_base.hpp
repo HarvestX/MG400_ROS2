@@ -23,6 +23,7 @@
 #include <rclcpp/node_interfaces/node_logging_interface.hpp>
 #include <rclcpp/node_interfaces/node_services_interface.hpp>
 #include <mg400_interface/mg400_interface.hpp>
+#include <mg400_plugin_base/regular_motion_lease.hpp>
 
 namespace mg400_plugin_base
 {
@@ -99,6 +100,24 @@ class DashboardApiPluginBase
 class MotionApiPluginBase
   : public ApiPluginBase<mg400_interface::MotionCommander>
 {
+protected:
+  std::optional<RegularMotionLease> tryAcquireRegularMotionLease()
+  {
+    auto manager = this->mg400_interface_->getControlStateManagerShared();
+    mg400_interface::ControlStateManager::Result result{};
+    const auto logger = this->node_logging_if_->get_logger();
+    auto lease = RegularMotionLease::tryAcquire(
+      manager, result,
+      [logger](const auto lease_id, const std::string & message) {
+        RCLCPP_WARN(
+          logger, "Failed to release regular-motion lease %lu: %s",
+          static_cast<unsigned long>(lease_id), message.c_str());
+      });
+    if (!lease) {
+      RCLCPP_WARN(logger, "Regular-motion request rejected: %s", result.message.c_str());
+    }
+    return lease;
+  }
 };
 }  // namespace mg400_plugin_base
 #endif

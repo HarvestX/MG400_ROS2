@@ -32,6 +32,15 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(
+    test_move_jog_stop_waiter
+    test/test_move_jog_stop_waiter.cpp)
+  target_include_directories(
+    test_move_jog_stop_waiter PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_target_dependencies(test_move_jog_stop_waiter mg400_interface)
 endif()
 
 ament_auto_package()

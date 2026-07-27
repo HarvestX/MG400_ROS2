@@ -15,6 +15,15 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(
+    test_regular_motion_lease
+    test/test_regular_motion_lease.cpp)
+  target_include_directories(
+    test_regular_motion_lease PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_target_dependencies(test_regular_motion_lease mg400_interface mg400_msgs)
 endif()
 
 ament_export_dependencies(rclcpp)

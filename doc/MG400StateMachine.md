@@ -135,7 +135,7 @@ The proposed logical hierarchy is:
 ```text
 ROS control state
 ├── UNAVAILABLE             Disconnected, disabled, in error, etc.
-├── IDLE                    No ROS-side exclusive Servo control
+├── IDLE                    Servo does not own control (a regular-motion lease may exist)
 └── SERVO                   ROS 2 exclusively owns online trajectory following
     ├── SERVO_J             Joint-space following
     └── SERVO_P             Cartesian-space following
@@ -163,6 +163,47 @@ A change between `ENABLE` and `RUNNING` during `SERVO` is not considered a ROS c
 | `SERVO_J/P -> IDLE` | Target-update timeout | Stop through the watchdog, publish diagnostics, and release ownership |
 
 For safety, the initial implementation must not allow a direct switch between `SERVO_J` and `SERVO_P`; it must return to `IDLE` first. While Servo is active, new regular motion, Jog, and `CommandQueue` requests must be rejected. Conversely, a Servo start request must be rejected while a regular motion is executing. This decision must be centralized in a single state-management component shared through `MG400Interface`, rather than distributed among individual plugins.
+
+### Regular-Motion Lease Policy
+
+`MovJ`, `MovL`, `JointMovJ`, `MovJIO`, `MovLIO`, `CommandQueue`, and non-stop
+`MoveJog` requests share the `REGULAR_MOTION` owner in `ControlStateManager`.
+This owner is represented by a unique lease ID; it is not a new ROS control
+state. The visible control state remains `IDLE`, while the owner and lease
+prevent both Servo admission and a second regular-motion request.
+
+An Action server must acquire its lease atomically before returning
+`ACCEPT_AND_EXECUTE`. The lease is reserved by Action goal UUID until
+`handle_accepted` transfers it to that goal's execution context. TF results and
+other converted targets belong to the same immutable context and must not be
+stored in a callback-shared target member. Validation performed after
+acquisition is covered by the lease, so validation failure releases ownership
+without accepting the goal.
+
+The execution context owns the lease through RAII from admission until normal
+completion, abort, exception, connection failure, or another early exit.
+Releasing a foreign or stale ID is an error and cannot affect a newer owner.
+Connection loss or an unsafe embedded mode may revoke ownership first; the
+later RAII release is then reported diagnostically and remains harmless.
+
+Action cancellation only records the client's request. The current Motion APIs
+do not contain a verified safe cancellation command, so accepting cancellation
+must not release the lease or guess a controller stop operation. Execution
+continues observing the robot and releases the lease only after the existing
+terminal condition is reached (or after connection/error handling revokes it).
+
+`CommandQueue` acquires exactly one lease for the complete queue. Commands
+inside the queue do not reacquire ownership, and the lease remains held across
+all batches until every command finishes or queue execution fails.
+
+`MoveJog(axis)` acquires and persistently retains one regular-motion lease.
+Subsequent direction changes reuse that lease. `MoveJog()` is the stop command;
+after sending it, the implementation must receive a successful port 30003
+response and observe `RobotMode=ENABLE` before releasing the lease. Both checks
+use one explicit `steady_clock` deadline. A timeout, controller error, or loss
+of stop confirmation retains ownership (fail-closed). A disconnect may cause
+`ControlStateManager` to revoke the old lease; its stale ID must never release
+ownership obtained after reconnection.
 
 ### ROS Interface Direction
 

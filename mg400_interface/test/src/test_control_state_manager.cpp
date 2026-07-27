@@ -216,4 +216,35 @@ TEST(TestControlStateManager, OnlyOneConcurrentCallerAcquiresOwnership)
   EXPECT_EQ(1U, success_count.load());
 }
 
+TEST(TestControlStateManager, BothServoOwnersRejectRegularMotion)
+{
+  for (const auto servo_state : {Manager::State::SERVO_J, Manager::State::SERVO_P}) {
+    Manager manager;
+    manager.updateRobotStatus(true, RobotMode::ENABLE);
+    const auto servo = manager.requestControlState(servo_state);
+    ASSERT_TRUE(servo.success) << servo.message;
+    EXPECT_FALSE(manager.tryAcquireRegularMotion().success);
+  }
+}
+
+TEST(TestControlStateManager, ForeignAndStaleLeaseCannotReleaseCurrentOwnership)
+{
+  Manager manager;
+  manager.updateRobotStatus(true, RobotMode::ENABLE);
+  const auto first = manager.tryAcquireRegularMotion();
+  ASSERT_TRUE(first.success) << first.message;
+
+  EXPECT_FALSE(manager.releaseRegularMotion(first.lease_id + 1).success);
+  EXPECT_EQ(first.lease_id, manager.getSnapshot().lease_id);
+
+  manager.updateRobotStatus(false, RobotMode::INVALID);
+  manager.updateRobotStatus(true, RobotMode::ENABLE);
+  const auto second = manager.tryAcquireRegularMotion();
+  ASSERT_TRUE(second.success) << second.message;
+  ASSERT_NE(first.lease_id, second.lease_id);
+
+  EXPECT_FALSE(manager.releaseRegularMotion(first.lease_id).success);
+  EXPECT_EQ(second.lease_id, manager.getSnapshot().lease_id);
+}
+
 }  // namespace

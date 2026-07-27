@@ -50,7 +50,7 @@ public:
 private:
   const std::string IP;
 
-  ControlStateManager control_state_manager_;
+  ControlStateManager::SharedPtr control_state_manager_;
 
   DashboardTcpInterface::UniquePtr dashboard_tcp_if_;
   MotionTcpInterface::UniquePtr motion_tcp_if_;
@@ -67,6 +67,7 @@ public:
 
   ControlStateManager & getControlStateManager() noexcept;
   const ControlStateManager & getControlStateManager() const noexcept;
+  ControlStateManager::SharedPtr getControlStateManagerShared() noexcept;
 
 private:
   static const rclcpp::Logger getLogger() noexcept;

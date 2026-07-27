@@ -50,7 +50,7 @@ void JointMovJ::configure(
 }
 
 rclcpp_action::GoalResponse JointMovJ::handle_goal(
-  const rclcpp_action::GoalUUID & /*uuid*/, ActionT::Goal::ConstSharedPtr /*goal*/)
+  const rclcpp_action::GoalUUID & uuid, ActionT::Goal::ConstSharedPtr /*goal*/)
 {
   if (!this->mg400_interface_->ok()) {
     RCLCPP_ERROR(
@@ -58,12 +58,16 @@ rclcpp_action::GoalResponse JointMovJ::handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-    uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+  auto lease = this->tryAcquireRegularMotionLease();
+  if (!lease) {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
+
+  GoalReservations::Entry reservation{std::move(*lease), std::monostate{}};
+  if (!this->goal_reservations_.reserve(
+      mg400_plugin_base::makeGoalReservationKey(uuid), std::move(reservation)))
+  {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Duplicate Action goal UUID");
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -75,19 +79,56 @@ rclcpp_action::CancelResponse JointMovJ::handle_cancel(
 {
   RCLCPP_INFO(
     this->node_logging_if_->get_logger(), "Received request to cancel goal");
-  // TODO(anyone): Should stop movJ
+  // No verified safe-stop command exists here. Execution therefore keeps the
+  // lease until the robot reaches its terminal state even after cancellation.
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
 void JointMovJ::handle_accepted(
   const std::shared_ptr<GoalHandle> goal_handle)
 {
-  using namespace std::placeholders;  // NOLINT
-  std::thread{std::bind(&JointMovJ::execute, this, _1), goal_handle}.detach();
+  auto reservation = this->goal_reservations_.take(
+    mg400_plugin_base::makeGoalReservationKey(goal_handle->get_goal_id()));
+  if (!reservation) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Accepted goal has no motion lease");
+    auto result = std::make_shared<ActionT::Result>();
+    result->result = false;
+    goal_handle->abort(result);
+    return;
+  }
+
+  auto context = std::make_shared<GoalReservations::Entry>(std::move(*reservation));
+  try {
+    std::thread{
+      [this, goal_handle, context]() {
+        try {
+          this->execute(goal_handle, *context);
+        } catch (const std::exception & error) {
+          RCLCPP_ERROR(this->node_logging_if_->get_logger(), "%s", error.what());
+          auto result = std::make_shared<ActionT::Result>();
+          result->result = false;
+          goal_handle->abort(result);
+        } catch (...) {
+          RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Unhandled motion execution error");
+          auto result = std::make_shared<ActionT::Result>();
+          result->result = false;
+          goal_handle->abort(result);
+        }
+      }}.detach();
+  } catch (const std::exception & error) {
+    RCLCPP_ERROR(
+      this->node_logging_if_->get_logger(), "Failed to start execution: %s",
+      error.what());
+    auto result = std::make_shared<ActionT::Result>();
+    result->result = false;
+    goal_handle->abort(result);
+  }
 }
 
 
-void JointMovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
+void JointMovJ::execute(
+  const std::shared_ptr<GoalHandle> goal_handle,
+  const GoalReservations::Entry & /*reservation*/)
 {
   rclcpp::Rate control_freq(10);  // Hz
 
@@ -142,6 +183,7 @@ void JointMovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       this->node_logging_if_->get_logger(), e.what());
+    goal_handle->abort(result);
     return;
   }
 
@@ -271,7 +313,11 @@ void JointMovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
 
   RCLCPP_INFO(this->node_logging_if_->get_logger(), "Execution succeeded");
   result->result = true;
-  goal_handle->succeed(result);
+  if (goal_handle->is_canceling()) {
+    goal_handle->canceled(result);
+  } else {
+    goal_handle->succeed(result);
+  }
 }
 }  // namespace mg400_plugin
 

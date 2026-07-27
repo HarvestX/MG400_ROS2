@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -43,11 +44,14 @@ class CommandQueue final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::CommandQueue;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+    std::string, std::monostate>;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
   mg400_common::MG400IKUtil mg400_ik_util_;
+  GoalReservations goal_reservations_;
 
 public:
   void configure(
@@ -66,7 +70,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>);
+  void execute(const std::shared_ptr<GoalHandle>, const GoalReservations::Entry &);
 
   // functions to handle each command
   void sendMovJ(const mg400_msgs::msg::MovJ &);

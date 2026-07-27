@@ -16,6 +16,8 @@
 #define __MG400_PLUGIN_MOTION_API_JOINT_MOV_J_HPP__
 
 #include <memory>
+#include <string>
+#include <variant>
 
 #include <mg400_common/mg400_ik_util.hpp>
 #include <mg400_msgs/action/joint_mov_j.hpp>
@@ -34,11 +36,14 @@ class JointMovJ final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::JointMovJ;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
+  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+    std::string, std::monostate>;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
   mg400_common::MG400IKUtil mg400_ik_util_;
+  GoalReservations goal_reservations_;
 
 public:
   void configure(
@@ -57,7 +62,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>);
+  void execute(const std::shared_ptr<GoalHandle>, const GoalReservations::Entry &);
 };
 }  // namespace mg400_plugin
 #endif

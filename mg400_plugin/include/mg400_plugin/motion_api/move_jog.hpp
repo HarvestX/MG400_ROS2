@@ -15,7 +15,12 @@
 #ifndef __MG400_PLUGIN_MOTION_API_MOVE_JOG_HPP__
 #define __MG400_PLUGIN_MOTION_API_MOVE_JOG_HPP__
 
+#include <chrono>
+#include <mutex>
+#include <optional>
+
 #include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_plugin/motion_api/move_jog_stop_waiter.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 
 
@@ -32,8 +37,23 @@ public:
       typename ServiceT::Response::SharedPtr
     )>;
 
+  ~MoveJog() override;
+
 private:
+  enum class JogState
+  {
+    IDLE,
+    STARTING,
+    ACTIVE,
+    STOPPING,
+  };
+
   rclcpp::Service<ServiceT>::SharedPtr srv_;
+  std::mutex jog_state_mutex_;
+  JogState jog_state_{JogState::IDLE};
+  std::optional<mg400_plugin_base::RegularMotionLease> jog_lease_;
+
+  static constexpr std::chrono::seconds STOP_TIMEOUT{2};
 
 public:
   void configure(
@@ -48,6 +68,9 @@ public:
 private:
   void onServiceCall(
     const ServiceT::Request::SharedPtr, ServiceT::Response::SharedPtr);
+  void handleStart(
+    const std::string &, ServiceT::Response::SharedPtr);
+  void handleStop(ServiceT::Response::SharedPtr);
 };
 }  // namespace mg400_plugin
 #endif
