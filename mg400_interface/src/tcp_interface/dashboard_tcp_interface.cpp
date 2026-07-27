@@ -87,18 +87,18 @@ void DashboardTcpInterface::disConnect()
 std::string DashboardTcpInterface::recvResponse()
 {
   std::string response;
-  constexpr int kChunkSize = 128;  // Larger chunk for better efficiency
-  constexpr int kMaxResponseSize = 4096;  // Maximum response size limit
+  constexpr int chunk_size = 128;  // Larger chunk for better efficiency
+  constexpr int max_response_size = 4096;  // Maximum response size limit
 
   response.reserve(256);  // Pre-allocate memory to reduce reallocations
 
-  while (response.size() < kMaxResponseSize) {
+  while (response.size() < max_response_size) {
     try {
       // Use stack buffer for temporary storage
-      std::array<char, kChunkSize> buffer{};
+      std::array<char, chunk_size> buffer{};
 
       uint32_t bytes_received = 0;
-      this->tcp_socket_->recv(buffer.data(), kChunkSize, bytes_received, 500ms);
+      this->tcp_socket_->recv(buffer.data(), chunk_size, bytes_received, 500ms);
 
       if (bytes_received == 0) {
         // No data received, break the loop
@@ -128,7 +128,7 @@ std::string DashboardTcpInterface::recvResponse()
     }
   }
 
-  if (response.size() >= kMaxResponseSize) {
+  if (response.size() >= max_response_size) {
     RCLCPP_ERROR(this->getLogger(), "Response size exceeded maximum limit");
   }
 

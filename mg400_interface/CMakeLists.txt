@@ -53,7 +53,8 @@ if(BUILD_TESTING)
   set(TEST_TARGETS
     test_control_state_manager
     test_error_msg_generator
-    test_joint_handler)
+    test_joint_handler
+    test_motion_tcp_interface)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

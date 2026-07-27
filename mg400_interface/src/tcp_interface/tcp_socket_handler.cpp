@@ -33,33 +33,31 @@ TcpSocketHandler::~TcpSocketHandler()
 
 void TcpSocketHandler::close()
 {
-  if (this->fd_ < 0) {
-    // TcpClient not connected
-    // Do nothing
-    return;
-  }
-
-  ::close(this->fd_);
-  this->is_connected_.store(false);
-  this->fd_ = -1;
+  this->disConnect();
 }
 
 void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
 {
-  if (this->fd_ < 0) {
-    this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (this->fd_ < 0) {
+  std::lock_guard<std::mutex> lock(this->mutex_connect_);
+  if (this->isConnected()) {
+    return;
+  }
+
+  int fd = this->fd_.load();
+  if (fd < 0) {
+    fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
       throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
     }
+    this->fd_.store(fd);
 
     timeval tv = {0, 0};
     tv.tv_sec = timeout.count() / static_cast<int>(1e9);
     tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
     if (::setsockopt(
-        this->fd_, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char *>(&tv), sizeof(tv)) < 0)
+        fd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char *>(&tv), sizeof(tv)) < 0)
     {
-      ::close(this->fd_);
-      this->fd_ = -1;
+      this->closeSocket(fd);
       throw TcpSocketException(this->toString() + std::string(" socket : ") + strerror(errno));
     }
   }
@@ -71,27 +69,34 @@ void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
   addr.sin_family = AF_INET;
   addr.sin_port = htons(this->port_);
 
-  if (::connect(this->fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
-    ::close(this->fd_);
-    this->fd_ = -1;
-    if (errno == EINPROGRESS || errno == EAGAIN) {
+  if (::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
+    const int error_number = errno;
+    this->closeSocket(fd);
+    if (error_number == EINPROGRESS || error_number == EAGAIN) {
       throw  TcpSocketException(this->toString() + std::string(" connect : timeout"));
     } else {
-      throw  TcpSocketException(this->toString() + std::string(" connect : ") + strerror(errno));
+      throw  TcpSocketException(
+              this->toString() + std::string(" connect : ") + strerror(error_number));
     }
   }
 
   this->is_connected_.store(true);
+  if (this->fd_.load() != fd) {
+    this->is_connected_.store(false);
+    throw TcpSocketException(this->toString() + std::string(" connect : cancelled"));
+  }
 
   RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpSocketHandler::disConnect()
 {
-  if (this->is_connected_.load()) {
-    ::close(this->fd_);
-    this->is_connected_.store(false);
-    this->fd_ = -1;
+  this->is_connected_.store(false);
+  const int fd = this->fd_.exchange(-1);
+  if (fd >= 0) {
+    // shutdown() wakes a thread blocked in select()/read() before close().
+    ::shutdown(fd, SHUT_RDWR);
+    ::close(fd);
   }
 }
 
@@ -102,53 +107,85 @@ bool TcpSocketHandler::isConnected() const
 
 void TcpSocketHandler::send(const void * buf, uint32_t len)
 {
-  if (!this->is_connected_.load()) {
+  const int fd = this->fd_.load();
+  if (!this->is_connected_.load() || fd < 0) {
     throw TcpSocketException("tcp is disconnected");
   }
 
-  RCLCPP_INFO(LOGGER, "send : %s", (const char *)buf);
+  RCLCPP_DEBUG(LOGGER, "send : %.*s", static_cast<int>(len), (const char *)buf);
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {
-    int err = static_cast<int>(::send(fd_, tmp, len, MSG_NOSIGNAL));
-    if (err < 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" ::send() ") + strerror(errno));
+    int err = static_cast<int>(::send(fd, tmp, len, MSG_NOSIGNAL));
+    if (err <= 0) {
+      const int error_number = err < 0 ? errno : EPIPE;
+      this->closeSocket(fd);
+      throw TcpSocketException(
+              this->toString() + std::string(" ::send() ") + strerror(error_number));
     }
     len -= err;
     tmp += err;
   }
 }
 
+uint32_t TcpSocketHandler::recvSome(
+  void * buf, uint32_t capacity, const std::chrono::nanoseconds & timeout)
+{
+  if (capacity == 0) {
+    return 0;
+  }
+
+  const int fd = this->fd_.load();
+  if (!this->is_connected_.load() || fd < 0) {
+    throw TcpSocketException("tcp is disconnected");
+  }
+
+  fd_set read_fds;
+  FD_ZERO(&read_fds);
+  FD_SET(fd, &read_fds);
+
+  timeval tv = {0, 0};
+  tv.tv_sec = timeout.count() / static_cast<int>(1e9);
+  tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
+  const int select_result = ::select(fd + 1, &read_fds, nullptr, nullptr, &tv);
+  if (select_result < 0) {
+    const int error_number = errno;
+    this->closeSocket(fd);
+    throw TcpSocketException(
+            this->toString() + std::string(" select() : ") + strerror(error_number));
+  }
+  if (select_result == 0 || FD_ISSET(fd, &read_fds) == 0) {
+    return 0;
+  }
+
+  const int read_result = static_cast<int>(::read(fd, buf, capacity));
+  if (read_result < 0) {
+    const int error_number = errno;
+    if (error_number == EAGAIN || error_number == EWOULDBLOCK) {
+      return 0;
+    }
+    this->closeSocket(fd);
+    throw TcpSocketException(
+            this->toString() + std::string(" ::read() ") + strerror(error_number));
+  }
+  if (read_result == 0) {
+    this->closeSocket(fd);
+    throw TcpSocketException(this->toString() + std::string(" tcp server has disconnected."));
+  }
+  return static_cast<uint32_t>(read_result);
+}
+
 bool TcpSocketHandler::recv(void * buf, uint32_t len, const std::chrono::nanoseconds & timeout)
 {
   uint8_t * tmp = reinterpret_cast<uint8_t *>(buf);
-  fd_set read_fds;
-  timeval tv = {0, 0};
 
   while (len) {
-    FD_ZERO(&read_fds);
-    FD_SET(this->fd_, &read_fds);
-
-    tv.tv_sec = timeout.count() / static_cast<int>(1e9);
-    tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
-    int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
-    if (err < 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" select() : ") + strerror(errno));
-    } else if (err == 0 || FD_ISSET(this->fd_, &read_fds) == 0) {
+    const uint32_t received = this->recvSome(tmp, len, timeout);
+    if (received == 0) {
       return false;
     }
-    err = static_cast<int>(::read(fd_, tmp, len));
-    if (err < 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" ::read() ") + strerror(errno));
-    } else if (err == 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" tcp server has disconnected."));
-    }
-    len -= err;
-    tmp += err;
+    len -= received;
+    tmp += received;
   }
   return true;
 }
@@ -158,34 +195,16 @@ bool TcpSocketHandler::recv(
   const std::chrono::nanoseconds & timeout)
 {
   uint8_t * tmp = reinterpret_cast<uint8_t *>(buf);
-  fd_set read_fds;
-  timeval tv = {0, 0};
   received_data_len = 0;
 
   while (len) {
-    FD_ZERO(&read_fds);
-    FD_SET(this->fd_, &read_fds);
-
-    tv.tv_sec = timeout.count() / static_cast<int>(1e9);
-    tv.tv_usec = (timeout.count() % static_cast<int>(1e9)) / static_cast<int>(1e3);
-    int err = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
-    if (err < 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" select() : ") + strerror(errno));
-    } else if (err == 0 || FD_ISSET(this->fd_, &read_fds) == 0) {
+    const uint32_t received = this->recvSome(tmp, len, timeout);
+    if (received == 0) {
       return false;
     }
-    err = static_cast<int>(::read(fd_, tmp, len));
-    if (err < 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" ::read() ") + strerror(errno));
-    } else if (err == 0) {
-      this->disConnect();
-      throw TcpSocketException(this->toString() + std::string(" tcp server has disconnected."));
-    }
-    len -= err;
-    tmp += err;
-    received_data_len += err;
+    len -= received;
+    tmp += received;
+    received_data_len += received;
   }
   return true;
 }
@@ -193,6 +212,16 @@ bool TcpSocketHandler::recv(
 std::string TcpSocketHandler::toString()
 {
   return this->ip_ + ":" + std::to_string(this->port_);
+}
+
+void TcpSocketHandler::closeSocket(int fd)
+{
+  int expected = fd;
+  if (this->fd_.compare_exchange_strong(expected, -1)) {
+    this->is_connected_.store(false);
+    ::shutdown(fd, SHUT_RDWR);
+    ::close(fd);
+  }
 }
 
 }  // namespace mg400_interface

@@ -64,3 +64,30 @@ This package provide interface library to connect with Dobot MG400 via TCP commu
 
 ## References
 - [MG400 Documents](https://www.dropbox.com/s/3sqgd2eew244fyf/TCPIP%20Protocol%20%20for%20CR%20Robot%20V2.0.pdf?dl=0)
+
+## Motion response handling
+
+`MotionTcpInterface` has one background reader for port 30003. It accumulates
+TCP bytes until the documented `;` terminator, handles split and combined TCP
+reads, and limits an individual response to 4096 bytes by default. The existing
+`MotionCommander` command methods remain asynchronous and keep their original
+`void` API. Callers that need completions can use `tryTakeResponse()` or
+`waitForResponse()`; diagnostic callers can use `getLatestResponse()`,
+`getLatestError()`, and `getPendingCommandCount()`.
+
+The protocol has no request ID. The controller documentation says that each
+received command produces a response which echoes the submitted command, but
+does not explicitly guarantee response ordering. The implementation therefore
+keeps the FIFO correlation assumption in one place and verifies the echoed
+command name. A parse or command-name mismatch closes that connection rather
+than correlating subsequent responses speculatively.
+
+The default pending and completed queue limits are 256 and 512. A full pending
+queue rejects the new command with `MotionCommandQueueFullException`. A full
+completed queue replaces its oldest entry so existing fire-and-forget clients
+can run continuously; this is never silent: the cumulative count is available
+through `getDroppedCompletedResponseCount()` and warnings are emitted. Pending
+timeouts use `steady_clock` (one second by default). A timeout resets the TCP
+connection so a late response cannot be assigned to a later command. EOF,
+receive errors, send errors, and explicit disconnect complete all remaining
+pending commands as disconnected before a new connection generation is used.

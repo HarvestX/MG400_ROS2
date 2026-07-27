@@ -50,6 +50,13 @@ public:
   MotionCommander() = delete;
   explicit MotionCommander(MotionTcpInterfaceBase *);
 
+  bool tryTakeResponse(MotionResponse &);
+  bool waitForResponse(MotionResponse &, const std::chrono::nanoseconds &);
+  bool getLatestResponse(MotionResponse &) const;
+  bool getLatestError(MotionResponse &) const;
+  size_t getPendingCommandCount() const;
+  uint64_t getDroppedCompletedResponseCount() const;
+
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(
     const si_m, const si_m, const si_m, const si_rad,

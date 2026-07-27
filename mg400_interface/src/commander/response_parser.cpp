@@ -58,6 +58,7 @@ bool ResponseParser::parseResponse(
   const std::string & packet,
   DashboardResponse & response)
 {
+  response = DashboardResponse{};
   // Remove white space
   std::string substr;
   std::string buf;
@@ -74,7 +75,7 @@ bool ResponseParser::parseResponse(
         }
         break;
       case 1:
-        if (buf.back() == '}' && s == ',') {
+        if (!buf.empty() && buf.back() == '}' && s == ',') {
           response.ret_val = buf;
           buf.clear();
           search_mode_counter++;
