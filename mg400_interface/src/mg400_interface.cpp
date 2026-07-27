@@ -87,6 +87,8 @@ bool MG400Interface::activate()
 
 bool MG400Interface::deactivate()
 {
+  this->control_state_manager_.updateRobotStatus(false, 0);
+
   // disconnect each interface in parallel because it takes time sometimes.
   std::thread discnt_dashboard_tcp_if_([this]() {this->dashboard_tcp_if_->disConnect();});
   std::thread discnt_realtime_tcp_if_([this]() {this->realtime_tcp_interface->disConnect();});
@@ -103,8 +105,24 @@ bool MG400Interface::ok()
   // When MG400 is being initialized when booting up, realtime tcp interface
   // will be connected but not active yet.
   // We assume MG400Interface is ok when realtime tcp interface is active.
-  return this->isConnected() &&
-         this->realtime_tcp_interface->isActive();
+  const bool active = this->isConnected() &&
+    this->realtime_tcp_interface->isActive();
+  uint64_t robot_mode = 0;
+  const bool robot_mode_available = active &&
+    this->realtime_tcp_interface->getRobotMode(robot_mode);
+  this->control_state_manager_.updateRobotStatus(
+    robot_mode_available, robot_mode);
+  return robot_mode_available;
+}
+
+ControlStateManager & MG400Interface::getControlStateManager() noexcept
+{
+  return this->control_state_manager_;
+}
+
+const ControlStateManager & MG400Interface::getControlStateManager() const noexcept
+{
+  return this->control_state_manager_;
 }
 
 const rclcpp::Logger MG400Interface::getLogger() noexcept

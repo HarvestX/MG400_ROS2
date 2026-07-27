@@ -25,6 +25,7 @@
 #include "mg400_interface/commander/dashboard_commander.hpp"
 #include "mg400_interface/commander/motion_commander.hpp"
 
+#include "mg400_interface/control_state_manager.hpp"
 #include "mg400_interface/joint_handler.hpp"
 #include "mg400_interface/error_msg_generator.hpp"
 
@@ -49,6 +50,8 @@ public:
 private:
   const std::string IP;
 
+  ControlStateManager control_state_manager_;
+
   DashboardTcpInterface::UniquePtr dashboard_tcp_if_;
   MotionTcpInterface::UniquePtr motion_tcp_if_;
 
@@ -61,6 +64,9 @@ public:
   bool activate();
   bool deactivate();
   bool ok();
+
+  ControlStateManager & getControlStateManager() noexcept;
+  const ControlStateManager & getControlStateManager() const noexcept;
 
 private:
   static const rclcpp::Logger getLogger() noexcept;

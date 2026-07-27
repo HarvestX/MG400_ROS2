@@ -16,6 +16,7 @@ ament_auto_add_library(
       ./src/commander/dashboard_commander.cpp
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp
+      ./src/control_state_manager.cpp
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
@@ -50,6 +51,7 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gmock REQUIRED)
 
   set(TEST_TARGETS
+    test_control_state_manager
     test_error_msg_generator
     test_joint_handler)
   foreach(TARGET ${TEST_TARGETS})
