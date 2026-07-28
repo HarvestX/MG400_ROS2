@@ -36,7 +36,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
   this->declare_parameter<int>("servo.send_period_ms", 30);
-  this->declare_parameter<int>("servo.target_watchdog_ms", 100);
+  this->declare_parameter<int>("servo.target_watchdog_ms", 30000);
   this->declare_parameter<int>("servo.stop_timeout_ms", 2000);
   this->declare_parameter<int>("servo.stop_confirmation_poll_ms", 10);
   this->declare_parameter<int>("servo.diagnostics_period_ms", 100);
