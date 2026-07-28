@@ -15,12 +15,16 @@
 
 #include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
 
+#include <cstddef>
+#include <exception>
+#include <utility>
+
 namespace mg400_interface
 {
 RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
   const std::string & ip, const std::string & prefix)
 : frame_id_prefix(prefix),
-  current_joints_{}, rt_data_{}
+  current_joints_{}, rt_data_{}, realtime_data_callback_{}
 {
   this->is_running_ = false;
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
@@ -103,12 +107,19 @@ bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
   }
 }
 
+void RealtimeFeedbackTcpInterface::setRealtimeDataCallback(RealtimeDataCallback callback)
+{
+  std::lock_guard<std::mutex> lock_callback(this->mutex_realtime_data_callback_);
+  this->realtime_data_callback_ = std::move(callback);
+}
+
 void RealtimeFeedbackTcpInterface::disConnect()
 {
   this->is_running_ = false;
-  if (this->thread_->joinable()) {
+  if (this->thread_ && this->thread_->joinable()) {
     this->thread_->join();
   }
+  this->thread_.reset();
   this->tcp_socket_->disConnect();
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
@@ -133,21 +144,38 @@ void RealtimeFeedbackTcpInterface::recvData()
         continue;
       }
 
-      if (recvd_data->len != sizeof(RealTimeData)) {
-        // Error: Invalid size
+      if (!recvd_data->isValid()) {
+        // Error: Invalid packet framing or memory-layout test value
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
         continue;
-      } else {
-        // Success
-        std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-        this->rt_data_ = std::move(recvd_data);
       }
 
-      std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
-      std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-      for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
-        this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
+      {
+        std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+        this->rt_data_ = recvd_data;
+      }
+
+      {
+        std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
+        for (std::size_t i = 0; i < this->current_joints_.size(); ++i) {
+          this->current_joints_[i] = recvd_data->q_actual[i] * TO_RADIAN;
+        }
+      }
+
+      RealtimeDataCallback callback;
+      {
+        std::lock_guard<std::mutex> lock_callback(this->mutex_realtime_data_callback_);
+        callback = this->realtime_data_callback_;
+      }
+      if (callback) {
+        try {
+          callback(*recvd_data);
+        } catch (const std::exception & error) {
+          RCLCPP_ERROR(this->getLogger(), "Realtime data callback failed: %s", error.what());
+        } catch (...) {
+          RCLCPP_ERROR(this->getLogger(), "Realtime data callback failed with an unknown error");
+        }
       }
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();

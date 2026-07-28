@@ -24,6 +24,7 @@ ament_auto_add_library(
       ./src/mg400_interface.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
       ./src/tcp_interface/motion_tcp_interface.cpp
+      ./src/tcp_interface/realtime_data_converter.cpp
       ./src/tcp_interface/realtime_feedback_tcp_interface.cpp
       ./src/tcp_interface/tcp_socket_handler.cpp)
 set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -57,7 +58,9 @@ if(BUILD_TESTING)
     test_error_msg_generator
     test_joint_handler
     test_motion_tcp_interface
-    test_servo_control_session)
+    test_realtime_data
+    test_servo_control_session
+    test_tcp_interface_lifecycle)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

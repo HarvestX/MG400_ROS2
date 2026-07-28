@@ -16,8 +16,13 @@
 #define __MG400_INTERFACE_TCP_INTERFACE_REALTIME_FEEDBACK_TCP_INTERFACE_HPP__
 
 
-#include <string>
+#include <atomic>
+#include <array>
+#include <functional>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -35,6 +40,7 @@ class RealtimeFeedbackTcpInterface
 public:
   RCLCPP_SHARED_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
   RCLCPP_UNIQUE_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
+  using RealtimeDataCallback = std::function<void (const RealTimeData &)>;
 
   const std::string frame_id_prefix;
 
@@ -44,8 +50,10 @@ private:
 
   std::mutex mutex_current_joints_;
   std::mutex mutex_rt_data_;
+  std::mutex mutex_realtime_data_callback_;
   std::array<double, 4> current_joints_;
   std::shared_ptr<RealTimeData> rt_data_;
+  RealtimeDataCallback realtime_data_callback_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   TcpSocketHandler::SharedPtr tcp_socket_;
@@ -66,6 +74,7 @@ public:
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
+  void setRealtimeDataCallback(RealtimeDataCallback callback);
   void disConnect();
 
 private:

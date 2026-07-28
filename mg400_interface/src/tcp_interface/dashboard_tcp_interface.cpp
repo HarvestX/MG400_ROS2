@@ -77,9 +77,10 @@ void DashboardTcpInterface::sendCommand(const std::string & cmd)
 void DashboardTcpInterface::disConnect()
 {
   this->is_running_ = false;
-  if (this->thread_->joinable()) {
+  if (this->thread_ && this->thread_->joinable()) {
     this->thread_->join();
   }
+  this->thread_.reset();
   this->tcp_socket_->disConnect();
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }

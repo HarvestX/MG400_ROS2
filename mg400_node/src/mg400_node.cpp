@@ -19,6 +19,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "mg400_interface/tcp_interface/realtime_data_converter.hpp"
+
 namespace mg400_node
 {
 using namespace std::chrono_literals;   // NOLINT
@@ -176,10 +178,15 @@ CallbackReturn MG400Node::on_configure(const State &)
 
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states", rclcpp::SystemDefaultsQoS());
+  this->realtime_feedback_pub_ =
+    this->create_publisher<mg400_msgs::msg::RealtimeFeedback>(
+    "realtime_feedback", rclcpp::SensorDataQoS());
   this->robot_mode_pub_ = this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  this->interface_->realtime_tcp_interface->setRealtimeDataCallback(
+    [this](const mg400_interface::RealTimeData & data) {this->onRealtimeData(data);});
 
   this->connection_interrupted_ = false;
   this->interface_active_ = false;
@@ -297,6 +304,18 @@ CallbackReturn MG400Node::on_error(const State &)
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
+}
+
+void MG400Node::onRealtimeData(const mg400_interface::RealTimeData & data)
+{
+  if (!this->realtime_feedback_pub_) {
+    return;
+  }
+
+  auto message = std::make_unique<mg400_msgs::msg::RealtimeFeedback>(
+    mg400_interface::toRealtimeFeedbackMessage(data));
+  message->header.stamp = this->now();
+  this->realtime_feedback_pub_->publish(std::move(message));
 }
 
 void MG400Node::onJointStateTimer()
@@ -552,7 +571,11 @@ void MG400Node::destroyRosEntities()
   this->servo_control_ros_interface_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
+  if (this->interface_ && this->interface_->realtime_tcp_interface) {
+    this->interface_->realtime_tcp_interface->setRealtimeDataCallback({});
+  }
   this->joint_state_pub_.reset();
+  this->realtime_feedback_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
   this->mg400_connected_pub_.reset();

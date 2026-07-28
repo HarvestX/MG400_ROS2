@@ -53,7 +53,7 @@ int main(int argc, char ** argv)
 
     printf(
       "len:\t\t\t\t%" PRIu16 "\n",
-      data.len);
+      data.message_size);
     printf(
       "digital inputs:\t\t\t%" PRIu64 "\n",
       data.digital_inputs);
@@ -118,11 +118,11 @@ int main(int argc, char ** argv)
       data.i_actual[2], data.i_actual[3],
       data.i_actual[4], data.i_actual[5]);
     printf(
-      "actual_i_TCP_force:\t\t"
+      "actual_tcp_force:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data.actual_i_TCP_force[0], data.actual_i_TCP_force[1],
-      data.actual_i_TCP_force[2], data.actual_i_TCP_force[3],
-      data.actual_i_TCP_force[4], data.actual_i_TCP_force[5]);
+      data.actual_tcp_force[0], data.actual_tcp_force[1],
+      data.actual_tcp_force[2], data.actual_tcp_force[3],
+      data.actual_tcp_force[4], data.actual_tcp_force[5]);
     printf(
       "tool_vector_actual:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
@@ -135,36 +135,36 @@ int main(int argc, char ** argv)
     printf(
       "TCP_speed_actual:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data.TCP_speed_actual[0],
-      data.TCP_speed_actual[1],
-      data.TCP_speed_actual[2],
-      data.TCP_speed_actual[3],
-      data.TCP_speed_actual[4],
-      data.TCP_speed_actual[5]);
+      data.tcp_speed_actual[0],
+      data.tcp_speed_actual[1],
+      data.tcp_speed_actual[2],
+      data.tcp_speed_actual[3],
+      data.tcp_speed_actual[4],
+      data.tcp_speed_actual[5]);
     printf(
       "TCP_force:\t\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data.TCP_force[0], data.TCP_force[1],
-      data.TCP_force[2], data.TCP_force[3],
-      data.TCP_force[4], data.TCP_force[5]);
+      data.tcp_force[0], data.tcp_force[1],
+      data.tcp_force[2], data.tcp_force[3],
+      data.tcp_force[4], data.tcp_force[5]);
     printf(
       "tool_vector_target:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
       data.tool_vector_target[0],
       data.tool_vector_target[1],
       data.tool_vector_target[2],
-      data.tool_vector_actual[3],
+      data.tool_vector_target[3],
       data.tool_vector_target[4],
       data.tool_vector_target[5]);
     printf(
       "TCP_speed_target:\t\t"
       "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
-      data.TCP_speed_target[0],
-      data.TCP_speed_target[1],
-      data.TCP_speed_target[2],
-      data.TCP_speed_target[3],
-      data.TCP_speed_target[4],
-      data.TCP_speed_target[5]);
+      data.tcp_speed_target[0],
+      data.tcp_speed_target[1],
+      data.tcp_speed_target[2],
+      data.tcp_speed_target[3],
+      data.tcp_speed_target[4],
+      data.tcp_speed_target[5]);
     printf(
       "load:\t\t\t\t%.3lf\n",
       data.load);

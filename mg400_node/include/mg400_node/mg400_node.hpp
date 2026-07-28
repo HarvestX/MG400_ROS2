@@ -22,6 +22,7 @@
 
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
+#include <mg400_msgs/msg/realtime_feedback.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <mg400_plugin_base/api_loader_base.hpp>
@@ -46,9 +47,7 @@ private:
     "mg400_plugin::DisableRobot",
     "mg400_plugin::EmergencyStop",
     "mg400_plugin::EnableRobot",
-    "mg400_plugin::GetAngle",
     "mg400_plugin::GetErrorID",
-    "mg400_plugin::GetPose",
     "mg400_plugin::InverseSolution",
     "mg400_plugin::PayLoad",
     "mg400_plugin::PositiveSolution",
@@ -86,6 +85,7 @@ private:
   rclcpp::TimerBase::SharedPtr connect_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::RealtimeFeedback>::SharedPtr realtime_feedback_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
   rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
@@ -102,6 +102,7 @@ public:
   ~MG400Node();
 
   void onInit();
+  void onRealtimeData(const mg400_interface::RealTimeData & data);
   void onJointStateTimer();
   void onRobotModeTimer();
   void onErrorTimer();
