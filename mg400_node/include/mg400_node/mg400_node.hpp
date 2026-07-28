@@ -30,6 +30,9 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_node/servo_control_ros_interface.hpp"
+
 namespace mg400_node
 {
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -66,6 +69,10 @@ private:
 
   std::string ip_address_;
   mg400_interface::MG400Interface::SharedPtr interface_;
+  std::unique_ptr<ServoControlRosInterface> servo_control_ros_interface_;
+  mg400_interface::ServoControlSession::Options servo_session_options_;
+  mg400_interface::ResetRobotStopStrategy::Options servo_stop_options_;
+  ServoControlRosInterface::Options servo_ros_options_;
   mg400_plugin_base::DashboardApiLoader::SharedPtr dashboard_api_loader_;
   mg400_plugin_base::MotionApiLoader::SharedPtr motion_api_loader_;
 
@@ -82,6 +89,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
 
   bool connection_interrupted_;
+  bool interface_active_{false};
 
   rclcpp::TimerBase::SharedPtr autoconfigure_timer_;
   std::atomic<bool> autoconfigure_executed_{false};
@@ -107,6 +115,11 @@ private:
 
   void runTimer();
   void cancelTimer();
+
+  bool loadAndValidateServoParameters();
+  bool createServoSession();
+  bool stopAndDestroyServoSession(const std::string & reason);
+  void destroyRosEntities();
 
   void handleAutoConfigure();
 };

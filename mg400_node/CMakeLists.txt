@@ -40,7 +40,11 @@ set_property(TARGET joint_command_publisher_gui PROPERTY AUTORCC ON)
 
 # ===================================================================
 set(TARGET mg400_node)
-ament_auto_add_library(${TARGET} SHARED ./src/${TARGET}.cpp)
+ament_auto_add_library(
+  ${TARGET}
+  SHARED
+    ./src/${TARGET}.cpp
+    ./src/servo_control_ros_interface.cpp)
 rclcpp_components_register_node(
   ${TARGET}
     PLUGIN "mg400_node::MG400Node"
@@ -52,6 +56,12 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(
+    test_servo_control_ros_interface
+    test/test_servo_control_ros_interface.cpp)
+  target_link_libraries(test_servo_control_ros_interface ${PROJECT_NAME})
 endif()
 
 ament_auto_package()

@@ -282,7 +282,17 @@ bool ServoControlSession::updateServoPTarget(
 ServoControlSession::Result ServoControlSession::stop(const LeaseId lease_id)
 {
   auto result = this->performStop(StopCause::EXPLICIT, lease_id, "Explicit stop requested");
-  this->joinWorker();
+  bool worker_should_exit = false;
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    worker_should_exit = this->worker_should_exit_;
+  }
+  // A foreign/stale lease is rejected before target admission is changed.
+  // Joining in that case would block behind the still-active worker until its
+  // watchdog expires and could indirectly stop the valid owner.
+  if (worker_should_exit) {
+    this->joinWorker();
+  }
   return result;
 }
 

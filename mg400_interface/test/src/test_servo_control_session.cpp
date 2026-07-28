@@ -440,6 +440,23 @@ TEST(ServoControlSession, ForeignAndStaleStopCannotAffectANewerLease)
   ASSERT_TRUE(fixture.manager->handleServoWatchdogTimeout(current.lease_id).success);
 }
 
+TEST(ServoControlSession, ForeignStopDoesNotJoinOrStopTheValidActiveWorker)
+{
+  SessionFixture fixture;
+  auto session = fixture.makeSession(quietOptions());
+  const auto started = session->start(Manager::State::SERVO_J);
+  ASSERT_TRUE(started.success) << started.message;
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
+
+  const auto foreign_stop = session->stop(started.lease_id + 1);
+  EXPECT_FALSE(foreign_stop.success);
+  EXPECT_EQ(started.lease_id, fixture.manager->getSnapshot().lease_id);
+  EXPECT_TRUE(session->updateServoJTarget(started.lease_id, {{0.2, 0.3, 0.4, 0.5}}));
+
+  EXPECT_TRUE(session->stop(started.lease_id).success);
+  EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
+}
+
 TEST(ServoControlSession, StaleStopCompletionCannotReleaseLeaseAcquiredDuringStrategy)
 {
   FakeMotionTcpInterface tcp;

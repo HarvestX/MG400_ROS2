@@ -84,10 +84,12 @@ public:
 
   // Defaults preserve compatibility with lightweight mocks and third-party
   // implementations that only provide the original send-only API.
-  virtual bool tryTakeResponse(MotionResponse &) {return false;}
-  virtual bool waitForResponse(MotionResponse &, const std::chrono::nanoseconds &) {return false;}
-  virtual bool getLatestResponse(MotionResponse &) const {return false;}
-  virtual bool getLatestError(MotionResponse &) const {return false;}
+  virtual bool tryTakeResponse(MotionResponse & /*unused*/) {return false;}
+  virtual bool waitForResponse(
+    MotionResponse & /*unused*/,
+    const std::chrono::nanoseconds & /*unused*/) {return false;}
+  virtual bool getLatestResponse(MotionResponse & /*unused*/) const {return false;}
+  virtual bool getLatestError(MotionResponse & /*unused*/) const {return false;}
   virtual size_t getPendingCommandCount() const {return 0;}
   virtual uint64_t getDroppedCompletedResponseCount() const {return 0;}
 };
@@ -140,17 +142,19 @@ public:
   explicit MotionTcpInterface(const std::string &);
   MotionTcpInterface(
     const std::string &, uint16_t, const MotionTcpInterfaceOptions & = MotionTcpInterfaceOptions());
-  ~MotionTcpInterface();
+  ~MotionTcpInterface() override;
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
   bool isConnected() const;
   bool waitUntilConnected(const std::chrono::nanoseconds &);
-  void sendCommand(const std::string &) override;
-  bool tryTakeResponse(MotionResponse &) override;
-  bool waitForResponse(MotionResponse &, const std::chrono::nanoseconds &) override;
-  bool getLatestResponse(MotionResponse &) const override;
-  bool getLatestError(MotionResponse &) const override;
+  void sendCommand(const std::string & /*unused*/) override;
+  bool tryTakeResponse(MotionResponse & /*unused*/) override;
+  bool waitForResponse(
+    MotionResponse & /*unused*/,
+    const std::chrono::nanoseconds & /*unused*/) override;
+  bool getLatestResponse(MotionResponse & /*unused*/) const override;
+  bool getLatestError(MotionResponse & /*unused*/) const override;
   size_t getPendingCommandCount() const override;
   uint64_t getDroppedCompletedResponseCount() const override;
   size_t getCompletedResponseCount() const;

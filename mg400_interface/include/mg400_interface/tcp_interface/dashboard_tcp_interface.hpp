@@ -56,8 +56,8 @@ public:
 
   static rclcpp::Logger getLogger();
   bool isConnected();
-  void sendCommand(const std::string &) override;
-  std::string recvResponse(void) override;
+  void sendCommand(const std::string & /*unused*/) override;
+  std::string recvResponse() override;
   void disConnect();
 
 private:

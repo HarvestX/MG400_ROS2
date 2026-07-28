@@ -14,6 +14,10 @@
 
 #include "mg400_node/mg400_node.hpp"
 
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
 
 namespace mg400_node
 {
@@ -31,6 +35,11 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
+  this->declare_parameter<int>("servo.send_period_ms", 30);
+  this->declare_parameter<int>("servo.target_watchdog_ms", 100);
+  this->declare_parameter<int>("servo.stop_timeout_ms", 2000);
+  this->declare_parameter<int>("servo.stop_confirmation_poll_ms", 10);
+  this->declare_parameter<int>("servo.diagnostics_period_ms", 100);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(
@@ -51,8 +60,23 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 MG400Node::~MG400Node()
 {
   this->cancelTimer();
+  if (this->servo_control_ros_interface_) {
+    const auto stopped = this->servo_control_ros_interface_->stopForLifecycle(
+      "MG400Node destructor");
+    if (!stopped.success) {
+      RCLCPP_FATAL(
+        this->get_logger(),
+        "Servo safe stop failed during destruction; lease remains fail-closed: %s",
+        stopped.message.c_str());
+    }
+    // Destruction is the final fallback: even after a failed best-effort stop,
+    // the Session must still be destroyed before its raw TCP dependencies.
+    this->servo_control_ros_interface_->clearSession("MG400Node destructor");
+    this->servo_control_ros_interface_.reset();
+  }
   if (this->interface_) {
     this->interface_->deactivate();
+    this->interface_active_ = false;
   }
 }
 
@@ -91,6 +115,10 @@ void MG400Node::handleAutoConfigure()
 
 CallbackReturn MG400Node::on_configure(const State &)
 {
+  if (!this->loadAndValidateServoParameters()) {
+    return CallbackReturn::FAILURE;
+  }
+
   this->mg400_connected_pub_ =
     this->create_publisher<std_msgs::msg::Bool>(
     "mg400_connected", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
@@ -101,6 +129,18 @@ CallbackReturn MG400Node::on_configure(const State &)
     std::make_shared<mg400_interface::MG400Interface>(this->ip_address_);
   if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
     RCLCPP_ERROR(this->get_logger(), "Failed to configure MG400Interface.");
+    return CallbackReturn::FAILURE;
+  }
+
+  try {
+    this->servo_ros_options_.target_frame =
+      this->get_parameter("prefix").as_string() + "mg400_origin_link";
+    this->servo_ros_options_.hardware_id = "mg400@" + this->ip_address_;
+    this->servo_control_ros_interface_ = std::make_unique<ServoControlRosInterface>(
+      *this, this->interface_->getControlStateManagerShared(), this->servo_ros_options_);
+  } catch (const std::exception & error) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Failed to configure Servo ROS interface: %s", error.what());
     return CallbackReturn::FAILURE;
   }
 
@@ -142,6 +182,7 @@ CallbackReturn MG400Node::on_configure(const State &)
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
 
   this->connection_interrupted_ = false;
+  this->interface_active_ = false;
 
   if (this->get_parameter("auto_connect").as_bool()) {
     RCLCPP_INFO(this->get_logger(), "Try connecting to MG400 at %s ...", this->ip_address_.c_str());
@@ -156,6 +197,7 @@ CallbackReturn MG400Node::on_activate(const State &)
   this->connect_timer_.reset();
 
   if (!this->interface_->activate()) {
+    this->interface_active_ = false;
     RCLCPP_WARN(this->get_logger(), "Failed to connect to MG400 at %s", this->ip_address_.c_str());
     if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
       RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
@@ -164,21 +206,42 @@ CallbackReturn MG400Node::on_activate(const State &)
     return CallbackReturn::FAILURE;
   }
 
+  this->interface_active_ = true;
+  if (!this->createServoSession()) {
+    this->interface_->deactivate();
+    this->interface_active_ = false;
+    return CallbackReturn::FAILURE;
+  }
+
   this->runTimer();
   this->connection_interrupted_ = false;
 
   RCLCPP_INFO(this->get_logger(), "Connected to MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
+  this->servo_control_ros_interface_->publishControlState(true);
+  this->servo_control_ros_interface_->publishDiagnostics();
   return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn MG400Node::on_deactivate(const State &)
 {
+  if (!this->stopAndDestroyServoSession("Lifecycle deactivate")) {
+    RCLCPP_ERROR(
+      this->get_logger(),
+      "Refusing to disconnect MG400 because Servo safe stop was not confirmed");
+    return CallbackReturn::FAILURE;
+  }
+
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
 
   this->cancelTimer();
-  this->interface_->deactivate();
+  if (this->interface_active_) {
+    this->interface_->deactivate();
+    this->interface_active_ = false;
+  }
+  this->servo_control_ros_interface_->publishControlState(true);
+  this->servo_control_ros_interface_->publishDiagnostics();
 
   if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
@@ -190,12 +253,15 @@ CallbackReturn MG400Node::on_deactivate(const State &)
 
 CallbackReturn MG400Node::on_cleanup(const State &)
 {
-  this->mg400_connected_pub_.reset();
-  this->dashboard_api_loader_.reset();
-  this->motion_api_loader_.reset();
-  this->joint_state_pub_.reset();
-  this->robot_mode_pub_.reset();
-  this->error_id_pub_.reset();
+  if (!this->stopAndDestroyServoSession("Lifecycle cleanup")) {
+    return CallbackReturn::FAILURE;
+  }
+  this->cancelTimer();
+  if (this->interface_active_) {
+    this->interface_->deactivate();
+    this->interface_active_ = false;
+  }
+  this->destroyRosEntities();
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
@@ -203,13 +269,15 @@ CallbackReturn MG400Node::on_cleanup(const State &)
 
 CallbackReturn MG400Node::on_shutdown(const State &)
 {
+  if (!this->stopAndDestroyServoSession("Lifecycle shutdown")) {
+    return CallbackReturn::FAILURE;
+  }
   this->cancelTimer();
-  this->dashboard_api_loader_.reset();
-  this->motion_api_loader_.reset();
-  this->joint_state_pub_.reset();
-  this->robot_mode_pub_.reset();
-  this->error_id_pub_.reset();
-  this->mg400_connected_pub_.reset();
+  if (this->interface_active_) {
+    this->interface_->deactivate();
+    this->interface_active_ = false;
+  }
+  this->destroyRosEntities();
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
@@ -217,13 +285,15 @@ CallbackReturn MG400Node::on_shutdown(const State &)
 
 CallbackReturn MG400Node::on_error(const State &)
 {
+  if (!this->stopAndDestroyServoSession("Lifecycle error")) {
+    return CallbackReturn::FAILURE;
+  }
   this->cancelTimer();
-  this->dashboard_api_loader_.reset();
-  this->motion_api_loader_.reset();
-  this->joint_state_pub_.reset();
-  this->robot_mode_pub_.reset();
-  this->error_id_pub_.reset();
-  this->mg400_connected_pub_.reset();
+  if (this->interface_active_) {
+    this->interface_->deactivate();
+    this->interface_active_ = false;
+  }
+  this->destroyRosEntities();
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
@@ -318,7 +388,31 @@ void MG400Node::onInterfaceCheckTimer()
   if (!this->interface_->ok()) {
     RCLCPP_ERROR(this->get_logger(), "Connection to MG400 was interrupted");
     this->connection_interrupted_ = true;
+    if (this->servo_control_ros_interface_) {
+      this->servo_control_ros_interface_->retireSessionIfLeaseLost(
+        "Connection interruption revoked the Servo lease");
+    }
     this->deactivate();
+    return;
+  }
+
+  if (this->servo_control_ros_interface_ &&
+    this->servo_control_ros_interface_->retireSessionIfLeaseLost(
+      "RobotMode or connection epoch revoked the Servo lease"))
+  {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "Retired a stale Servo Session without issuing ResetRobot");
+  }
+
+  if (this->servo_control_ros_interface_ &&
+    !this->servo_control_ros_interface_->hasSession() &&
+    this->interface_->getControlStateManager().getState() ==
+    mg400_interface::ControlStateManager::State::IDLE)
+  {
+    if (!this->createServoSession()) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to create a fresh Servo connection epoch");
+    }
   }
 }
 
@@ -340,6 +434,128 @@ void MG400Node::cancelTimer()
   this->robot_mode_timer_.reset();
   this->error_timer_.reset();
   this->interface_check_timer_.reset();
+}
+
+bool MG400Node::loadAndValidateServoParameters()
+{
+  const auto send_period_ms = this->get_parameter("servo.send_period_ms").as_int();
+  const auto target_watchdog_ms =
+    this->get_parameter("servo.target_watchdog_ms").as_int();
+  const auto stop_timeout_ms = this->get_parameter("servo.stop_timeout_ms").as_int();
+  const auto stop_confirmation_poll_ms =
+    this->get_parameter("servo.stop_confirmation_poll_ms").as_int();
+  const auto diagnostics_period_ms =
+    this->get_parameter("servo.diagnostics_period_ms").as_int();
+
+  const std::array<std::pair<const char *, std::int64_t>, 5> values{{
+    {"servo.send_period_ms", send_period_ms},
+    {"servo.target_watchdog_ms", target_watchdog_ms},
+    {"servo.stop_timeout_ms", stop_timeout_ms},
+    {"servo.stop_confirmation_poll_ms", stop_confirmation_poll_ms},
+    {"servo.diagnostics_period_ms", diagnostics_period_ms}}};
+  for (const auto & parameter : values) {
+    if (parameter.second <= 0) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Parameter %s must be greater than zero", parameter.first);
+      return false;
+    }
+  }
+
+  this->servo_session_options_.send_period = std::chrono::milliseconds(send_period_ms);
+  this->servo_session_options_.target_watchdog_timeout =
+    std::chrono::milliseconds(target_watchdog_ms);
+  this->servo_session_options_.stop_confirmation_timeout =
+    std::chrono::milliseconds(stop_timeout_ms);
+  this->servo_stop_options_.confirmation_poll_period =
+    std::chrono::milliseconds(stop_confirmation_poll_ms);
+  this->servo_ros_options_.diagnostics_period =
+    std::chrono::milliseconds(diagnostics_period_ms);
+  return true;
+}
+
+bool MG400Node::createServoSession()
+{
+  if (!this->interface_ || !this->servo_control_ros_interface_) {
+    RCLCPP_ERROR(this->get_logger(), "Servo dependencies are not configured");
+    return false;
+  }
+  if (this->servo_control_ros_interface_->hasSession()) {
+    this->servo_control_ros_interface_->setLifecycleActive(true);
+    return true;
+  }
+
+  try {
+    std::weak_ptr<mg400_interface::MG400Interface> weak_interface(this->interface_);
+    auto stop_strategy = std::make_shared<mg400_interface::ResetRobotStopStrategy>(
+      [weak_interface]() {
+        const auto interface = weak_interface.lock();
+        if (!interface || !interface->dashboard_commander) {
+          throw std::runtime_error("MG400 dashboard connection epoch is no longer available");
+        }
+        interface->dashboard_commander->resetRobot();
+      },
+      [weak_interface](std::uint64_t & robot_mode) {
+        const auto interface = weak_interface.lock();
+        return interface && interface->realtime_tcp_interface &&
+        interface->realtime_tcp_interface->getRobotMode(robot_mode);
+      },
+      this->servo_stop_options_);
+    auto session = std::make_shared<mg400_interface::ServoControlSession>(
+      this->interface_->getControlStateManagerShared(),
+      this->interface_->motion_commander,
+      std::move(stop_strategy),
+      this->servo_session_options_);
+    this->servo_control_ros_interface_->installSession(std::move(session));
+    return true;
+  } catch (const std::exception & error) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to create Servo Session: %s", error.what());
+    return false;
+  }
+}
+
+bool MG400Node::stopAndDestroyServoSession(const std::string & reason)
+{
+  if (!this->servo_control_ros_interface_) {
+    return true;
+  }
+
+  const auto stopped = this->servo_control_ros_interface_->stopForLifecycle(reason);
+  if (!stopped.success) {
+    // Refreshing status is safe and distinguishes a fail-closed live lease
+    // from an epoch already revoked by communication loss.
+    if (this->interface_ && this->interface_active_) {
+      static_cast<void>(this->interface_->ok());
+    }
+    if (this->servo_control_ros_interface_->retireSessionIfLeaseLost(
+        reason + ": stale Session retired after stop failure"))
+    {
+      return true;
+    }
+    this->servo_control_ros_interface_->publishControlState(true);
+    this->servo_control_ros_interface_->publishDiagnostics();
+    RCLCPP_ERROR(
+      this->get_logger(), "Servo safe stop failed and the live Lease is retained: %s",
+      stopped.message.c_str());
+    return false;
+  }
+
+  if (this->servo_control_ros_interface_->hasSession()) {
+    this->servo_control_ros_interface_->clearSession(reason);
+  }
+  return true;
+}
+
+void MG400Node::destroyRosEntities()
+{
+  // Servo callbacks and Session references are destroyed before the
+  // MG400Interface that owns the TCP objects referenced by MotionCommander.
+  this->servo_control_ros_interface_.reset();
+  this->dashboard_api_loader_.reset();
+  this->motion_api_loader_.reset();
+  this->joint_state_pub_.reset();
+  this->robot_mode_pub_.reset();
+  this->error_id_pub_.reset();
+  this->mg400_connected_pub_.reset();
 }
 
 }  // namespace mg400_node

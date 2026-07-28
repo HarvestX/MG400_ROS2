@@ -9,6 +9,8 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>diagnostic_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>lifecycle_msgs</depend>
   <depend>mg400_interface</depend>
   <depend>mg400_msgs</depend>
@@ -18,6 +20,10 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
 
   <exec_depend>mg400_plugin</exec_depend>
 
@@ -26,6 +32,7 @@
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
