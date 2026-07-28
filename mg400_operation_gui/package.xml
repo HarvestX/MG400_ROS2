@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mg400_operation_gui</name>
+  <version>0.1.0</version>
+  <description>Qt GUI for operating MG400 ServoJ and ServoP through ROS 2.</description>
+  <maintainer email="yuki8mamo10.hu@gmail.com">Yuki Yamamoto</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>geometry_msgs</depend>
+  <depend>mg400_msgs</depend>
+  <depend>rclcpp</depend>
+
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>qt5-qmake</build_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
