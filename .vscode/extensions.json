@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "charliermarsh.ruff",
     "streetsidesoftware.code-spell-checker",
     "ms-python.isort",
     "ms-python.flake8",
