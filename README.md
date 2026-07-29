@@ -110,9 +110,10 @@ ros2 run mg400_interface show_realtime_data
 
 ## References
 
-### Design documents
+### ServoMode documents
 
-- [MG400 embedded states and ROS 2 Servo control-state design](./doc/MG400StateMachine.md)
+- [ServoJ mode concepts and behavior](./doc/ServoModeDescription.md)
+- [ServoMode code implementation guide](./doc/ServoModeImplementation.md)
 
 ### Official ROS1 package
 

@@ -37,21 +37,12 @@ public:
     UNAVAILABLE = 0,
     IDLE = 1,
     SERVO_J = 2,
-    SERVO_P = 3,
-  };
-
-  enum class MotionOwner : std::uint8_t
-  {
-    NONE = 0,
-    REGULAR_MOTION,
-    SERVO_J,
-    SERVO_P,
+    REGULAR_MOTION = 3,
   };
 
   struct Snapshot
   {
     State control_state;
-    MotionOwner motion_owner;
     LeaseId lease_id;
     bool connected;
     std::uint64_t robot_mode;
@@ -71,34 +62,25 @@ public:
   /// Apply the latest connection and embedded RobotMode observation.
   Snapshot updateRobotStatus(bool connected, std::uint64_t robot_mode);
 
-  /// Request IDLE -> SERVO_J/P or complete SERVO_J/P -> IDLE.
-  ///
-  /// A successful Servo start returns a lease that must be supplied to later
-  /// target checks and stop operations. Before requesting IDLE, call
-  /// beginServoStop(), perform the safe-stop action, and then complete the
-  /// transition with this method. UNAVAILABLE cannot be requested.
-  Result requestControlState(State target_state, LeaseId lease_id = NO_LEASE);
+  /// Atomically acquire IDLE -> REGULAR_MOTION or IDLE -> SERVO_J.
+  Result tryAcquire(State target_state);
 
-  /// Stop target admission while retaining ownership during the safe stop.
+  /// Stop Servo target admission while retaining SERVO_J ownership.
   Result beginServoStop(LeaseId lease_id);
 
-  /// Atomically acquire ownership for MovJ, MovL, Jog, CommandQueue, etc.
-  Result tryAcquireRegularMotion();
+  /// Release the matching state and lease after motion has stopped.
+  Result release(State owned_state, LeaseId lease_id);
 
-  /// Release regular-motion ownership. Stale or foreign leases are rejected.
-  Result releaseRegularMotion(LeaseId lease_id);
+  /// Check that a state and lease are still the current owner.
+  bool owns(State owned_state, LeaseId lease_id) const;
 
-  /// Release Servo ownership after the watchdog has performed its stop action.
-  Result handleServoWatchdogTimeout(LeaseId lease_id);
-
-  /// Check that a target belongs to the currently active Servo session.
-  bool acceptsServoTarget(State servo_state, LeaseId lease_id) const;
+  /// Check that a target belongs to the currently active ServoJ session.
+  bool acceptsServoJTarget(LeaseId lease_id) const;
 
   Snapshot getSnapshot() const;
   State getState() const;
 
   static const char * toString(State state) noexcept;
-  static const char * toString(MotionOwner owner) noexcept;
 
 private:
   static constexpr std::uint64_t ROBOT_MODE_ENABLE = 5;
@@ -109,7 +91,6 @@ private:
 
   mutable std::mutex mutex_;
   State control_state_;
-  MotionOwner motion_owner_;
   LeaseId lease_id_;
   LeaseId next_lease_id_;
   bool connected_;
@@ -122,10 +103,8 @@ private:
   void clearOwnershipLocked();
   void setStateWithoutOwnerLocked();
 
-  static bool isServoState(State state) noexcept;
-  static bool isServoOwner(MotionOwner owner) noexcept;
-  static bool isServoAllowedRobotMode(std::uint64_t robot_mode) noexcept;
-  static bool isRegularMotionRobotMode(std::uint64_t robot_mode) noexcept;
+  static bool isAcquirableState(State state) noexcept;
+  static bool isAllowedRobotMode(State state, std::uint64_t robot_mode) noexcept;
 };
 
 }  // namespace mg400_interface

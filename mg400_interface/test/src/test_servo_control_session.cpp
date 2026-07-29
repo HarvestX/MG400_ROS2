@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #include <atomic>
+#include <array>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
@@ -42,6 +44,11 @@ using MotionResponse = mg400_interface::MotionResponse;
 using MotionResponseResult = mg400_interface::MotionResponseResult;
 using ResetRobotStopStrategy = mg400_interface::ResetRobotStopStrategy;
 using ServoControlSession = mg400_interface::ServoControlSession;
+using ServoFeedbackState = mg400_interface::ServoFeedbackState;
+using ServoOperationalErrorCode = mg400_interface::ServoOperationalErrorCode;
+using ServoOperationalErrorState = mg400_interface::ServoOperationalErrorState;
+using ServoSafetyViolationCode = mg400_interface::ServoSafetyViolationCode;
+using ServoSafetyViolationState = mg400_interface::ServoSafetyViolationState;
 using ServoStopStrategy = mg400_interface::ServoStopStrategy;
 using RobotMode = mg400_msgs::msg::RobotMode;
 
@@ -64,11 +71,17 @@ public:
   void sendCommand(const std::string & command) override
   {
     bool block = false;
+    bool fail = false;
     bool enqueue_response = false;
     MotionResponseResult response_result = MotionResponseResult::SUCCESS;
     int error_code = 0;
     {
       std::lock_guard<std::mutex> lock(this->mutex_);
+      fail = this->fail_next_send_;
+      this->fail_next_send_ = false;
+      if (fail) {
+        throw std::runtime_error("simulated TCP send failure");
+      }
       this->commands_.push_back(command);
       block = this->block_first_send_ && this->commands_.size() == 1;
       enqueue_response = this->auto_response_;
@@ -123,6 +136,12 @@ public:
     this->block_first_send_ = true;
   }
 
+  void failNextSend()
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->fail_next_send_ = true;
+  }
+
   void releaseFirstSend()
   {
     {
@@ -155,6 +174,7 @@ private:
   MotionResponseResult auto_response_result_{MotionResponseResult::SUCCESS};
   int auto_error_code_{0};
   bool block_first_send_{false};
+  bool fail_next_send_{false};
   std::uint64_t dropped_response_count_{0};
 
   std::mutex mutex_block_;
@@ -212,11 +232,19 @@ private:
 
 struct SessionFixture
 {
+  static constexpr ServoFeedbackState::ConnectionEpoch CONNECTION_EPOCH = 7;
+
   FakeMotionTcpInterface tcp;
   Manager::SharedPtr manager{std::make_shared<Manager>()};
   mg400_interface::MotionCommander::SharedPtr commander{
     std::make_shared<mg400_interface::MotionCommander>(&tcp)};
   std::shared_ptr<FakeStopStrategy> stop_strategy{std::make_shared<FakeStopStrategy>()};
+  ServoSafetyViolationState::SharedPtr safety_state{
+    std::make_shared<ServoSafetyViolationState>()};
+  ServoOperationalErrorState::SharedPtr operational_state{
+    std::make_shared<ServoOperationalErrorState>()};
+  ServoFeedbackState::SharedPtr feedback_state{
+    std::make_shared<ServoFeedbackState>(CONNECTION_EPOCH)};
 
   SessionFixture()
   {
@@ -227,7 +255,17 @@ struct SessionFixture
     const ServoControlSession::Options & options)
   {
     return std::unique_ptr<ServoControlSession>(
-      new ServoControlSession(manager, commander, stop_strategy, options));
+      new ServoControlSession(
+        manager, commander, stop_strategy, safety_state, operational_state,
+        feedback_state, options));
+  }
+
+  void updateFeedback(
+    const std::array<double, 4> & joints,
+    const ServoFeedbackState::Clock::time_point received_at =
+    ServoFeedbackState::Clock::now())
+  {
+    feedback_state->update(joints, received_at);
   }
 };
 
@@ -241,14 +279,14 @@ ServoControlSession::Options quietOptions()
   return options;
 }
 
-TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongKindLeaseAndNonFiniteValues)
+TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongLeaseAndNonFiniteValues)
 {
   SessionFixture fixture;
   auto session = fixture.makeSession(quietOptions());
-  const auto started = session->start(Manager::State::SERVO_J);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
+  fixture.updateFeedback({{0.1, 0.2, 0.3, 0.4}});
 
-  EXPECT_FALSE(session->updateServoPTarget(started.lease_id, 0.1, 0.2, 0.3, 0.4));
   EXPECT_FALSE(
     session->updateServoJTarget(
       started.lease_id + 1, {{0.1, 0.2, 0.3, 0.4}}));
@@ -260,9 +298,31 @@ TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongKindLeaseAndNonFi
 
   const auto snapshot = session->getSnapshot();
   EXPECT_EQ(ServoControlSession::State::ACTIVE, snapshot.state);
-  EXPECT_EQ(1U, snapshot.accepted_target_count);
-  EXPECT_EQ(3U, snapshot.rejected_target_count);
-  EXPECT_TRUE(session->stop(started.lease_id).success);
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, KinematicViolationIsNotBufferedAndUsesFaultStopPath)
+{
+  {
+    SessionFixture fixture;
+    auto session = fixture.makeSession(quietOptions());
+    const auto started = session->start();
+    ASSERT_TRUE(started.success) << started.message;
+    EXPECT_FALSE(session->updateServoJTarget(started.lease_id, {{3.0, 0.0, 0.2, 0.0}}));
+    ASSERT_TRUE(
+      waitUntil(
+        [&session]() {
+          return session->getSnapshot().state == ServoControlSession::State::IDLE;
+        }));
+    EXPECT_TRUE(fixture.tcp.commands().empty());
+    EXPECT_EQ(
+      ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
+      fixture.safety_state->getSnapshot().code);
+    EXPECT_EQ(
+      ServoOperationalErrorCode::NONE,
+      fixture.operational_state->getSnapshot().code);
+    EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  }
 }
 
 TEST(ServoControlSession, SendsOnlyTheLatestTargetAtThePeriodicDeadline)
@@ -271,18 +331,218 @@ TEST(ServoControlSession, SendsOnlyTheLatestTargetAtThePeriodicDeadline)
   auto options = quietOptions();
   options.send_period = 50ms;
   auto session = fixture.makeSession(options);
-  const auto started = session->start(Manager::State::SERVO_J);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
-  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.0, 0.0, 0.0, 0.0}}));
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  const std::array<double, 4> latest{{0.01, 0.01, 0.21, 0.01}};
+  fixture.updateFeedback(latest);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
   ASSERT_TRUE(
-    session->updateServoJTarget(
-      started.lease_id, {{M_PI_2, -M_PI_2, M_PI, 0.0}}));
+    session->updateServoJTarget(started.lease_id, latest));
 
   ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
   const auto commands = fixture.tcp.commands();
   ASSERT_FALSE(commands.empty());
-  EXPECT_EQ("ServoJ(90.000,-90.000,180.000,0.000)", commands.front());
-  EXPECT_TRUE(session->stop(started.lease_id).success);
+  EXPECT_EQ("ServoJ(0.573,0.573,12.032,0.573)", commands.front());
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, InitialServoJUsesFreshFeedbackAndAllowsInclusiveThreshold)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.max_initial_joint_distance_rad = 0.05;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> current{{0.0, 0.0, 0.2, 0.0}};
+  const std::array<double, 4> target{{0.05, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(current);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  EXPECT_EQ(ServoSafetyViolationCode::NONE, fixture.safety_state->getSnapshot().code);
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, InitialServoJDiscontinuityNeverReachesTcpAndFaultStopsOnce)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.max_initial_joint_distance_rad = 0.05;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  fixture.updateFeedback({{0.0, 0.0, 0.2, 0.0}});
+  ASSERT_TRUE(
+    session->updateServoJTarget(started.lease_id, {{0.05001, 0.0, 0.2, 0.0}}));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+
+  EXPECT_TRUE(fixture.tcp.commands().empty());
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  const auto violation = fixture.safety_state->getSnapshot();
+  EXPECT_EQ(ServoSafetyViolationCode::SERVO_J_COMMAND_DISCONTINUITY, violation.code);
+  EXPECT_EQ(
+    "Initial ServoJ target is too far from the current joint position", violation.message);
+}
+
+TEST(ServoControlSession, InitialCommandRejectsMissingStaleAndWrongEpochFeedback)
+{
+  enum class Case {MISSING, STALE, WRONG_EPOCH};
+  for (const auto test_case : {Case::MISSING, Case::STALE, Case::WRONG_EPOCH}) {
+    SessionFixture fixture;
+    auto options = quietOptions();
+    options.send_period = 5ms;
+    options.feedback_timeout = 10ms;
+    auto session = fixture.makeSession(options);
+    const auto started = session->start();
+    ASSERT_TRUE(started.success) << started.message;
+
+    if (test_case == Case::STALE) {
+      fixture.updateFeedback(
+        {{0.0, 0.0, 0.2, 0.0}},
+        ServoFeedbackState::Clock::now() - 20ms);
+    } else if (test_case == Case::WRONG_EPOCH) {
+      fixture.feedback_state->beginConnectionEpoch(SessionFixture::CONNECTION_EPOCH + 1);
+      fixture.updateFeedback({{0.0, 0.0, 0.2, 0.0}});
+    }
+    ASSERT_TRUE(
+      session->updateServoJTarget(started.lease_id, {{0.0, 0.0, 0.2, 0.0}}));
+    ASSERT_TRUE(
+      waitUntil(
+        [&session]() {
+          return session->getSnapshot().state == ServoControlSession::State::IDLE;
+        }));
+    EXPECT_TRUE(fixture.tcp.commands().empty());
+    EXPECT_EQ(
+      ServoSafetyViolationCode::REALTIME_FEEDBACK_UNAVAILABLE,
+      fixture.safety_state->getSnapshot().code);
+    EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  }
+}
+
+TEST(ServoControlSession, SubsequentServoJComparesLatestTargetWithLastTcpSuccess)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 15ms;
+  options.max_joint_step_rad = 0.02;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(first);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+
+  // Feedback is deliberately moved: it must not be the comparison basis now.
+  fixture.updateFeedback({{1.0, 1.0, 1.0, 1.0}});
+  ASSERT_TRUE(
+    session->updateServoJTarget(started.lease_id, {{0.01, 0.0, 0.2, 0.0}}));
+  ASSERT_TRUE(
+    session->updateServoJTarget(started.lease_id, {{0.02001, 0.0, 0.2, 0.0}}));
+
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  EXPECT_EQ(
+    ServoSafetyViolationCode::SERVO_J_COMMAND_DISCONTINUITY,
+    fixture.safety_state->getSnapshot().code);
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+}
+
+TEST(ServoControlSession, SubsequentServoJAllowsInclusiveStepThreshold)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.max_joint_step_rad = 0.02;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(first);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  fixture.updateFeedback({{1.0, 1.0, 1.0, 1.0}});
+  ASSERT_TRUE(
+    session->updateServoJTarget(started.lease_id, {{0.02, 0.0, 0.2, 0.0}}));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
+  EXPECT_EQ(ServoSafetyViolationCode::NONE, fixture.safety_state->getSnapshot().code);
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, TcpSendFailureUsesFaultStopPath)
+{
+  SessionFixture fixture;
+  fixture.tcp.failNextSend();
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> target{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+  EXPECT_TRUE(fixture.tcp.commands().empty());
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  EXPECT_EQ(ServoSafetyViolationCode::NONE, fixture.safety_state->getSnapshot().code);
+  EXPECT_EQ(
+    ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED,
+    fixture.operational_state->getSnapshot().code);
+}
+
+TEST(ServoControlSession, SuccessfulRestartResetsPreviousTcpCommandToInitialState)
+{
+  SessionFixture fixture;
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.max_joint_step_rad = 0.01;
+  auto session = fixture.makeSession(options);
+
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+  fixture.updateFeedback(first);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  ASSERT_TRUE(session->stop().success);
+
+  ASSERT_TRUE(
+    fixture.safety_state->reportViolation(
+      ServoSafetyViolationCode::SERVO_J_COUPLED_LIMIT, "old safety fault"));
+  ASSERT_TRUE(
+    fixture.operational_state->reportError(
+      ServoOperationalErrorCode::MOTION_RESPONSE_TIMEOUT, "old operational fault"));
+
+  const std::array<double, 4> restarted_target{{0.5, 0.0, 0.2, 0.0}};
+  started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+  EXPECT_EQ(ServoSafetyViolationCode::NONE, fixture.safety_state->getSnapshot().code);
+  EXPECT_EQ(ServoOperationalErrorCode::NONE, fixture.operational_state->getSnapshot().code);
+  fixture.updateFeedback(restarted_target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, restarted_target));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
+  EXPECT_EQ(ServoSafetyViolationCode::NONE, fixture.safety_state->getSnapshot().code);
+  EXPECT_TRUE(session->stop().success);
 }
 
 TEST(ServoControlSession, ADelayedSendDoesNotCauseCatchUpBurst)
@@ -292,9 +552,11 @@ TEST(ServoControlSession, ADelayedSendDoesNotCauseCatchUpBurst)
   auto options = quietOptions();
   options.send_period = 10ms;
   auto session = fixture.makeSession(options);
-  const auto started = session->start(Manager::State::SERVO_P);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
-  ASSERT_TRUE(session->updateServoPTarget(started.lease_id, 0.1, 0.2, 0.3, 0.4));
+  const std::array<double, 4> target{{0.1, 0.2, 0.3, 0.4}};
+  fixture.updateFeedback(target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
 
   ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
   std::this_thread::sleep_for(50ms);
@@ -302,7 +564,7 @@ TEST(ServoControlSession, ADelayedSendDoesNotCauseCatchUpBurst)
   std::this_thread::sleep_for(4ms);
   EXPECT_EQ(1U, fixture.tcp.commands().size());
   ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
-  EXPECT_TRUE(session->stop(started.lease_id).success);
+  EXPECT_TRUE(session->stop().success);
 }
 
 TEST(ServoControlSession, TargetAfterAnElapsedWatchdogCannotReviveABlockedWorker)
@@ -313,8 +575,9 @@ TEST(ServoControlSession, TargetAfterAnElapsedWatchdogCannotReviveABlockedWorker
   options.send_period = 5ms;
   options.target_watchdog_timeout = 20ms;
   auto session = fixture.makeSession(options);
-  const auto started = session->start(Manager::State::SERVO_J);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
+  fixture.updateFeedback({{0.1, 0.2, 0.3, 0.4}});
   ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
   ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
 
@@ -327,8 +590,10 @@ TEST(ServoControlSession, TargetAfterAnElapsedWatchdogCannotReviveABlockedWorker
       [&session]() {
         return session->getSnapshot().state == ServoControlSession::State::IDLE;
       }));
-  EXPECT_TRUE(session->getSnapshot().watchdog_triggered);
   EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  EXPECT_EQ(
+    ServoOperationalErrorCode::WATCHDOG_TIMEOUT,
+    fixture.operational_state->getSnapshot().code);
 }
 
 TEST(ServoControlSession, MissingFirstTargetTriggersWatchdogAndReleasesOnlyAfterConfirmedStop)
@@ -337,7 +602,7 @@ TEST(ServoControlSession, MissingFirstTargetTriggersWatchdogAndReleasesOnlyAfter
   auto options = quietOptions();
   options.target_watchdog_timeout = 25ms;
   auto session = fixture.makeSession(options);
-  const auto started = session->start(Manager::State::SERVO_J);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
 
   ASSERT_TRUE(
@@ -346,11 +611,13 @@ TEST(ServoControlSession, MissingFirstTargetTriggersWatchdogAndReleasesOnlyAfter
         return session->getSnapshot().state == ServoControlSession::State::IDLE;
       }));
   const auto snapshot = session->getSnapshot();
-  EXPECT_TRUE(snapshot.watchdog_triggered);
   EXPECT_EQ(ServoControlSession::StopCause::WATCHDOG, snapshot.stop_cause);
   EXPECT_EQ(1U, fixture.stop_strategy->callCount());
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
   EXPECT_TRUE(fixture.tcp.commands().empty());
+  EXPECT_EQ(
+    ServoOperationalErrorCode::WATCHDOG_TIMEOUT,
+    fixture.operational_state->getSnapshot().code);
 }
 
 TEST(ServoControlSession, FailedWatchdogStopRetainsLeaseAndSameLeaseCanRetry)
@@ -362,7 +629,7 @@ TEST(ServoControlSession, FailedWatchdogStopRetainsLeaseAndSameLeaseCanRetry)
   auto options = quietOptions();
   options.target_watchdog_timeout = 20ms;
   auto session = fixture.makeSession(options);
-  const auto started = session->start(Manager::State::SERVO_P);
+  const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
 
   ASSERT_TRUE(
@@ -374,13 +641,16 @@ TEST(ServoControlSession, FailedWatchdogStopRetainsLeaseAndSameLeaseCanRetry)
   EXPECT_EQ(started.lease_id, manager_snapshot.lease_id);
   EXPECT_FALSE(manager_snapshot.accepting_servo_targets);
 
-  const auto retried = session->stop(started.lease_id);
+  const auto retried = session->stop();
   EXPECT_TRUE(retried.success) << retried.message;
   EXPECT_EQ(
     ServoControlSession::StopCause::WATCHDOG,
     session->getSnapshot().stop_cause);
   EXPECT_EQ(2U, fixture.stop_strategy->callCount());
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
+  EXPECT_EQ(
+    ServoOperationalErrorCode::WATCHDOG_TIMEOUT,
+    fixture.operational_state->getSnapshot().code);
 }
 
 TEST(ServoControlSession, EveryServoResponseFailureUsesTheFaultStopPath)
@@ -399,8 +669,9 @@ TEST(ServoControlSession, EveryServoResponseFailureUsesTheFaultStopPath)
     auto options = quietOptions();
     options.send_period = 5ms;
     auto session = fixture.makeSession(options);
-    const auto started = session->start(Manager::State::SERVO_J);
+    const auto started = session->start();
     ASSERT_TRUE(started.success) << started.message;
+    fixture.updateFeedback({{0.1, 0.2, 0.3, 0.4}});
     ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
 
     ASSERT_TRUE(
@@ -410,9 +681,16 @@ TEST(ServoControlSession, EveryServoResponseFailureUsesTheFaultStopPath)
         })) << "failure enum " << static_cast<int>(failure);
     const auto snapshot = session->getSnapshot();
     EXPECT_EQ(ServoControlSession::StopCause::FAULT, snapshot.stop_cause);
-    ASSERT_TRUE(snapshot.has_latest_response);
-    EXPECT_EQ(failure, snapshot.latest_response.result);
     EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+    const auto expected_code =
+      failure == MotionResponseResult::CONTROLLER_ERROR ?
+      ServoOperationalErrorCode::MOTION_RESPONSE_CONTROLLER_ERROR :
+      failure == MotionResponseResult::TIMEOUT ?
+      ServoOperationalErrorCode::MOTION_RESPONSE_TIMEOUT :
+      failure == MotionResponseResult::DISCONNECTED ?
+      ServoOperationalErrorCode::MOTION_RESPONSE_DISCONNECTED :
+      ServoOperationalErrorCode::MOTION_RESPONSE_PARSE_ERROR;
+    EXPECT_EQ(expected_code, fixture.operational_state->getSnapshot().code);
   }
 }
 
@@ -420,41 +698,25 @@ TEST(ServoControlSession, ForeignAndStaleStopCannotAffectANewerLease)
 {
   SessionFixture fixture;
   auto session = fixture.makeSession(quietOptions());
-  const auto old = session->start(Manager::State::SERVO_J);
+  const auto old = session->start();
   ASSERT_TRUE(old.success) << old.message;
 
   fixture.manager->updateRobotStatus(false, RobotMode::INVALID);
   fixture.manager->updateRobotStatus(true, RobotMode::ENABLE);
-  const auto current = fixture.manager->requestControlState(Manager::State::SERVO_P);
+  const auto current = fixture.manager->tryAcquire(Manager::State::SERVO_J);
   ASSERT_TRUE(current.success) << current.message;
   ASSERT_NE(old.lease_id, current.lease_id);
 
-  const auto stale_stop = session->stop(old.lease_id);
+  const auto stale_stop = session->stop();
   EXPECT_FALSE(stale_stop.success);
   const auto snapshot = fixture.manager->getSnapshot();
   EXPECT_EQ(current.lease_id, snapshot.lease_id);
-  EXPECT_EQ(Manager::MotionOwner::SERVO_P, snapshot.motion_owner);
+  EXPECT_EQ(Manager::State::SERVO_J, snapshot.control_state);
   EXPECT_EQ(0U, fixture.stop_strategy->callCount());
 
   ASSERT_TRUE(fixture.manager->beginServoStop(current.lease_id).success);
-  ASSERT_TRUE(fixture.manager->handleServoWatchdogTimeout(current.lease_id).success);
-}
-
-TEST(ServoControlSession, ForeignStopDoesNotJoinOrStopTheValidActiveWorker)
-{
-  SessionFixture fixture;
-  auto session = fixture.makeSession(quietOptions());
-  const auto started = session->start(Manager::State::SERVO_J);
-  ASSERT_TRUE(started.success) << started.message;
-  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
-
-  const auto foreign_stop = session->stop(started.lease_id + 1);
-  EXPECT_FALSE(foreign_stop.success);
-  EXPECT_EQ(started.lease_id, fixture.manager->getSnapshot().lease_id);
-  EXPECT_TRUE(session->updateServoJTarget(started.lease_id, {{0.2, 0.3, 0.4, 0.5}}));
-
-  EXPECT_TRUE(session->stop(started.lease_id).success);
-  EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
+  ASSERT_TRUE(
+    fixture.manager->release(Manager::State::SERVO_J, current.lease_id).success);
 }
 
 TEST(ServoControlSession, StaleStopCompletionCannotReleaseLeaseAcquiredDuringStrategy)
@@ -468,26 +730,31 @@ TEST(ServoControlSession, StaleStopCompletionCannotReleaseLeaseAcquiredDuringStr
     [manager, &newer_lease]() {
       manager->updateRobotStatus(false, RobotMode::INVALID);
       manager->updateRobotStatus(true, RobotMode::ENABLE);
-      const auto acquired = manager->requestControlState(Manager::State::SERVO_P);
+      const auto acquired = manager->tryAcquire(Manager::State::SERVO_J);
       if (acquired.success) {
         newer_lease = acquired.lease_id;
       }
       return ServoStopStrategy::Result{
         ServoStopStrategy::Status::SUCCESS, "old ResetRobot completion"};
     });
-  ServoControlSession session(manager, commander, strategy, quietOptions());
-  const auto old = session.start(Manager::State::SERVO_J);
+  auto safety_state = std::make_shared<ServoSafetyViolationState>();
+  auto operational_state = std::make_shared<ServoOperationalErrorState>();
+  auto feedback_state = std::make_shared<ServoFeedbackState>(1);
+  ServoControlSession session(
+    manager, commander, strategy, safety_state, operational_state, feedback_state,
+    quietOptions());
+  const auto old = session.start();
   ASSERT_TRUE(old.success) << old.message;
 
-  const auto stopped = session.stop(old.lease_id);
+  const auto stopped = session.stop();
   EXPECT_FALSE(stopped.success);
   ASSERT_NE(Manager::NO_LEASE, newer_lease);
   const auto snapshot = manager->getSnapshot();
   EXPECT_EQ(newer_lease, snapshot.lease_id);
-  EXPECT_EQ(Manager::MotionOwner::SERVO_P, snapshot.motion_owner);
+  EXPECT_EQ(Manager::State::SERVO_J, snapshot.control_state);
 
   ASSERT_TRUE(manager->beginServoStop(newer_lease).success);
-  ASSERT_TRUE(manager->handleServoWatchdogTimeout(newer_lease).success);
+  ASSERT_TRUE(manager->release(Manager::State::SERVO_J, newer_lease).success);
 }
 
 TEST(ResetRobotStopStrategy, RequiresResetSuccessAndEnableConfirmation)

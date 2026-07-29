@@ -23,6 +23,7 @@
 #include <mg400_msgs/action/joint_mov_j.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_plugin_base/regular_motion_action_reservations.hpp>
 #include <mg400_plugin/plugin_utils.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <tf2/utils.h>
@@ -36,7 +37,7 @@ class JointMovJ final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::JointMovJ;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
-  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+  using GoalReservations = mg400_plugin_base::RegularMotionActionReservations<
     std::string, std::monostate>;
 
 private:

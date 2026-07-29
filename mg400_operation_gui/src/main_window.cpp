@@ -22,10 +22,8 @@
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QPushButton>
-#include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSlider>
-#include <QStackedWidget>
 #include <QTime>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -54,9 +52,7 @@ QString serviceError(const QString & name, const int error_id)
 
 MainWindow::MainWindow(const rclcpp::NodeOptions & options)
 : QMainWindow(),
-  rclcpp::Node("mg400_operation_gui", "mg400", options),
-  servo_p_frame_id_(this->declare_parameter<std::string>(
-      "servo_p_frame_id", "mg400_origin_link"))
+  rclcpp::Node("mg400_operation_gui", "mg400", options)
 {
   const auto command_period_ms = std::clamp<std::int64_t>(
     this->declare_parameter<std::int64_t>("command_period_ms", 30), 10, 90);
@@ -67,16 +63,14 @@ MainWindow::MainWindow(const rclcpp::NodeOptions & options)
     QStringLiteral("起動しました。ROS namespace: %1")
     .arg(QString::fromStdString(this->get_namespace())));
   this->appendLog(
-    QStringLiteral("ServoP target frame: %1 / 指令周期: %2 ms")
-    .arg(QString::fromStdString(this->servo_p_frame_id_))
-    .arg(command_period_ms));
+    QStringLiteral("ServoJ 指令周期: %1 ms").arg(command_period_ms));
   this->updateUiState();
 }
 
 void MainWindow::setupUi()
 {
   this->setWindowTitle(QStringLiteral("MG400 Servo Control"));
-  this->setMinimumSize(720, 720);
+  this->setMinimumSize(720, 650);
 
   auto * central = new QWidget(this);
   auto * root = new QVBoxLayout(central);
@@ -104,9 +98,6 @@ void MainWindow::setupUi()
   const std::array<QString, 4> joint_labels{{
     QStringLiteral("J1"), QStringLiteral("J2"),
     QStringLiteral("J3"), QStringLiteral("J4")}};
-  const std::array<QString, 4> pose_labels{{
-    QStringLiteral("X"), QStringLiteral("Y"),
-    QStringLiteral("Z"), QStringLiteral("Rx")}};
   for (std::size_t index = 0; index < joint_labels.size(); ++index) {
     const int column = static_cast<int>(index * 2);
     current_value_layout->addWidget(
@@ -117,16 +108,6 @@ void MainWindow::setupUi()
       Qt::AlignRight | Qt::AlignVCenter);
     current_value_layout->addWidget(
       this->current_joint_value_labels_.at(index), 0, column + 1);
-
-    current_value_layout->addWidget(
-      new QLabel(pose_labels.at(index), current_value_group), 1, column);
-    this->current_pose_value_labels_.at(index) = new QLabel(
-      index < 3 ? QStringLiteral("-- mm") : QStringLiteral("-- deg"),
-      current_value_group);
-    this->current_pose_value_labels_.at(index)->setAlignment(
-      Qt::AlignRight | Qt::AlignVCenter);
-    current_value_layout->addWidget(
-      this->current_pose_value_labels_.at(index), 1, column + 1);
     current_value_layout->setColumnStretch(column + 1, 1);
   }
   root->addWidget(current_value_group);
@@ -141,20 +122,9 @@ void MainWindow::setupUi()
   robot_layout->addWidget(this->clear_error_button_);
   root->addWidget(robot_group);
 
-  auto * servo_group = new QGroupBox(QStringLiteral("ServoJ / ServoP"), central);
+  auto * servo_group = new QGroupBox(QStringLiteral("ServoJ"), central);
   auto * servo_layout = new QVBoxLayout(servo_group);
-  auto * mode_layout = new QHBoxLayout();
-  mode_layout->addWidget(new QLabel(QStringLiteral("Servoモード:"), servo_group));
-  this->servo_j_radio_ = new QRadioButton(QStringLiteral("ServoJ"), servo_group);
-  this->servo_p_radio_ = new QRadioButton(QStringLiteral("ServoP"), servo_group);
-  this->servo_j_radio_->setChecked(true);
-  mode_layout->addWidget(this->servo_j_radio_);
-  mode_layout->addWidget(this->servo_p_radio_);
-  mode_layout->addStretch();
-  servo_layout->addLayout(mode_layout);
-
-  this->target_stack_ = new QStackedWidget(servo_group);
-  this->target_stack_->addWidget(
+  servo_layout->addWidget(
     this->createAxisPanel(
       {QStringLiteral("J1"), QStringLiteral("J2"), QStringLiteral("J3"),
         QStringLiteral("J4")},
@@ -163,16 +133,6 @@ void MainWindow::setupUi()
       {QStringLiteral(" deg"), QStringLiteral(" deg"), QStringLiteral(" deg"),
         QStringLiteral(" deg")},
       this->servo_j_axes_));
-  this->target_stack_->addWidget(
-    this->createAxisPanel(
-      {QStringLiteral("X"), QStringLiteral("Y"), QStringLiteral("Z"),
-        QStringLiteral("Yaw (R)")},
-      {-500.0, -500.0, -500.0, -180.0},
-      {500.0, 500.0, 500.0, 180.0},
-      {QStringLiteral(" mm"), QStringLiteral(" mm"), QStringLiteral(" mm"),
-        QStringLiteral(" deg")},
-      this->servo_p_axes_));
-  servo_layout->addWidget(this->target_stack_);
 
   auto * target_action_layout = new QHBoxLayout();
   this->load_target_button_ = new QPushButton(
@@ -284,20 +244,6 @@ void MainWindow::setupUi()
     this->publish_stop_button_, &QPushButton::clicked, this, [this]() {
       this->stopPublishing();
     });
-  QObject::connect(
-    this->servo_j_radio_, &QRadioButton::toggled, this, [this](bool checked) {
-      if (checked) {
-        this->target_stack_->setCurrentIndex(0);
-        this->updateUiState();
-      }
-    });
-  QObject::connect(
-    this->servo_p_radio_, &QRadioButton::toggled, this, [this](bool checked) {
-      if (checked) {
-        this->target_stack_->setCurrentIndex(1);
-        this->updateUiState();
-      }
-    });
 }
 
 QWidget * MainWindow::createAxisPanel(
@@ -353,13 +299,10 @@ void MainWindow::createRosInterfaces(const std::chrono::milliseconds command_per
   this->enable_client_ = this->create_client<EnableRobot>("enable_robot");
   this->disable_client_ = this->create_client<DisableRobot>("disable_robot");
   this->clear_error_client_ = this->create_client<ClearError>("clear_error");
-  this->control_state_client_ = this->create_client<ChangeControlState>("change_control_state");
+  this->enable_servo_j_client_ = this->create_client<EnableServoJ>("enable_servo_j");
 
   this->servo_j_publisher_ = this->create_publisher<mg400_msgs::msg::ServoJ>(
     "servo_j/target", rclcpp::QoS(rclcpp::KeepLast(1)).reliable());
-  this->servo_p_publisher_ = this->create_publisher<mg400_msgs::msg::ServoP>(
-    "servo_p/target", rclcpp::QoS(rclcpp::KeepLast(1)).reliable());
-
   this->realtime_feedback_subscription_ =
     this->create_subscription<mg400_msgs::msg::RealtimeFeedback>(
     "realtime_feedback", rclcpp::SensorDataQoS(),
@@ -367,10 +310,10 @@ void MainWindow::createRosInterfaces(const std::chrono::milliseconds command_per
   this->robot_mode_subscription_ = this->create_subscription<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS(),
     std::bind(&MainWindow::handleRobotMode, this, std::placeholders::_1));
-  const auto control_qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
+  const auto control_state_qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
   this->control_state_subscription_ =
     this->create_subscription<mg400_msgs::msg::ControlState>(
-    "control_state", control_qos,
+    "control_state", control_state_qos,
     std::bind(&MainWindow::handleControlState, this, std::placeholders::_1));
 
   this->command_timer_ = this->create_wall_timer(
@@ -399,8 +342,6 @@ void MainWindow::updateUiState()
   this->enable_button_->setEnabled(controls_available && !owns_servo);
   this->disable_button_->setEnabled(controls_available && !owns_servo);
   this->clear_error_button_->setEnabled(controls_available);
-  this->servo_j_radio_->setEnabled(controls_available && !owns_servo);
-  this->servo_p_radio_->setEnabled(controls_available && !owns_servo);
   this->load_target_button_->setEnabled(
     controls_available && !owns_servo && this->realtime_feedback_received_);
 
@@ -410,7 +351,9 @@ void MainWindow::updateUiState()
     this->robot_mode_ == mg400_msgs::msg::RobotMode::ENABLE &&
     this->control_state_ == mg400_msgs::msg::ControlState::IDLE;
   this->mode_start_button_->setEnabled(ready_for_servo);
-  this->mode_stop_button_->setEnabled(controls_available && owns_servo);
+  this->mode_stop_button_->setEnabled(
+    controls_available && this->control_state_received_ &&
+    this->control_state_ == mg400_msgs::msg::ControlState::SERVO_J);
   this->publish_start_button_->setEnabled(
     controls_available && owns_servo && !this->command_active_ &&
     this->selectedTargetInitialized());
@@ -418,12 +361,8 @@ void MainWindow::updateUiState()
     controls_available && owns_servo && this->command_active_);
   this->filter_cutoff_spin_box_->setEnabled(!this->closing_);
 
-  const bool j_selected = this->selectedMode() == ServoMode::SERVO_J;
   this->setAxesEnabled(
-    this->servo_j_axes_, j_selected && this->servo_j_target_initialized_ &&
-    !this->service_busy_ && !this->closing_);
-  this->setAxesEnabled(
-    this->servo_p_axes_, !j_selected && this->servo_p_target_initialized_ &&
+    this->servo_j_axes_, this->servo_j_target_initialized_ &&
     !this->service_busy_ && !this->closing_);
 
   if (this->selectedTargetInitialized()) {
@@ -487,13 +426,9 @@ std::array<double, 4> MainWindow::axisValues(
 
 std::array<double, 4> MainWindow::filteredTargetValues()
 {
-  const bool servo_j_active = this->active_mode_ == ServoMode::SERVO_J;
-  const auto raw_values = this->axisValues(
-    servo_j_active ? this->servo_j_axes_ : this->servo_p_axes_);
-  auto & filtered_values = servo_j_active ?
-    this->servo_j_filtered_target_ : this->servo_p_filtered_target_;
-  auto & filter_initialized = servo_j_active ?
-    this->servo_j_filter_initialized_ : this->servo_p_filter_initialized_;
+  const auto raw_values = this->axisValues(this->servo_j_axes_);
+  auto & filtered_values = this->servo_j_filtered_target_;
+  auto & filter_initialized = this->servo_j_filter_initialized_;
 
   if (!filter_initialized) {
     filtered_values = raw_values;
@@ -512,16 +447,9 @@ std::array<double, 4> MainWindow::filteredTargetValues()
   return filtered_values;
 }
 
-MainWindow::ServoMode MainWindow::selectedMode() const
-{
-  return this->servo_p_radio_ && this->servo_p_radio_->isChecked() ?
-         ServoMode::SERVO_P : ServoMode::SERVO_J;
-}
-
 bool MainWindow::selectedTargetInitialized() const
 {
-  return this->selectedMode() == ServoMode::SERVO_J ?
-         this->servo_j_target_initialized_ : this->servo_p_target_initialized_;
+  return this->servo_j_target_initialized_;
 }
 
 void MainWindow::callEnableRobot()
@@ -609,32 +537,18 @@ void MainWindow::loadCurrentTarget()
     return;
   }
 
-  const bool servo_j_selected = this->selectedMode() == ServoMode::SERVO_J;
-  const auto & current_values = servo_j_selected ?
-    this->current_joint_angles_ : this->current_pose_;
-  const bool loaded = this->setAxisValues(
-    servo_j_selected ? this->servo_j_axes_ : this->servo_p_axes_, current_values);
+  const auto & current_values = this->current_joint_angles_;
+  const bool loaded = this->setAxisValues(this->servo_j_axes_, current_values);
 
   if (loaded) {
-    if (servo_j_selected) {
-      this->servo_j_filtered_target_ = current_values;
-      this->servo_j_filter_initialized_ = true;
-      this->servo_j_target_initialized_ = true;
-      this->appendLog(
-        QStringLiteral("realtime_feedback の現在関節角をスライダーへ読み込みました。"));
-    } else {
-      this->servo_p_filtered_target_ = current_values;
-      this->servo_p_filter_initialized_ = true;
-      this->servo_p_target_initialized_ = true;
-      this->appendLog(
-        QStringLiteral("realtime_feedback の現在TCP poseをスライダーへ読み込みました。"));
-    }
+    this->servo_j_filtered_target_ = current_values;
+    this->servo_j_filter_initialized_ = true;
+    this->servo_j_target_initialized_ = true;
+    this->appendLog(
+      QStringLiteral("realtime_feedback の現在関節角をスライダーへ読み込みました。"));
   } else {
     this->appendLog(
-      servo_j_selected ?
-      QStringLiteral("realtime_feedback の関節角が不正、またはUI範囲外です。") :
-      QStringLiteral("realtime_feedback のTCP poseが不正、またはUI範囲外です。"),
-      true);
+      QStringLiteral("realtime_feedback の関節角が不正、またはUI範囲外です。"), true);
   }
 
   const bool should_start = loaded && this->pending_servo_start_ && !this->closing_;
@@ -659,32 +573,24 @@ void MainWindow::beginServoStart()
     this->loadCurrentTarget();
     return;
   }
-  if (!this->control_state_client_->service_is_ready()) {
-    this->appendLog(QStringLiteral("change_control_state サービスが利用できません。"), true);
+  if (!this->enable_servo_j_client_->service_is_ready()) {
+    this->appendLog(QStringLiteral("enable_servo_j サービスが利用できません。"), true);
     return;
   }
 
-  const ServoMode requested_mode = this->selectedMode();
-  auto request = std::make_shared<ChangeControlState::Request>();
-  request->target_state.control_state = requested_mode == ServoMode::SERVO_J ?
-    mg400_msgs::msg::ControlState::SERVO_J : mg400_msgs::msg::ControlState::SERVO_P;
-  request->lease_id = 0;
+  auto request = std::make_shared<EnableServoJ::Request>();
+  request->enable = true;
   this->setServiceBusy(true);
-  this->appendLog(
-    requested_mode == ServoMode::SERVO_J ? QStringLiteral("ServoJモードを要求しました。") :
-    QStringLiteral("ServoPモードを要求しました。"));
-  this->control_state_client_->async_send_request(
-    request, [this, requested_mode](rclcpp::Client<ChangeControlState>::SharedFuture future) {
+  this->appendLog(QStringLiteral("ServoJモードを要求しました。"));
+  this->enable_servo_j_client_->async_send_request(
+    request, [this](rclcpp::Client<EnableServoJ>::SharedFuture future) {
       bool started = false;
       try {
         const auto response = future.get();
-        const std::uint8_t expected_state = requested_mode == ServoMode::SERVO_J ?
-        mg400_msgs::msg::ControlState::SERVO_J : mg400_msgs::msg::ControlState::SERVO_P;
         started = response->success && response->lease_id != 0 &&
-        response->current_state.control_state == expected_state;
+        response->enabled;
         if (started) {
           this->lease_id_ = response->lease_id;
-          this->active_mode_ = requested_mode;
           this->command_active_ = false;
           this->appendLog(
             QStringLiteral("Servoモード開始: lease_id=%1 (%2)。Target送信は停止中です。")
@@ -741,34 +647,28 @@ void MainWindow::requestServoStop()
 {
   this->command_active_ = false;
   this->updateUiState();
-  if (this->lease_id_ == 0) {
-    this->appendLog(QStringLiteral("停止対象のServo leaseはありません。"));
-    this->continueCloseIfNeeded();
-    return;
-  }
   if (this->service_busy_ || this->stop_request_in_flight_) {
     return;
   }
-  if (!this->control_state_client_->service_is_ready()) {
+  if (!this->enable_servo_j_client_->service_is_ready()) {
     this->appendLog(
-      QStringLiteral("change_control_state サービスが利用できません。指令送信は停止しました。"),
+      QStringLiteral("enable_servo_j サービスが利用できません。指令送信は停止しました。"),
       true);
     return;
   }
 
   const std::uint64_t stopping_lease = this->lease_id_;
-  auto request = std::make_shared<ChangeControlState::Request>();
-  request->target_state.control_state = mg400_msgs::msg::ControlState::IDLE;
-  request->lease_id = stopping_lease;
+  auto request = std::make_shared<EnableServoJ::Request>();
+  request->enable = false;
   this->stop_request_in_flight_ = true;
   this->setServiceBusy(true);
   this->appendLog(QStringLiteral("Target送信を停止し、IDLEへの遷移を要求しました。"));
-  this->control_state_client_->async_send_request(
-    request, [this, stopping_lease](rclcpp::Client<ChangeControlState>::SharedFuture future) {
+  this->enable_servo_j_client_->async_send_request(
+    request, [this, stopping_lease](rclcpp::Client<EnableServoJ>::SharedFuture future) {
       try {
         const auto response = future.get();
         if (response->success &&
-        response->current_state.control_state == mg400_msgs::msg::ControlState::IDLE)
+        !response->enabled)
         {
           if (this->lease_id_ == stopping_lease) {
             this->lease_id_ = 0;
@@ -796,31 +696,13 @@ void MainWindow::publishServoTarget()
     return;
   }
 
-  if (this->active_mode_ == ServoMode::SERVO_J) {
-    const auto degrees = this->filteredTargetValues();
-    mg400_msgs::msg::ServoJ message;
-    message.lease_id = this->lease_id_;
-    for (std::size_t index = 0; index < degrees.size(); ++index) {
-      message.joint_angles.at(index) = degrees.at(index) * PI / 180.0;
-    }
-    this->servo_j_publisher_->publish(std::move(message));
-    return;
-  }
-
-  const auto values = this->filteredTargetValues();
-  const double yaw = values.at(3) * PI / 180.0;
-  mg400_msgs::msg::ServoP message;
+  const auto degrees = this->filteredTargetValues();
+  mg400_msgs::msg::ServoJ message;
   message.lease_id = this->lease_id_;
-  message.pose.header.stamp = this->now();
-  message.pose.header.frame_id = this->servo_p_frame_id_;
-  message.pose.pose.position.x = values.at(0) / 1000.0;
-  message.pose.pose.position.y = values.at(1) / 1000.0;
-  message.pose.pose.position.z = values.at(2) / 1000.0;
-  message.pose.pose.orientation.x = 0.0;
-  message.pose.pose.orientation.y = 0.0;
-  message.pose.pose.orientation.z = std::sin(yaw / 2.0);
-  message.pose.pose.orientation.w = std::cos(yaw / 2.0);
-  this->servo_p_publisher_->publish(std::move(message));
+  for (std::size_t index = 0; index < degrees.size(); ++index) {
+    message.joint_angles.at(index) = degrees.at(index) * PI / 180.0;
+  }
+  this->servo_j_publisher_->publish(std::move(message));
 }
 
 void MainWindow::handleRobotMode(
@@ -843,19 +725,6 @@ void MainWindow::handleRealtimeFeedback(
     this->current_joint_value_labels_.at(index)->setText(
       QStringLiteral("%1 deg").arg(message->q_actual.at(index), 0, 'f', 2));
   }
-  this->current_pose_ = {{
-    message->tool_vector_actual.at(0),
-    message->tool_vector_actual.at(1),
-    message->tool_vector_actual.at(2),
-    std::remainder(message->tool_vector_actual.at(3), 360.0),
-  }};
-  for (std::size_t index = 0; index < this->current_pose_value_labels_.size(); ++index) {
-    this->current_pose_value_labels_.at(index)->setText(
-      index < 3 ?
-      QStringLiteral("%1 mm").arg(message->tool_vector_actual.at(index), 0, 'f', 2) :
-      QStringLiteral("%1 deg").arg(message->tool_vector_actual.at(index), 0, 'f', 2));
-  }
-
   const bool first_message = !this->realtime_feedback_received_;
   this->realtime_feedback_received_ = true;
   if (first_message) {
@@ -871,9 +740,8 @@ void MainWindow::handleControlState(
   this->control_state_ = message->control_state;
   this->control_state_received_ = true;
 
-  const std::uint8_t expected_state = this->active_mode_ == ServoMode::SERVO_J ?
-    mg400_msgs::msg::ControlState::SERVO_J : mg400_msgs::msg::ControlState::SERVO_P;
-  if (this->lease_id_ != 0 && this->control_state_ != expected_state &&
+  if (this->lease_id_ != 0 &&
+    this->control_state_ != mg400_msgs::msg::ControlState::SERVO_J &&
     !this->stop_request_in_flight_)
   {
     this->command_active_ = false;
@@ -987,8 +855,8 @@ QString MainWindow::controlStateName(const std::uint8_t state)
       return QStringLiteral("IDLE");
     case mg400_msgs::msg::ControlState::SERVO_J:
       return QStringLiteral("SERVO_J");
-    case mg400_msgs::msg::ControlState::SERVO_P:
-      return QStringLiteral("SERVO_P");
+    case mg400_msgs::msg::ControlState::REGULAR_MOTION:
+      return QStringLiteral("REGULAR_MOTION");
     default:
       return QStringLiteral("UNKNOWN (%1)").arg(state);
   }

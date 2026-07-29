@@ -105,14 +105,6 @@ TEST_F(TestMotionCommander, ServoJUsesDegreesWithoutOptionalArguments)
   commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
 }
 
-TEST_F(TestMotionCommander, ServoPUsesMillimetersAndDegreesWithoutOptionalArguments)
-{
-  EXPECT_CALL(
-    mock, sendCommand(
-      StrEq("ServoP(100.000,-200.000,300.000,-45.000)"))).Times(1);
-  commander->servoP(0.1, -0.2, 0.3, -M_PI_4);
-}
-
 TEST_F(TestMotionCommander, MovLIO) {
   EXPECT_CALL(
     mock, sendCommand(

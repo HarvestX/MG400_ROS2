@@ -102,8 +102,8 @@ void MoveJog::handleStart(
     const auto snapshot =
       this->mg400_interface_->getControlStateManagerShared()->getSnapshot();
     const bool lease_is_current =
-      snapshot.motion_owner ==
-      mg400_interface::ControlStateManager::MotionOwner::REGULAR_MOTION &&
+      snapshot.control_state ==
+      mg400_interface::ControlStateManager::State::REGULAR_MOTION &&
       snapshot.lease_id == active_lease_id;
 
     if (lease_is_current) {

@@ -27,11 +27,10 @@
 #include <mg400_msgs/msg/realtime_feedback.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_msgs/msg/servo_j.hpp>
-#include <mg400_msgs/msg/servo_p.hpp>
-#include <mg400_msgs/srv/change_control_state.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/enable_servo_j.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 class QCloseEvent;
@@ -39,9 +38,7 @@ class QDoubleSpinBox;
 class QLabel;
 class QPlainTextEdit;
 class QPushButton;
-class QRadioButton;
 class QSlider;
-class QStackedWidget;
 class QTimer;
 class QVBoxLayout;
 class QWidget;
@@ -61,31 +58,21 @@ protected:
   void closeEvent(QCloseEvent * event) override;
 
 private:
-  enum class ServoMode
-  {
-    SERVO_J,
-    SERVO_P,
-  };
-
   struct AxisWidgets
   {
     QSlider * slider;
     QDoubleSpinBox * spin_box;
   };
 
-  using ChangeControlState = mg400_msgs::srv::ChangeControlState;
   using ClearError = mg400_msgs::srv::ClearError;
   using DisableRobot = mg400_msgs::srv::DisableRobot;
   using EnableRobot = mg400_msgs::srv::EnableRobot;
+  using EnableServoJ = mg400_msgs::srv::EnableServoJ;
 
   std::array<AxisWidgets, 4> servo_j_axes_{};
-  std::array<AxisWidgets, 4> servo_p_axes_{};
   std::array<double, 4> current_joint_angles_{};
-  std::array<double, 4> current_pose_{};
   std::array<double, 4> servo_j_filtered_target_{};
-  std::array<double, 4> servo_p_filtered_target_{};
   std::array<QLabel *, 4> current_joint_value_labels_{};
-  std::array<QLabel *, 4> current_pose_value_labels_{};
 
   QLabel * robot_mode_value_{nullptr};
   QLabel * control_state_value_{nullptr};
@@ -101,18 +88,14 @@ private:
   QPushButton * publish_start_button_{nullptr};
   QPushButton * publish_stop_button_{nullptr};
   QDoubleSpinBox * filter_cutoff_spin_box_{nullptr};
-  QRadioButton * servo_j_radio_{nullptr};
-  QRadioButton * servo_p_radio_{nullptr};
-  QStackedWidget * target_stack_{nullptr};
   QPlainTextEdit * log_view_{nullptr};
   QTimer * close_timeout_{nullptr};
 
   rclcpp::Client<EnableRobot>::SharedPtr enable_client_;
   rclcpp::Client<DisableRobot>::SharedPtr disable_client_;
   rclcpp::Client<ClearError>::SharedPtr clear_error_client_;
-  rclcpp::Client<ChangeControlState>::SharedPtr control_state_client_;
+  rclcpp::Client<EnableServoJ>::SharedPtr enable_servo_j_client_;
   rclcpp::Publisher<mg400_msgs::msg::ServoJ>::SharedPtr servo_j_publisher_;
-  rclcpp::Publisher<mg400_msgs::msg::ServoP>::SharedPtr servo_p_publisher_;
   rclcpp::Subscription<mg400_msgs::msg::RealtimeFeedback>::SharedPtr
     realtime_feedback_subscription_;
   rclcpp::Subscription<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_subscription_;
@@ -120,18 +103,14 @@ private:
     control_state_subscription_;
   rclcpp::TimerBase::SharedPtr command_timer_;
 
-  const std::string servo_p_frame_id_;
   std::uint64_t lease_id_{0};
   std::uint64_t robot_mode_{mg400_msgs::msg::RobotMode::INVALID};
   std::uint8_t control_state_{mg400_msgs::msg::ControlState::UNAVAILABLE};
-  ServoMode active_mode_{ServoMode::SERVO_J};
   bool robot_mode_received_{false};
   bool control_state_received_{false};
   bool realtime_feedback_received_{false};
   bool servo_j_target_initialized_{false};
-  bool servo_p_target_initialized_{false};
   bool servo_j_filter_initialized_{false};
-  bool servo_p_filter_initialized_{false};
   bool command_active_{false};
   bool service_busy_{false};
   bool pending_servo_start_{false};
@@ -154,7 +133,6 @@ private:
   bool setAxisValues(std::array<AxisWidgets, 4> & axes, const std::array<double, 4> & values);
   std::array<double, 4> axisValues(const std::array<AxisWidgets, 4> & axes) const;
   std::array<double, 4> filteredTargetValues();
-  ServoMode selectedMode() const;
   bool selectedTargetInitialized() const;
 
   void callEnableRobot();

@@ -15,6 +15,7 @@
 #include "mg400_node/mg400_node.hpp"
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
@@ -41,7 +42,9 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<int>("servo.target_watchdog_ms", 30000);
   this->declare_parameter<int>("servo.stop_timeout_ms", 2000);
   this->declare_parameter<int>("servo.stop_confirmation_poll_ms", 10);
-  this->declare_parameter<int>("servo.diagnostics_period_ms", 100);
+  this->declare_parameter<int>("servo.safety.feedback_timeout_ms", 100);
+  this->declare_parameter<double>("servo.safety.max_initial_joint_distance_rad", 0.0872665);
+  this->declare_parameter<double>("servo.safety.max_joint_step_rad", 0.0174533);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(
@@ -73,7 +76,7 @@ MG400Node::~MG400Node()
     }
     // Destruction is the final fallback: even after a failed best-effort stop,
     // the Session must still be destroyed before its raw TCP dependencies.
-    this->servo_control_ros_interface_->clearSession("MG400Node destructor");
+    this->servo_control_ros_interface_->clearSession();
     this->servo_control_ros_interface_.reset();
   }
   if (this->interface_) {
@@ -135,11 +138,9 @@ CallbackReturn MG400Node::on_configure(const State &)
   }
 
   try {
-    this->servo_ros_options_.target_frame =
-      this->get_parameter("prefix").as_string() + "mg400_origin_link";
-    this->servo_ros_options_.hardware_id = "mg400@" + this->ip_address_;
     this->servo_control_ros_interface_ = std::make_unique<ServoControlRosInterface>(
-      *this, this->interface_->getControlStateManagerShared(), this->servo_ros_options_);
+      *this, this->interface_->getControlStateManagerShared(),
+      this->servo_safety_violation_state_, this->servo_operational_error_state_);
   } catch (const std::exception & error) {
     RCLCPP_ERROR(
       this->get_logger(), "Failed to configure Servo ROS interface: %s", error.what());
@@ -226,7 +227,6 @@ CallbackReturn MG400Node::on_activate(const State &)
   RCLCPP_INFO(this->get_logger(), "Connected to MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(true));
   this->servo_control_ros_interface_->publishControlState(true);
-  this->servo_control_ros_interface_->publishDiagnostics();
   return CallbackReturn::SUCCESS;
 }
 
@@ -248,7 +248,6 @@ CallbackReturn MG400Node::on_deactivate(const State &)
     this->interface_active_ = false;
   }
   this->servo_control_ros_interface_->publishControlState(true);
-  this->servo_control_ros_interface_->publishDiagnostics();
 
   if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
@@ -404,9 +403,26 @@ void MG400Node::onErrorTimer()
 
 void MG400Node::onInterfaceCheckTimer()
 {
+  const auto previous_manager_snapshot =
+    this->interface_->getControlStateManager().getSnapshot();
+  const bool servo_was_active =
+    previous_manager_snapshot.control_state ==
+    mg400_interface::ControlStateManager::State::SERVO_J ||
+    (this->servo_control_ros_interface_ &&
+    this->servo_control_ros_interface_->hasActiveServoLease());
   if (!this->interface_->ok()) {
     RCLCPP_ERROR(this->get_logger(), "Connection to MG400 was interrupted");
     this->connection_interrupted_ = true;
+    if (servo_was_active && this->servo_operational_error_state_->reportError(
+        mg400_interface::ServoOperationalErrorCode::REALTIME_CONNECTION_LOST,
+        "The MG400 connection was lost during Servo control"))
+    {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "REALTIME_CONNECTION_LOST: MG400 connection was lost during Servo control; "
+        "lease_id=%lu",
+        previous_manager_snapshot.lease_id);
+    }
     if (this->servo_control_ros_interface_) {
       this->servo_control_ros_interface_->retireSessionIfLeaseLost(
         "Connection interruption revoked the Servo lease");
@@ -432,6 +448,9 @@ void MG400Node::onInterfaceCheckTimer()
     if (!this->createServoSession()) {
       RCLCPP_ERROR(this->get_logger(), "Failed to create a fresh Servo connection epoch");
     }
+  }
+  if (this->servo_control_ros_interface_) {
+    this->servo_control_ros_interface_->publishControlState();
   }
 }
 
@@ -463,15 +482,15 @@ bool MG400Node::loadAndValidateServoParameters()
   const auto stop_timeout_ms = this->get_parameter("servo.stop_timeout_ms").as_int();
   const auto stop_confirmation_poll_ms =
     this->get_parameter("servo.stop_confirmation_poll_ms").as_int();
-  const auto diagnostics_period_ms =
-    this->get_parameter("servo.diagnostics_period_ms").as_int();
+  const auto feedback_timeout_ms =
+    this->get_parameter("servo.safety.feedback_timeout_ms").as_int();
 
   const std::array<std::pair<const char *, std::int64_t>, 5> values{{
     {"servo.send_period_ms", send_period_ms},
     {"servo.target_watchdog_ms", target_watchdog_ms},
     {"servo.stop_timeout_ms", stop_timeout_ms},
     {"servo.stop_confirmation_poll_ms", stop_confirmation_poll_ms},
-    {"servo.diagnostics_period_ms", diagnostics_period_ms}}};
+    {"servo.safety.feedback_timeout_ms", feedback_timeout_ms}}};
   for (const auto & parameter : values) {
     if (parameter.second <= 0) {
       RCLCPP_ERROR(
@@ -480,15 +499,45 @@ bool MG400Node::loadAndValidateServoParameters()
     }
   }
 
+  const std::array<std::pair<const char *, double>, 2> safety_thresholds{{
+    {"servo.safety.max_initial_joint_distance_rad",
+      this->get_parameter("servo.safety.max_initial_joint_distance_rad").as_double()},
+    {"servo.safety.max_joint_step_rad",
+      this->get_parameter("servo.safety.max_joint_step_rad").as_double()}}};
+  for (const auto & parameter : safety_thresholds) {
+    if (!std::isfinite(parameter.second) || parameter.second <= 0.0) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Parameter %s must be positive and finite", parameter.first);
+      return false;
+    }
+  }
+
   this->servo_session_options_.send_period = std::chrono::milliseconds(send_period_ms);
   this->servo_session_options_.target_watchdog_timeout =
     std::chrono::milliseconds(target_watchdog_ms);
+  this->servo_session_options_.feedback_timeout =
+    std::chrono::milliseconds(feedback_timeout_ms);
+  this->servo_session_options_.max_initial_joint_distance_rad = safety_thresholds[0].second;
+  this->servo_session_options_.max_joint_step_rad = safety_thresholds[1].second;
+  const auto logger = this->get_logger();
+  this->servo_session_options_.safety_log_callback =
+    [logger](const std::string & message) {RCLCPP_ERROR(logger, "%s", message.c_str());};
+  const auto clock = this->get_clock();
+  this->servo_session_options_.operational_log_callback =
+    [logger, clock](
+    const mg400_interface::ServoOperationalErrorCode code,
+    const std::string & message)
+    {
+      if (code == mg400_interface::ServoOperationalErrorCode::WATCHDOG_TIMEOUT) {
+        RCLCPP_WARN_THROTTLE(logger, *clock, 5000, "%s", message.c_str());
+      } else {
+        RCLCPP_ERROR_THROTTLE(logger, *clock, 5000, "%s", message.c_str());
+      }
+    };
   this->servo_session_options_.stop_confirmation_timeout =
     std::chrono::milliseconds(stop_timeout_ms);
   this->servo_stop_options_.confirmation_poll_period =
     std::chrono::milliseconds(stop_confirmation_poll_ms);
-  this->servo_ros_options_.diagnostics_period =
-    std::chrono::milliseconds(diagnostics_period_ms);
   return true;
 }
 
@@ -523,6 +572,9 @@ bool MG400Node::createServoSession()
       this->interface_->getControlStateManagerShared(),
       this->interface_->motion_commander,
       std::move(stop_strategy),
+      this->servo_control_ros_interface_->getSafetyViolationStateShared(),
+      this->servo_control_ros_interface_->getOperationalErrorStateShared(),
+      this->interface_->realtime_tcp_interface->getServoFeedbackStateShared(),
       this->servo_session_options_);
     this->servo_control_ros_interface_->installSession(std::move(session));
     return true;
@@ -551,7 +603,6 @@ bool MG400Node::stopAndDestroyServoSession(const std::string & reason)
       return true;
     }
     this->servo_control_ros_interface_->publishControlState(true);
-    this->servo_control_ros_interface_->publishDiagnostics();
     RCLCPP_ERROR(
       this->get_logger(), "Servo safe stop failed and the live Lease is retained: %s",
       stopped.message.c_str());
@@ -559,7 +610,7 @@ bool MG400Node::stopAndDestroyServoSession(const std::string & reason)
   }
 
   if (this->servo_control_ros_interface_->hasSession()) {
-    this->servo_control_ros_interface_->clearSession(reason);
+    this->servo_control_ros_interface_->clearSession();
   }
   return true;
 }

@@ -35,8 +35,8 @@ static_assert(
   mg400_msgs::msg::ControlState::SERVO_J,
   "ControlStateManager and ControlState.msg must use the same values");
 static_assert(
-  static_cast<std::uint8_t>(ControlStateManager::State::SERVO_P) ==
-  mg400_msgs::msg::ControlState::SERVO_P,
+  static_cast<std::uint8_t>(ControlStateManager::State::REGULAR_MOTION) ==
+  mg400_msgs::msg::ControlState::REGULAR_MOTION,
   "ControlStateManager and ControlState.msg must use the same values");
 static_assert(
   mg400_msgs::msg::RobotMode::ENABLE == 5,
@@ -56,7 +56,6 @@ static_assert(
 
 ControlStateManager::ControlStateManager()
 : control_state_(State::UNAVAILABLE),
-  motion_owner_(MotionOwner::NONE),
   lease_id_(NO_LEASE),
   next_lease_id_(NO_LEASE),
   connected_(false),
@@ -79,23 +78,10 @@ ControlStateManager::Snapshot ControlStateManager::updateRobotStatus(
     return this->getSnapshotLocked();
   }
 
-  if (isServoOwner(this->motion_owner_)) {
-    if (isServoAllowedRobotMode(this->robot_mode_)) {
-      this->control_state_ = this->motion_owner_ == MotionOwner::SERVO_J ?
-        State::SERVO_J : State::SERVO_P;
-    } else {
-      this->clearOwnershipLocked();
-      this->control_state_ = State::UNAVAILABLE;
-    }
-    return this->getSnapshotLocked();
-  }
-
-  if (this->motion_owner_ == MotionOwner::REGULAR_MOTION) {
-    if (isRegularMotionRobotMode(this->robot_mode_)) {
-      // IDLE means that Servo does not own control. The regular-motion lease
-      // still prevents Servo admission while the embedded robot is active.
-      this->control_state_ = State::IDLE;
-    } else {
+  if (this->control_state_ == State::SERVO_J ||
+    this->control_state_ == State::REGULAR_MOTION)
+  {
+    if (!isAllowedRobotMode(this->control_state_, this->robot_mode_)) {
       this->clearOwnershipLocked();
       this->control_state_ = State::UNAVAILABLE;
     }
@@ -106,38 +92,12 @@ ControlStateManager::Snapshot ControlStateManager::updateRobotStatus(
   return this->getSnapshotLocked();
 }
 
-ControlStateManager::Result ControlStateManager::requestControlState(
-  const State target_state, const LeaseId lease_id)
+ControlStateManager::Result ControlStateManager::tryAcquire(const State target_state)
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
 
-  if (target_state == State::UNAVAILABLE) {
-    return this->makeResultLocked(false, "UNAVAILABLE cannot be requested");
-  }
-
-  if (target_state == State::IDLE) {
-    if (!isServoOwner(this->motion_owner_)) {
-      return this->makeResultLocked(false, "Servo control is not active");
-    }
-    if (lease_id == NO_LEASE || lease_id != this->lease_id_) {
-      return this->makeResultLocked(false, "Servo lease does not match the active owner");
-    }
-    if (this->accepting_servo_targets_) {
-      return this->makeResultLocked(false, "Servo stop has not begun");
-    }
-
-    this->clearOwnershipLocked();
-    // A completed explicit stop is a Servo -> IDLE transition. A subsequent
-    // status update can still move the state to UNAVAILABLE if necessary.
-    this->control_state_ = State::IDLE;
-    return this->makeResultLocked(true, "Servo control stopped");
-  }
-
-  if (!isServoState(target_state)) {
-    return this->makeResultLocked(false, "Unknown control state");
-  }
-  if (lease_id != NO_LEASE) {
-    return this->makeResultLocked(false, "A Servo start request must use lease ID zero");
+  if (!isAcquirableState(target_state)) {
+    return this->makeResultLocked(false, "Requested control state cannot be acquired");
   }
   if (!this->connected_) {
     return this->makeResultLocked(false, "MG400 is not connected");
@@ -148,23 +108,18 @@ ControlStateManager::Result ControlStateManager::requestControlState(
   if (this->control_state_ != State::IDLE) {
     return this->makeResultLocked(false, "Control state is not IDLE");
   }
-  if (this->motion_owner_ != MotionOwner::NONE) {
-    return this->makeResultLocked(false, "Motion ownership is already held");
-  }
 
   this->lease_id_ = this->allocateLeaseLocked();
-  this->motion_owner_ = target_state == State::SERVO_J ?
-    MotionOwner::SERVO_J : MotionOwner::SERVO_P;
   this->control_state_ = target_state;
-  this->accepting_servo_targets_ = true;
-  return this->makeResultLocked(true, "Servo control started");
+  this->accepting_servo_targets_ = target_state == State::SERVO_J;
+  return this->makeResultLocked(true, "Control state acquired");
 }
 
 ControlStateManager::Result ControlStateManager::beginServoStop(const LeaseId lease_id)
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
 
-  if (!isServoOwner(this->motion_owner_)) {
+  if (this->control_state_ != State::SERVO_J) {
     return this->makeResultLocked(false, "Servo control is not active");
   }
   if (lease_id == NO_LEASE || lease_id != this->lease_id_) {
@@ -178,84 +133,41 @@ ControlStateManager::Result ControlStateManager::beginServoStop(const LeaseId le
   return this->makeResultLocked(true, "Servo target admission stopped");
 }
 
-ControlStateManager::Result ControlStateManager::tryAcquireRegularMotion()
+ControlStateManager::Result ControlStateManager::release(
+  const State owned_state, const LeaseId lease_id)
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
 
-  if (!this->connected_) {
-    return this->makeResultLocked(false, "MG400 is not connected");
-  }
-  if (this->robot_mode_ != ROBOT_MODE_ENABLE) {
-    return this->makeResultLocked(false, "RobotMode is not ENABLE");
-  }
-  if (this->control_state_ != State::IDLE) {
-    return this->makeResultLocked(false, "Control state is not IDLE");
-  }
-  if (this->motion_owner_ != MotionOwner::NONE) {
-    return this->makeResultLocked(false, "Motion ownership is already held");
-  }
-
-  this->lease_id_ = this->allocateLeaseLocked();
-  this->motion_owner_ = MotionOwner::REGULAR_MOTION;
-  return this->makeResultLocked(true, "Regular-motion ownership acquired");
-}
-
-ControlStateManager::Result ControlStateManager::releaseRegularMotion(
-  const LeaseId lease_id)
-{
-  std::lock_guard<std::mutex> lock(this->mutex_);
-
-  if (this->motion_owner_ != MotionOwner::REGULAR_MOTION) {
-    return this->makeResultLocked(false, "Regular-motion ownership is not active");
+  if (!isAcquirableState(owned_state) || this->control_state_ != owned_state) {
+    return this->makeResultLocked(false, "Requested control ownership is not active");
   }
   if (lease_id == NO_LEASE || lease_id != this->lease_id_) {
-    return this->makeResultLocked(false, "Regular-motion lease does not match the active owner");
+    return this->makeResultLocked(false, "Lease does not match the active owner");
   }
-
-  this->clearOwnershipLocked();
-  this->setStateWithoutOwnerLocked();
-  return this->makeResultLocked(true, "Regular-motion ownership released");
-}
-
-ControlStateManager::Result ControlStateManager::handleServoWatchdogTimeout(
-  const LeaseId lease_id)
-{
-  std::lock_guard<std::mutex> lock(this->mutex_);
-
-  if (!isServoOwner(this->motion_owner_)) {
-    return this->makeResultLocked(false, "Servo control is not active");
-  }
-  if (lease_id == NO_LEASE || lease_id != this->lease_id_) {
-    return this->makeResultLocked(false, "Servo lease does not match the active owner");
-  }
-  if (this->accepting_servo_targets_) {
+  if (owned_state == State::SERVO_J && this->accepting_servo_targets_) {
     return this->makeResultLocked(false, "Servo stop has not begun");
   }
 
   this->clearOwnershipLocked();
-  // The caller must perform the configured safe-stop operation before
-  // reporting the timeout here.
-  this->control_state_ = State::IDLE;
-  return this->makeResultLocked(true, "Servo watchdog released motion ownership");
+  this->setStateWithoutOwnerLocked();
+  return this->makeResultLocked(true, "Control state released");
 }
 
-bool ControlStateManager::acceptsServoTarget(
-  const State servo_state, const LeaseId lease_id) const
+bool ControlStateManager::owns(
+  const State owned_state, const LeaseId lease_id) const
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
+  return isAcquirableState(owned_state) && lease_id != NO_LEASE &&
+         this->control_state_ == owned_state && this->lease_id_ == lease_id;
+}
 
-  if (!isServoState(servo_state) || lease_id == NO_LEASE) {
-    return false;
-  }
-
-  const MotionOwner expected_owner = servo_state == State::SERVO_J ?
-    MotionOwner::SERVO_J : MotionOwner::SERVO_P;
-  return this->connected_ &&
-         isServoAllowedRobotMode(this->robot_mode_) &&
+bool ControlStateManager::acceptsServoJTarget(const LeaseId lease_id) const
+{
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  return lease_id != NO_LEASE && this->connected_ &&
+         isAllowedRobotMode(State::SERVO_J, this->robot_mode_) &&
          this->accepting_servo_targets_ &&
-         this->control_state_ == servo_state &&
-         this->motion_owner_ == expected_owner &&
-         this->lease_id_ == lease_id;
+         this->control_state_ == State::SERVO_J && this->lease_id_ == lease_id;
 }
 
 ControlStateManager::Snapshot ControlStateManager::getSnapshot() const
@@ -279,24 +191,8 @@ const char * ControlStateManager::toString(const State state) noexcept
       return "IDLE";
     case State::SERVO_J:
       return "SERVO_J";
-    case State::SERVO_P:
-      return "SERVO_P";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-const char * ControlStateManager::toString(const MotionOwner owner) noexcept
-{
-  switch (owner) {
-    case MotionOwner::NONE:
-      return "NONE";
-    case MotionOwner::REGULAR_MOTION:
+    case State::REGULAR_MOTION:
       return "REGULAR_MOTION";
-    case MotionOwner::SERVO_J:
-      return "SERVO_J";
-    case MotionOwner::SERVO_P:
-      return "SERVO_P";
     default:
       return "UNKNOWN";
   }
@@ -314,8 +210,8 @@ ControlStateManager::LeaseId ControlStateManager::allocateLeaseLocked()
 ControlStateManager::Snapshot ControlStateManager::getSnapshotLocked() const
 {
   return Snapshot{
-    this->control_state_, this->motion_owner_, this->lease_id_,
-    this->connected_, this->robot_mode_, this->accepting_servo_targets_};
+    this->control_state_, this->lease_id_, this->connected_,
+    this->robot_mode_, this->accepting_servo_targets_};
 }
 
 ControlStateManager::Result ControlStateManager::makeResultLocked(
@@ -326,7 +222,6 @@ ControlStateManager::Result ControlStateManager::makeResultLocked(
 
 void ControlStateManager::clearOwnershipLocked()
 {
-  this->motion_owner_ = MotionOwner::NONE;
   this->lease_id_ = NO_LEASE;
   this->accepting_servo_targets_ = false;
 }
@@ -338,27 +233,22 @@ void ControlStateManager::setStateWithoutOwnerLocked()
     State::IDLE : State::UNAVAILABLE;
 }
 
-bool ControlStateManager::isServoState(const State state) noexcept
+bool ControlStateManager::isAcquirableState(const State state) noexcept
 {
-  return state == State::SERVO_J || state == State::SERVO_P;
+  return state == State::REGULAR_MOTION || state == State::SERVO_J;
 }
 
-bool ControlStateManager::isServoOwner(const MotionOwner owner) noexcept
+bool ControlStateManager::isAllowedRobotMode(
+  const State state, const std::uint64_t robot_mode) noexcept
 {
-  return owner == MotionOwner::SERVO_J || owner == MotionOwner::SERVO_P;
-}
-
-bool ControlStateManager::isServoAllowedRobotMode(const std::uint64_t robot_mode) noexcept
-{
-  return robot_mode == ROBOT_MODE_ENABLE || robot_mode == ROBOT_MODE_RUNNING;
-}
-
-bool ControlStateManager::isRegularMotionRobotMode(const std::uint64_t robot_mode) noexcept
-{
-  return robot_mode == ROBOT_MODE_ENABLE ||
-         robot_mode == ROBOT_MODE_RUNNING ||
-         robot_mode == ROBOT_MODE_PAUSE ||
-         robot_mode == ROBOT_MODE_JOG;
+  if (state == State::SERVO_J) {
+    return robot_mode == ROBOT_MODE_ENABLE || robot_mode == ROBOT_MODE_RUNNING;
+  }
+  if (state == State::REGULAR_MOTION) {
+    return robot_mode == ROBOT_MODE_ENABLE || robot_mode == ROBOT_MODE_RUNNING ||
+           robot_mode == ROBOT_MODE_PAUSE || robot_mode == ROBOT_MODE_JOG;
+  }
+  return false;
 }
 
 }  // namespace mg400_interface

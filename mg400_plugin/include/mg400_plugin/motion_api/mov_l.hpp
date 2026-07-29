@@ -16,11 +16,13 @@
 #define __MG400_PLUGIN_MOTION_API_MOV_L_HPP__
 
 #include <memory>
+#include <string>
 
 #include <mg400_common/mg400_ik_util.hpp>
 #include <mg400_msgs/action/mov_l.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_plugin_base/regular_motion_action_reservations.hpp>
 #include <mg400_plugin/plugin_utils.hpp>
 #include <mg400_plugin/tf_manager.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -35,14 +37,13 @@ class MovL final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::MovL;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
-  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+  using GoalReservations = mg400_plugin_base::RegularMotionActionReservations<
     std::string, geometry_msgs::msg::PoseStamped>;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
   mg400_common::MG400IKUtil mg400_ik_util_;
-
   GoalReservations goal_reservations_;
 
 public:

@@ -28,6 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
+#include "mg400_interface/servo_feedback_state.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
@@ -53,6 +54,7 @@ private:
   std::mutex mutex_realtime_data_callback_;
   std::array<double, 4> current_joints_;
   std::shared_ptr<RealTimeData> rt_data_;
+  ServoFeedbackState::SharedPtr servo_feedback_state_;
   RealtimeDataCallback realtime_data_callback_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
@@ -74,6 +76,7 @@ public:
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
+  ServoFeedbackState::SharedPtr getServoFeedbackStateShared() const noexcept;
   void setRealtimeDataCallback(RealtimeDataCallback callback);
   void disConnect();
 

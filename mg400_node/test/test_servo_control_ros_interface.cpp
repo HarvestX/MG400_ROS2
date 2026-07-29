@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
 #include <atomic>
 #include <chrono>
-#include <cmath>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
@@ -29,13 +29,14 @@
 
 #include <gtest/gtest.h>
 
-#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_msgs/msg/servo_error.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_node/mg400_node.hpp"
 #include "mg400_node/servo_control_ros_interface.hpp"
 
 namespace
@@ -44,9 +45,14 @@ namespace
 using namespace std::chrono_literals;  // NOLINT
 using Manager = mg400_interface::ControlStateManager;
 using Session = mg400_interface::ServoControlSession;
+using FeedbackState = mg400_interface::ServoFeedbackState;
+using OperationalCode = mg400_interface::ServoOperationalErrorCode;
+using OperationalState = mg400_interface::ServoOperationalErrorState;
+using SafetyCode = mg400_interface::ServoSafetyViolationCode;
+using SafetyState = mg400_interface::ServoSafetyViolationState;
 using StopStrategy = mg400_interface::ServoStopStrategy;
 using RosInterface = mg400_node::ServoControlRosInterface;
-using ChangeControlState = mg400_msgs::srv::ChangeControlState;
+using EnableServoJ = mg400_msgs::srv::EnableServoJ;
 using RobotMode = mg400_msgs::msg::RobotMode;
 
 class RosEnvironment : public ::testing::Environment
@@ -154,15 +160,6 @@ std::shared_ptr<rclcpp_lifecycle::LifecycleNode> makeNode()
     "servo_ros_interface_test_" + std::to_string(++sequence));
 }
 
-RosInterface::Options rosOptions()
-{
-  RosInterface::Options options;
-  options.diagnostics_period = 20ms;
-  options.target_frame = "robot_mg400_origin_link";
-  options.hardware_id = "test_mg400";
-  return options;
-}
-
 Session::Options sessionOptions()
 {
   Session::Options options;
@@ -175,6 +172,8 @@ Session::Options sessionOptions()
 
 struct Fixture
 {
+  static constexpr FeedbackState::ConnectionEpoch CONNECTION_EPOCH = 41;
+
   std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node{makeNode()};
   Manager::SharedPtr manager{std::make_shared<Manager>()};
   FakeMotionTcpInterface tcp;
@@ -182,133 +181,111 @@ struct Fixture
     std::make_shared<mg400_interface::MotionCommander>(&tcp)};
   std::shared_ptr<SequenceStopStrategy> stop_strategy{
     std::make_shared<SequenceStopStrategy>()};
+  FeedbackState::SharedPtr feedback_state{
+    std::make_shared<FeedbackState>(CONNECTION_EPOCH)};
+  SafetyState::SharedPtr safety_state{std::make_shared<SafetyState>()};
+  OperationalState::SharedPtr operational_state{std::make_shared<OperationalState>()};
   std::shared_ptr<Session> session;
   std::unique_ptr<RosInterface> ros_interface;
 
-  explicit Fixture(
-    RosInterface::TransformPoseFunction transform =
-    [] (const auto & input, const auto &, auto & output, auto & reason) {
-      output = input;
-      reason.clear();
-      return true;
-    })
+  Fixture()
   {
     manager->updateRobotStatus(true, RobotMode::ENABLE);
-    session = std::make_shared<Session>(
-      manager, commander, stop_strategy, sessionOptions());
     ros_interface = std::make_unique<RosInterface>(
-      *node, manager, rosOptions(), std::move(transform));
+      *node, manager, safety_state, operational_state);
+    session = std::make_shared<Session>(
+      manager, commander, stop_strategy,
+      ros_interface->getSafetyViolationStateShared(),
+      ros_interface->getOperationalErrorStateShared(), feedback_state, sessionOptions());
     ros_interface->installSession(session);
+  }
+
+  void updateFeedback(const std::array<double, 4> & joints)
+  {
+    feedback_state->update(joints);
   }
 
   ~Fixture()
   {
     if (ros_interface && ros_interface->hasSession()) {
-      ros_interface->clearSession("test teardown");
+      ros_interface->clearSession();
     }
   }
 };
 
-std::shared_ptr<ChangeControlState::Response> requestState(
+std::shared_ptr<EnableServoJ::Response> requestServoJ(
   RosInterface & ros_interface,
-  const Manager::State state,
-  const Manager::LeaseId lease_id)
+  const bool enable)
 {
-  auto request = std::make_shared<ChangeControlState::Request>();
-  request->target_state.control_state = static_cast<std::uint8_t>(state);
-  request->lease_id = lease_id;
-  auto response = std::make_shared<ChangeControlState::Response>();
-  ros_interface.handleChangeControlState(request, response);
+  auto request = std::make_shared<EnableServoJ::Request>();
+  request->enable = enable;
+  auto response = std::make_shared<EnableServoJ::Response>();
+  ros_interface.handleEnableServoJ(request, response);
   return response;
 }
 
-geometry_msgs::msg::Quaternion yawQuaternion(const double yaw)
+TEST(ServoControlRosInterface, MakesServoErrorMessageFromSnapshots)
 {
-  geometry_msgs::msg::Quaternion quaternion;
-  quaternion.z = std::sin(yaw / 2.0);
-  quaternion.w = std::cos(yaw / 2.0);
-  return quaternion;
+  using ServoError = mg400_msgs::msg::ServoError;
+  const auto error = RosInterface::makeServoErrorMessage(
+    {SafetyCode::SERVO_J_JOINT_LIMIT, "safety"},
+    {OperationalCode::WATCHDOG_TIMEOUT, "operational"});
+  EXPECT_EQ(ServoError::SAFETY_SERVO_J_JOINT_LIMIT, error.safety_violation_code);
+  EXPECT_EQ("safety", error.safety_violation_message);
+  EXPECT_EQ(ServoError::OPERATIONAL_WATCHDOG_TIMEOUT, error.operational_error_code);
+  EXPECT_EQ("operational", error.operational_error_message);
+
+  const auto clear = RosInterface::makeServoErrorMessage(
+    {SafetyCode::NONE, "stale safety"},
+    {OperationalCode::NONE, "stale operational"});
+  EXPECT_EQ(ServoError::SAFETY_NONE, clear.safety_violation_code);
+  EXPECT_TRUE(clear.safety_violation_message.empty());
+  EXPECT_EQ(ServoError::OPERATIONAL_NONE, clear.operational_error_code);
+  EXPECT_TRUE(clear.operational_error_message.empty());
 }
 
-std::string diagnosticValue(
-  const diagnostic_msgs::msg::DiagnosticArray & array,
-  const std::string & key)
-{
-  if (array.status.empty()) {
-    return "";
-  }
-  for (const auto & item : array.status.front().values) {
-    if (item.key == key) {
-      return item.value;
-    }
-  }
-  return "";
-}
-
-TEST(ServoControlRosInterface, EnforcesLeaseServiceContractAndAllowsStopRetry)
+TEST(ServoControlRosInterface, IssuesSingleLeaseAndAllowsUnauthenticatedStopRetry)
 {
   Fixture fixture;
 
-  const auto invalid_start = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_J, 42);
-  EXPECT_FALSE(invalid_start->success);
-  EXPECT_EQ(Manager::NO_LEASE, invalid_start->lease_id);
-  EXPECT_EQ(
-    static_cast<std::uint8_t>(Manager::State::IDLE),
-    invalid_start->current_state.control_state);
-
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_J, Manager::NO_LEASE);
+  const auto started = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(started->success) << started->message;
+  EXPECT_TRUE(started->enabled);
   ASSERT_NE(Manager::NO_LEASE, started->lease_id);
   const auto lease = started->lease_id;
 
-  const auto direct_switch = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_P, Manager::NO_LEASE);
-  EXPECT_FALSE(direct_switch->success);
-  EXPECT_EQ(Manager::NO_LEASE, direct_switch->lease_id);
-
-  const auto foreign_stop = requestState(
-    *fixture.ros_interface, Manager::State::IDLE, lease + 1);
-  EXPECT_FALSE(foreign_stop->success);
-  EXPECT_EQ(Manager::NO_LEASE, foreign_stop->lease_id);
+  const auto duplicate_start = requestServoJ(*fixture.ros_interface, true);
+  EXPECT_FALSE(duplicate_start->success);
+  EXPECT_TRUE(duplicate_start->enabled);
+  EXPECT_EQ(Manager::NO_LEASE, duplicate_start->lease_id);
   EXPECT_EQ(lease, fixture.manager->getSnapshot().lease_id);
-
-  const auto zero_stop = requestState(
-    *fixture.ros_interface, Manager::State::IDLE, Manager::NO_LEASE);
-  EXPECT_FALSE(zero_stop->success);
 
   fixture.stop_strategy->push(
     StopStrategy::Status::CONFIRMATION_TIMEOUT, "ENABLE confirmation timed out");
   fixture.stop_strategy->push(StopStrategy::Status::SUCCESS, "retry confirmed");
-  const auto failed_stop = requestState(
-    *fixture.ros_interface, Manager::State::IDLE, lease);
+  const auto failed_stop = requestServoJ(*fixture.ros_interface, false);
   EXPECT_FALSE(failed_stop->success);
+  EXPECT_TRUE(failed_stop->enabled);
   EXPECT_EQ(Manager::NO_LEASE, failed_stop->lease_id);
   EXPECT_EQ(lease, fixture.manager->getSnapshot().lease_id);
   EXPECT_FALSE(fixture.manager->getSnapshot().accepting_servo_targets);
 
-  const auto retried_stop = requestState(
-    *fixture.ros_interface, Manager::State::IDLE, lease);
+  const auto retried_stop = requestServoJ(*fixture.ros_interface, false);
   EXPECT_TRUE(retried_stop->success) << retried_stop->message;
   EXPECT_EQ(Manager::NO_LEASE, retried_stop->lease_id);
-  EXPECT_EQ(
-    static_cast<std::uint8_t>(Manager::State::IDLE),
-    retried_stop->current_state.control_state);
+  EXPECT_FALSE(retried_stop->enabled);
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
   EXPECT_EQ(2U, fixture.stop_strategy->callCount());
 
-  const auto stale_stop = requestState(
-    *fixture.ros_interface, Manager::State::IDLE, lease);
+  const auto stale_stop = requestServoJ(*fixture.ros_interface, false);
   EXPECT_FALSE(stale_stop->success);
   EXPECT_EQ(Manager::NO_LEASE, stale_stop->lease_id);
 }
 
-TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseKindAndNonFiniteTarget)
+TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseAndNonFiniteTarget)
 {
   Fixture fixture;
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_J, Manager::NO_LEASE);
+  const auto started = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(started->success);
 
   auto wrong_lease = std::make_shared<mg400_msgs::msg::ServoJ>();
@@ -321,112 +298,29 @@ TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseKindAndNonFiniteTarget)
   non_finite->joint_angles[2] = std::numeric_limits<double>::infinity();
   fixture.ros_interface->handleServoJTarget(non_finite);
 
-  auto wrong_kind = std::make_shared<mg400_msgs::msg::ServoP>();
-  wrong_kind->lease_id = started->lease_id;
-  wrong_kind->pose.header.frame_id = "world";
-  wrong_kind->pose.pose.orientation.w = 1.0;
-  fixture.ros_interface->handleServoPTarget(wrong_kind);
-
   auto accepted = std::make_shared<mg400_msgs::msg::ServoJ>();
   accepted->lease_id = started->lease_id;
   accepted->joint_angles = {{0.1, 0.2, 0.3, 0.4}};
+  fixture.updateFeedback(accepted->joint_angles);
   fixture.ros_interface->handleServoJTarget(accepted);
 
   const auto snapshot = fixture.session->getSnapshot();
-  EXPECT_EQ(1U, snapshot.accepted_target_count);
-  EXPECT_EQ(3U, snapshot.rejected_target_count);
+  EXPECT_EQ(Session::State::ACTIVE, snapshot.state);
   EXPECT_TRUE(
-    requestState(
-      *fixture.ros_interface, Manager::State::IDLE, started->lease_id)->success);
+    requestServoJ(*fixture.ros_interface, false)->success);
 }
 
-TEST(ServoControlRosInterface, ServoPTransformsToOriginFrameAndExtractsYaw)
+TEST(MG400Node, InvalidServoSafetyParameterFailsLifecycleConfigure)
 {
-  std::string requested_target_frame;
-  Fixture fixture(
-    [&requested_target_frame](
-      const geometry_msgs::msg::PoseStamped & input,
-      const std::string & target_frame,
-      geometry_msgs::msg::PoseStamped & output,
-      std::string & reason)
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
     {
-      requested_target_frame = target_frame;
-      output = input;
-      output.header.frame_id = target_frame;
-      output.pose.position.x = 0.1;
-      output.pose.position.y = -0.2;
-      output.pose.position.z = 0.3;
-      output.pose.orientation = yawQuaternion(M_PI_2);
-      reason.clear();
-      return true;
-    });
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_P, Manager::NO_LEASE);
-  ASSERT_TRUE(started->success);
+      rclcpp::Parameter("auto_configure", false),
+      rclcpp::Parameter("servo.safety.max_joint_step_rad", -0.1)});
+  auto node = std::make_shared<mg400_node::MG400Node>(options);
 
-  auto target = std::make_shared<mg400_msgs::msg::ServoP>();
-  target->lease_id = started->lease_id;
-  target->pose.header.frame_id = "camera";
-  target->pose.pose.orientation.w = 1.0;
-  fixture.ros_interface->handleServoPTarget(target);
-
-  EXPECT_EQ("robot_mg400_origin_link", requested_target_frame);
-  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
-  ASSERT_FALSE(fixture.tcp.commands().empty());
-  EXPECT_EQ("ServoP(100.000,-200.000,300.000,90.000)", fixture.tcp.commands().front());
-  EXPECT_TRUE(
-    requestState(
-      *fixture.ros_interface, Manager::State::IDLE, started->lease_id)->success);
-}
-
-TEST(ServoControlRosInterface, InvalidQuaternionAndTfFailureNeverReachSession)
-{
-  Fixture fixture(
-    [](const auto &, const auto &, auto &, auto & reason) {
-      reason = "test transform unavailable";
-      return false;
-    });
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_P, Manager::NO_LEASE);
-  ASSERT_TRUE(started->success);
-
-  auto invalid_quaternion = std::make_shared<mg400_msgs::msg::ServoP>();
-  invalid_quaternion->lease_id = started->lease_id;
-  invalid_quaternion->pose.header.frame_id = "camera";
-  fixture.ros_interface->handleServoPTarget(invalid_quaternion);
-
-  auto tf_failure = std::make_shared<mg400_msgs::msg::ServoP>();
-  tf_failure->lease_id = started->lease_id;
-  tf_failure->pose.header.frame_id = "camera";
-  tf_failure->pose.pose.orientation.w = 1.0;
-  fixture.ros_interface->handleServoPTarget(tf_failure);
-
-  EXPECT_EQ(0U, fixture.session->getSnapshot().accepted_target_count);
-  EXPECT_EQ(0U, fixture.session->getSnapshot().rejected_target_count);
-  EXPECT_EQ(2U, fixture.ros_interface->getRosRejectedTargetCount());
-  EXPECT_EQ("test transform unavailable", fixture.ros_interface->getLastRosRejection());
-  EXPECT_TRUE(
-    requestState(
-      *fixture.ros_interface, Manager::State::IDLE, started->lease_id)->success);
-}
-
-TEST(ServoControlRosInterface, QuaternionYawConversionRejectsInvalidValues)
-{
-  double yaw = 0.0;
-  std::string reason;
-  EXPECT_TRUE(RosInterface::quaternionToYaw(yawQuaternion(-0.75), yaw, reason));
-  EXPECT_NEAR(-0.75, yaw, 1.0e-12);
-
-  geometry_msgs::msg::Quaternion zero;
-  zero.x = 0.0;
-  zero.y = 0.0;
-  zero.z = 0.0;
-  zero.w = 0.0;
-  EXPECT_FALSE(RosInterface::quaternionToYaw(zero, yaw, reason));
-
-  geometry_msgs::msg::Quaternion non_finite;
-  non_finite.w = std::numeric_limits<double>::quiet_NaN();
-  EXPECT_FALSE(RosInterface::quaternionToYaw(non_finite, yaw, reason));
+  const auto state = node->configure();
+  EXPECT_EQ("unconfigured", state.label());
 }
 
 TEST(ServoControlRosInterface, LateSubscriberReceivesTransientLocalControlState)
@@ -435,11 +329,10 @@ TEST(ServoControlRosInterface, LateSubscriberReceivesTransientLocalControlState)
   auto manager = std::make_shared<Manager>();
   manager->updateRobotStatus(true, RobotMode::ENABLE);
   RosInterface ros_interface(
-    *node, manager, rosOptions(),
-    [](const auto & input, const auto &, auto & output, auto &) {
-      output = input;
-      return true;
-    });
+    *node, manager, std::make_shared<SafetyState>(),
+    std::make_shared<OperationalState>());
+  const auto regular = manager->tryAcquire(Manager::State::REGULAR_MOTION);
+  ASSERT_TRUE(regular.success) << regular.message;
   ros_interface.publishControlState(true);
 
   auto subscriber_node = std::make_shared<rclcpp::Node>("late_control_state_subscriber");
@@ -463,95 +356,18 @@ TEST(ServoControlRosInterface, LateSubscriberReceivesTransientLocalControlState)
   executor.remove_node(node->get_node_base_interface());
 
   ASSERT_TRUE(delivered);
-  EXPECT_EQ(static_cast<int>(Manager::State::IDLE), received.load());
-  static_cast<void>(subscription);
-}
-
-TEST(ServoControlRosInterface, WatchdogStateIsPublishedInDiagnostics)
-{
-  auto node = makeNode();
-  auto manager = std::make_shared<Manager>();
-  manager->updateRobotStatus(true, RobotMode::ENABLE);
-  FakeMotionTcpInterface tcp;
-  auto commander = std::make_shared<mg400_interface::MotionCommander>(&tcp);
-  auto stop_strategy = std::make_shared<SequenceStopStrategy>();
-  auto options = sessionOptions();
-  options.target_watchdog_timeout = 30ms;
-  auto session = std::make_shared<Session>(
-    manager, commander, stop_strategy, options);
-  RosInterface ros_interface(
-    *node, manager, rosOptions(),
-    [](const auto & input, const auto &, auto & output, auto &) {
-      output = input;
-      return true;
-    });
-  ros_interface.installSession(session);
-
-  auto subscriber_node = std::make_shared<rclcpp::Node>("servo_diagnostics_subscriber");
-  std::mutex message_mutex;
-  diagnostic_msgs::msg::DiagnosticArray latest;
-  auto subscription =
-    subscriber_node->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
-    "servo_diagnostics", rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
-    [&message_mutex, &latest](
-      const diagnostic_msgs::msg::DiagnosticArray::SharedPtr message)
-    {
-      std::lock_guard<std::mutex> lock(message_mutex);
-      latest = *message;
-    });
-
-  const auto started = requestState(
-    ros_interface, Manager::State::SERVO_J, Manager::NO_LEASE);
-  ASSERT_TRUE(started->success);
-  ASSERT_TRUE(
-    waitUntil(
-      [&session]() {
-        return session->getSnapshot().state == Session::State::IDLE;
-      }));
-  ros_interface.publishControlState();
-  ros_interface.publishDiagnostics();
-
-  rclcpp::executors::SingleThreadedExecutor executor;
-  executor.add_node(node->get_node_base_interface());
-  executor.add_node(subscriber_node);
-  const auto delivered = waitUntil(
-    [&executor, &message_mutex, &latest]() {
-      executor.spin_some();
-      std::lock_guard<std::mutex> lock(message_mutex);
-      return diagnosticValue(latest, "watchdog_triggered") == "true";
-    }, 2s);
-  executor.remove_node(subscriber_node);
-  executor.remove_node(node->get_node_base_interface());
-
-  ASSERT_TRUE(delivered);
-  {
-    std::lock_guard<std::mutex> lock(message_mutex);
-    EXPECT_EQ("WATCHDOG", diagnosticValue(latest, "stop_cause"));
-    EXPECT_EQ("IDLE", diagnosticValue(latest, "control_state"));
-  }
-  ros_interface.clearSession("test complete");
+  EXPECT_EQ(static_cast<int>(Manager::State::REGULAR_MOTION), received.load());
+  EXPECT_TRUE(
+    manager->release(Manager::State::REGULAR_MOTION, regular.lease_id).success);
   static_cast<void>(subscription);
 }
 
 TEST(ServoControlRosInterface, LifecycleStopFailureKeepsSessionAndLease)
 {
   Fixture fixture;
-  auto subscriber_node = std::make_shared<rclcpp::Node>("fault_diagnostics_subscriber");
-  std::mutex message_mutex;
-  diagnostic_msgs::msg::DiagnosticArray latest;
-  auto subscription =
-    subscriber_node->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
-    "servo_diagnostics", rclcpp::QoS(rclcpp::KeepLast(1)).reliable(),
-    [&message_mutex, &latest](
-      const diagnostic_msgs::msg::DiagnosticArray::SharedPtr message)
-    {
-      std::lock_guard<std::mutex> lock(message_mutex);
-      latest = *message;
-    });
   fixture.stop_strategy->push(
     StopStrategy::Status::CONFIRMATION_TIMEOUT, "stop confirmation failed");
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_J, Manager::NO_LEASE);
+  const auto started = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(started->success);
 
   const auto stopped = fixture.ros_interface->stopForLifecycle("test deactivate");
@@ -559,39 +375,17 @@ TEST(ServoControlRosInterface, LifecycleStopFailureKeepsSessionAndLease)
   EXPECT_TRUE(fixture.ros_interface->hasSession());
   EXPECT_EQ(started->lease_id, fixture.manager->getSnapshot().lease_id);
   EXPECT_FALSE(fixture.manager->getSnapshot().accepting_servo_targets);
-  fixture.ros_interface->publishDiagnostics();
-
-  rclcpp::executors::SingleThreadedExecutor executor;
-  executor.add_node(fixture.node->get_node_base_interface());
-  executor.add_node(subscriber_node);
-  const auto delivered = waitUntil(
-    [&executor, &message_mutex, &latest]() {
-      executor.spin_some();
-      std::lock_guard<std::mutex> lock(message_mutex);
-      return diagnosticValue(latest, "session_state") == "FAULTED";
-    }, 2s);
-  executor.remove_node(subscriber_node);
-  executor.remove_node(fixture.node->get_node_base_interface());
-  ASSERT_TRUE(delivered);
-  {
-    std::lock_guard<std::mutex> lock(message_mutex);
-    ASSERT_FALSE(latest.status.empty());
-    EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::ERROR, latest.status.front().level);
-    EXPECT_EQ("SERVO_J", diagnosticValue(latest, "control_state"));
-    EXPECT_EQ("stop confirmation failed", diagnosticValue(latest, "session_reason"));
-  }
+  EXPECT_EQ(Session::State::FAULTED, fixture.session->getSnapshot().state);
+  EXPECT_EQ("stop confirmation failed", fixture.session->getSnapshot().diagnostic);
 
   EXPECT_TRUE(
-    requestState(
-      *fixture.ros_interface, Manager::State::IDLE, started->lease_id)->success);
-  static_cast<void>(subscription);
+    requestServoJ(*fixture.ros_interface, false)->success);
 }
 
 TEST(ServoControlRosInterface, LifecycleStopCompletesBeforeSessionIsCleared)
 {
   Fixture fixture;
-  const auto started = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_P, Manager::NO_LEASE);
+  const auto started = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(started->success);
 
   const auto stopped = fixture.ros_interface->stopForLifecycle("test deactivate");
@@ -601,15 +395,14 @@ TEST(ServoControlRosInterface, LifecycleStopCompletesBeforeSessionIsCleared)
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
   EXPECT_EQ(1U, fixture.stop_strategy->callCount());
 
-  fixture.ros_interface->clearSession("test interface teardown");
+  fixture.ros_interface->clearSession();
   EXPECT_FALSE(fixture.ros_interface->hasSession());
 }
 
 TEST(ServoControlRosInterface, RetiredConnectionEpochCannotAffectNewLease)
 {
   Fixture fixture;
-  const auto old = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_J, Manager::NO_LEASE);
+  const auto old = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(old->success);
 
   fixture.manager->updateRobotStatus(false, RobotMode::INVALID);
@@ -618,18 +411,241 @@ TEST(ServoControlRosInterface, RetiredConnectionEpochCannotAffectNewLease)
   EXPECT_FALSE(fixture.ros_interface->hasSession());
   EXPECT_EQ(0U, fixture.stop_strategy->callCount());
 
+  fixture.feedback_state->beginConnectionEpoch(Fixture::CONNECTION_EPOCH + 1);
   auto new_session = std::make_shared<Session>(
-    fixture.manager, fixture.commander, fixture.stop_strategy, sessionOptions());
+    fixture.manager, fixture.commander, fixture.stop_strategy,
+    fixture.ros_interface->getSafetyViolationStateShared(),
+    fixture.ros_interface->getOperationalErrorStateShared(), fixture.feedback_state,
+    sessionOptions());
   fixture.session = new_session;
   fixture.ros_interface->installSession(new_session);
-  const auto current = requestState(
-    *fixture.ros_interface, Manager::State::SERVO_P, Manager::NO_LEASE);
+  const auto current = requestServoJ(*fixture.ros_interface, true);
   ASSERT_TRUE(current->success);
   EXPECT_NE(old->lease_id, current->lease_id);
   EXPECT_EQ(current->lease_id, fixture.manager->getSnapshot().lease_id);
   EXPECT_TRUE(
-    requestState(
-      *fixture.ros_interface, Manager::State::IDLE, current->lease_id)->success);
+    requestServoJ(*fixture.ros_interface, false)->success);
+}
+
+TEST(ServoControlRosInterface, DisconnectedRetirementDoesNotMaskNodeConnectionError)
+{
+  Fixture fixture;
+  const auto started = requestServoJ(*fixture.ros_interface, true);
+  ASSERT_TRUE(started->success);
+
+  fixture.manager->updateRobotStatus(false, RobotMode::INVALID);
+  EXPECT_TRUE(fixture.ros_interface->retireSessionIfLeaseLost("test disconnect"));
+  EXPECT_EQ(
+    OperationalCode::NONE,
+    fixture.ros_interface->getOperationalErrorStateShared()->getSnapshot().code);
+  EXPECT_TRUE(
+    fixture.ros_interface->getOperationalErrorStateShared()->reportError(
+      OperationalCode::REALTIME_CONNECTION_LOST,
+      "The MG400 connection was lost during Servo control"));
+}
+
+TEST(ServoControlRosInterface, PublishesErrorFieldsImmediatelyAndRearmsBothLatches)
+{
+  using ServoError = mg400_msgs::msg::ServoError;
+  auto node = makeNode();
+  auto manager = std::make_shared<Manager>();
+  manager->updateRobotStatus(true, RobotMode::ENABLE);
+  FakeMotionTcpInterface tcp;
+  auto commander = std::make_shared<mg400_interface::MotionCommander>(&tcp);
+  auto stop_strategy = std::make_shared<SequenceStopStrategy>();
+  RosInterface ros_interface(
+    *node, manager, std::make_shared<SafetyState>(),
+    std::make_shared<OperationalState>());
+  auto safety_state = ros_interface.getSafetyViolationStateShared();
+  auto operational_state = ros_interface.getOperationalErrorStateShared();
+  auto feedback_state = std::make_shared<FeedbackState>(61);
+  auto session = std::make_shared<Session>(
+    manager, commander, stop_strategy, safety_state, operational_state,
+    feedback_state, sessionOptions());
+  ros_interface.installSession(session);
+
+  auto subscriber_node = std::make_shared<rclcpp::Node>("servo_error_subscriber");
+  std::mutex message_mutex;
+  ServoError latest;
+  std::uint64_t received_count = 0;
+  auto subscription =
+    subscriber_node->create_subscription<ServoError>(
+    "servo_error", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
+    [&message_mutex, &latest, &received_count](
+      const ServoError::SharedPtr message)
+    {
+      std::lock_guard<std::mutex> lock(message_mutex);
+      latest = *message;
+      ++received_count;
+    });
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node->get_node_base_interface());
+  executor.add_node(subscriber_node);
+
+  ros_interface.publishServoError();
+  ASSERT_TRUE(
+    waitUntil(
+      [&executor, &message_mutex, &latest]() {
+        executor.spin_some();
+        std::lock_guard<std::mutex> lock(message_mutex);
+        return latest.safety_violation_code == ServoError::SAFETY_NONE &&
+        latest.operational_error_code == ServoError::OPERATIONAL_NONE;
+      }, 2s));
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    EXPECT_TRUE(latest.safety_violation_message.empty());
+    EXPECT_TRUE(latest.operational_error_message.empty());
+  }
+
+  ASSERT_TRUE(
+    operational_state->reportError(
+      OperationalCode::WATCHDOG_TIMEOUT, "Servo target watchdog expired"));
+  ASSERT_TRUE(
+    waitUntil(
+      [&executor, &message_mutex, &latest]() {
+        executor.spin_some();
+        std::lock_guard<std::mutex> lock(message_mutex);
+        return latest.operational_error_code == ServoError::OPERATIONAL_WATCHDOG_TIMEOUT;
+      }, 2s));
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    EXPECT_EQ("Servo target watchdog expired", latest.operational_error_message);
+  }
+
+  std::uint64_t count_before_violation;
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    count_before_violation = received_count;
+  }
+  ASSERT_TRUE(
+    safety_state->reportViolation(
+      SafetyCode::SERVO_J_COMMAND_DISCONTINUITY,
+      "Servo target is too far from the current position"));
+  ASSERT_TRUE(
+    waitUntil(
+      [&executor, &message_mutex, &latest, &received_count, count_before_violation]() {
+        executor.spin_some();
+        std::lock_guard<std::mutex> lock(message_mutex);
+        return received_count > count_before_violation &&
+        latest.safety_violation_code == ServoError::SAFETY_SERVO_J_COMMAND_DISCONTINUITY;
+      }, 2s));
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    EXPECT_EQ(
+      "Servo target is too far from the current position",
+      latest.safety_violation_message);
+  }
+
+  std::uint64_t count_before_rearm;
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    count_before_rearm = received_count;
+  }
+  const auto started = requestServoJ(ros_interface, true);
+  ASSERT_TRUE(started->success) << started->message;
+  ASSERT_TRUE(
+    waitUntil(
+      [&executor, &message_mutex, &latest, &received_count, count_before_rearm]() {
+        executor.spin_some();
+        std::lock_guard<std::mutex> lock(message_mutex);
+        return received_count > count_before_rearm &&
+        latest.safety_violation_code == ServoError::SAFETY_NONE &&
+        latest.operational_error_code == ServoError::OPERATIONAL_NONE;
+      }, 2s));
+  {
+    std::lock_guard<std::mutex> lock(message_mutex);
+    EXPECT_TRUE(latest.safety_violation_message.empty());
+    EXPECT_TRUE(latest.operational_error_message.empty());
+  }
+
+  EXPECT_TRUE(
+    requestServoJ(ros_interface, false)->success);
+  ros_interface.clearSession();
+  executor.remove_node(subscriber_node);
+  executor.remove_node(node->get_node_base_interface());
+  static_cast<void>(subscription);
+}
+
+TEST(ServoControlRosInterface, NodeOwnedErrorLatchesSurviveRosInterfaceRecreation)
+{
+  auto node = makeNode();
+  auto manager = std::make_shared<Manager>();
+  manager->updateRobotStatus(true, RobotMode::ENABLE);
+  auto safety_state = std::make_shared<mg400_interface::ServoSafetyViolationState>();
+  auto operational_state = std::make_shared<OperationalState>();
+  {
+    RosInterface ros_interface(
+      *node, manager, safety_state, operational_state);
+    ASSERT_TRUE(
+      safety_state->reportViolation(
+        SafetyCode::SERVO_J_JOINT_LIMIT, "ServoJ target violates a joint limit"));
+    ASSERT_TRUE(
+      operational_state->reportError(
+        OperationalCode::REALTIME_CONNECTION_LOST,
+        "MG400 connection was lost during Servo control"));
+  }
+
+  RosInterface replacement(
+    *node, manager, safety_state, operational_state);
+  EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
+  EXPECT_EQ(
+    OperationalCode::REALTIME_CONNECTION_LOST,
+    operational_state->getSnapshot().code);
+  EXPECT_EQ(
+    safety_state, replacement.getSafetyViolationStateShared());
+  EXPECT_EQ(
+    operational_state, replacement.getOperationalErrorStateShared());
+}
+
+TEST(ServoControlRosInterface, ErrorLatchesSurviveStopAndSessionReplacement)
+{
+  Fixture fixture;
+  const auto started = requestServoJ(*fixture.ros_interface, true);
+  ASSERT_TRUE(started->success) << started->message;
+  auto safety_state = fixture.ros_interface->getSafetyViolationStateShared();
+  auto operational_state = fixture.ros_interface->getOperationalErrorStateShared();
+  ASSERT_TRUE(
+    safety_state->reportViolation(
+      SafetyCode::SERVO_J_JOINT_LIMIT, "ServoJ target violates a joint limit"));
+  ASSERT_TRUE(
+    operational_state->reportError(
+      OperationalCode::MOTION_RESPONSE_TIMEOUT, "Servo Motion response timed out"));
+
+  ASSERT_TRUE(
+    requestServoJ(*fixture.ros_interface, false)->success);
+  EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+
+  fixture.ros_interface->clearSession();
+  EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+  auto replacement = std::make_shared<Session>(
+    fixture.manager, fixture.commander, fixture.stop_strategy,
+    safety_state, operational_state,
+    fixture.feedback_state, sessionOptions());
+  fixture.session = replacement;
+  fixture.ros_interface->installSession(replacement);
+
+  const auto regular_motion = fixture.manager->tryAcquire(Manager::State::REGULAR_MOTION);
+  ASSERT_TRUE(regular_motion.success) << regular_motion.message;
+  const auto failed_start = requestServoJ(*fixture.ros_interface, true);
+  EXPECT_FALSE(failed_start->success);
+  EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+  ASSERT_TRUE(
+    fixture.manager->release(
+      Manager::State::REGULAR_MOTION, regular_motion.lease_id).success);
+
+  const auto rearmed = requestServoJ(*fixture.ros_interface, true);
+  ASSERT_TRUE(rearmed->success) << rearmed->message;
+  EXPECT_EQ(SafetyCode::NONE, safety_state->getSnapshot().code);
+  EXPECT_TRUE(safety_state->getSnapshot().message.empty());
+  EXPECT_EQ(OperationalCode::NONE, operational_state->getSnapshot().code);
+  EXPECT_TRUE(operational_state->getSnapshot().message.empty());
+  EXPECT_TRUE(
+    requestServoJ(*fixture.ros_interface, false)->success);
+
 }
 
 }  // namespace

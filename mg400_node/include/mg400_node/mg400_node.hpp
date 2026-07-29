@@ -70,10 +70,13 @@ private:
 
   std::string ip_address_;
   mg400_interface::MG400Interface::SharedPtr interface_;
+  mg400_interface::ServoSafetyViolationState::SharedPtr servo_safety_violation_state_{
+    std::make_shared<mg400_interface::ServoSafetyViolationState>()};
+  mg400_interface::ServoOperationalErrorState::SharedPtr servo_operational_error_state_{
+    std::make_shared<mg400_interface::ServoOperationalErrorState>()};
   std::unique_ptr<ServoControlRosInterface> servo_control_ros_interface_;
   mg400_interface::ServoControlSession::Options servo_session_options_;
   mg400_interface::ResetRobotStopStrategy::Options servo_stop_options_;
-  ServoControlRosInterface::Options servo_ros_options_;
   mg400_plugin_base::DashboardApiLoader::SharedPtr dashboard_api_loader_;
   mg400_plugin_base::MotionApiLoader::SharedPtr motion_api_loader_;
 

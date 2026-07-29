@@ -66,20 +66,19 @@ rclcpp_action::GoalResponse CommandQueue::handle_goal(
     return rclcpp_action::GoalResponse::REJECT;
   }
 
-  auto lease = this->tryAcquireRegularMotionLease();
-  if (!lease) {
-    return rclcpp_action::GoalResponse::REJECT;
-  }
-
   // check if the requested goal is inside the mg400 range
   if (!this->validateTarget(goal->commands)) {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "The targets are outside of the range.");
     return rclcpp_action::GoalResponse::REJECT;
   }
 
+  auto lease = this->tryAcquireRegularMotionLease();
+  if (!lease) {
+    return rclcpp_action::GoalResponse::REJECT;
+  }
   GoalReservations::Entry reservation{std::move(*lease), std::monostate{}};
   if (!this->goal_reservations_.reserve(
-      mg400_plugin_base::makeGoalReservationKey(uuid), std::move(reservation)))
+      mg400_plugin_base::makeActionGoalKey(uuid), std::move(reservation)))
   {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Duplicate Action goal UUID");
     return rclcpp_action::GoalResponse::REJECT;
@@ -93,7 +92,7 @@ rclcpp_action::CancelResponse CommandQueue::handle_cancel(
 {
   RCLCPP_INFO(
     this->node_logging_if_->get_logger(), "Received request to cancel goal");
-  // There is no verified queue stop operation here. Keep the single queue
+  // There is no verified queue stop operation here. Keep the regular-motion
   // lease until every submitted command has actually finished.
   return rclcpp_action::CancelResponse::ACCEPT;
 }
@@ -102,21 +101,20 @@ void CommandQueue::handle_accepted(
   const std::shared_ptr<GoalHandle> goal_handle)
 {
   auto reservation = this->goal_reservations_.take(
-    mg400_plugin_base::makeGoalReservationKey(goal_handle->get_goal_id()));
-  if (!reservation) {
-    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Accepted goal has no motion lease");
+    mg400_plugin_base::makeActionGoalKey(goal_handle->get_goal_id()));
+  if (!reservation || !reservation->lease.isCurrent()) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Accepted goal has no current motion lease");
     auto result = std::make_shared<ActionT::Result>();
     result->result = false;
     goal_handle->abort(result);
     return;
   }
-
-  auto context = std::make_shared<GoalReservations::Entry>(std::move(*reservation));
+  auto execution = std::make_shared<GoalReservations::Entry>(std::move(*reservation));
   try {
     std::thread{
-      [this, goal_handle, context]() {
+      [this, goal_handle, execution]() {
         try {
-          this->execute(goal_handle, *context);
+          this->execute(goal_handle, *execution);
         } catch (const std::exception & error) {
           RCLCPP_ERROR(this->node_logging_if_->get_logger(), "%s", error.what());
           auto result = std::make_shared<ActionT::Result>();

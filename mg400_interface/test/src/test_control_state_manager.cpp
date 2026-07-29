@@ -31,19 +31,15 @@ using RobotMode = mg400_msgs::msg::RobotMode;
 TEST(TestControlStateManager, StartsUnavailable)
 {
   Manager manager;
-
   const auto snapshot = manager.getSnapshot();
   EXPECT_EQ(Manager::State::UNAVAILABLE, snapshot.control_state);
-  EXPECT_EQ(Manager::MotionOwner::NONE, snapshot.motion_owner);
   EXPECT_EQ(Manager::NO_LEASE, snapshot.lease_id);
   EXPECT_FALSE(snapshot.connected);
-  EXPECT_FALSE(snapshot.accepting_servo_targets);
 }
 
 TEST(TestControlStateManager, BecomesIdleOnlyWhenConnectedAndEnabled)
 {
   Manager manager;
-
   EXPECT_EQ(
     Manager::State::UNAVAILABLE,
     manager.updateRobotStatus(false, RobotMode::ENABLE).control_state);
@@ -58,107 +54,71 @@ TEST(TestControlStateManager, BecomesIdleOnlyWhenConnectedAndEnabled)
     manager.updateRobotStatus(true, RobotMode::ERROR).control_state);
 }
 
+TEST(TestControlStateManager, AcquireUsesOneAtomicPathForEveryMotionType)
+{
+  for (const auto state : {Manager::State::REGULAR_MOTION, Manager::State::SERVO_J}) {
+    Manager manager;
+    manager.updateRobotStatus(true, RobotMode::ENABLE);
+    const auto acquired = manager.tryAcquire(state);
+    ASSERT_TRUE(acquired.success) << acquired.message;
+    EXPECT_EQ(state, acquired.current_state);
+    EXPECT_NE(Manager::NO_LEASE, acquired.lease_id);
+    EXPECT_TRUE(manager.owns(state, acquired.lease_id));
+  }
+}
+
+TEST(TestControlStateManager, RejectsNonOwningAcquireTargets)
+{
+  Manager manager;
+  manager.updateRobotStatus(true, RobotMode::ENABLE);
+  EXPECT_FALSE(manager.tryAcquire(Manager::State::IDLE).success);
+  EXPECT_FALSE(manager.tryAcquire(Manager::State::UNAVAILABLE).success);
+  EXPECT_EQ(Manager::State::IDLE, manager.getState());
+}
+
 TEST(TestControlStateManager, ServoLeaseSurvivesEnableAndRunning)
 {
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-
-  const auto started = manager.requestControlState(Manager::State::SERVO_J);
+  const auto started = manager.tryAcquire(Manager::State::SERVO_J);
   ASSERT_TRUE(started.success) << started.message;
-  ASSERT_NE(Manager::NO_LEASE, started.lease_id);
-  EXPECT_TRUE(manager.acceptsServoTarget(Manager::State::SERVO_J, started.lease_id));
-  EXPECT_FALSE(manager.acceptsServoTarget(Manager::State::SERVO_P, started.lease_id));
+  EXPECT_TRUE(manager.acceptsServoJTarget(started.lease_id));
 
-  auto snapshot = manager.updateRobotStatus(true, RobotMode::RUNNING);
-  EXPECT_EQ(Manager::State::SERVO_J, snapshot.control_state);
-  EXPECT_EQ(Manager::MotionOwner::SERVO_J, snapshot.motion_owner);
-  EXPECT_EQ(started.lease_id, snapshot.lease_id);
-  EXPECT_TRUE(manager.acceptsServoTarget(Manager::State::SERVO_J, started.lease_id));
-
-  snapshot = manager.updateRobotStatus(true, RobotMode::ENABLE);
-  EXPECT_EQ(Manager::State::SERVO_J, snapshot.control_state);
-  EXPECT_EQ(started.lease_id, snapshot.lease_id);
+  EXPECT_EQ(
+    Manager::State::SERVO_J,
+    manager.updateRobotStatus(true, RobotMode::RUNNING).control_state);
+  EXPECT_TRUE(manager.acceptsServoJTarget(started.lease_id));
+  EXPECT_EQ(
+    Manager::State::SERVO_J,
+    manager.updateRobotStatus(true, RobotMode::ENABLE).control_state);
 }
 
-TEST(TestControlStateManager, UnsafeRobotModeRevokesServoOwnership)
+TEST(TestControlStateManager, UnsafeRobotModeRevokesOwnership)
 {
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto started = manager.requestControlState(Manager::State::SERVO_P);
+  const auto started = manager.tryAcquire(Manager::State::SERVO_J);
   ASSERT_TRUE(started.success) << started.message;
 
-  const auto snapshot = manager.updateRobotStatus(true, RobotMode::PAUSE);
+  const auto snapshot = manager.updateRobotStatus(true, RobotMode::ERROR);
   EXPECT_EQ(Manager::State::UNAVAILABLE, snapshot.control_state);
-  EXPECT_EQ(Manager::MotionOwner::NONE, snapshot.motion_owner);
   EXPECT_EQ(Manager::NO_LEASE, snapshot.lease_id);
-  EXPECT_FALSE(manager.acceptsServoTarget(Manager::State::SERVO_P, started.lease_id));
+  EXPECT_FALSE(manager.acceptsServoJTarget(started.lease_id));
 }
 
-TEST(TestControlStateManager, ServoStopRequiresTheActiveLease)
+TEST(TestControlStateManager, ServoReleaseRequiresStopAndMatchingLease)
 {
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto started = manager.requestControlState(Manager::State::SERVO_J);
+  const auto started = manager.tryAcquire(Manager::State::SERVO_J);
   ASSERT_TRUE(started.success) << started.message;
 
-  const auto wrong_lease = manager.requestControlState(
-    Manager::State::IDLE, started.lease_id + 1);
-  EXPECT_FALSE(wrong_lease.success);
-  EXPECT_EQ(Manager::State::SERVO_J, wrong_lease.current_state);
-
-  const auto stop_not_begun = manager.requestControlState(
-    Manager::State::IDLE, started.lease_id);
-  EXPECT_FALSE(stop_not_begun.success);
-  EXPECT_TRUE(manager.acceptsServoTarget(Manager::State::SERVO_J, started.lease_id));
-
-  const auto begin_stop = manager.beginServoStop(started.lease_id);
-  ASSERT_TRUE(begin_stop.success) << begin_stop.message;
-  EXPECT_FALSE(manager.acceptsServoTarget(Manager::State::SERVO_J, started.lease_id));
-  EXPECT_EQ(Manager::MotionOwner::SERVO_J, manager.getSnapshot().motion_owner);
-
-  const auto stopped = manager.requestControlState(
-    Manager::State::IDLE, started.lease_id);
-  EXPECT_TRUE(stopped.success) << stopped.message;
-  EXPECT_EQ(Manager::State::IDLE, stopped.current_state);
-  EXPECT_EQ(Manager::NO_LEASE, stopped.lease_id);
-}
-
-TEST(TestControlStateManager, RejectsDirectServoModeSwitch)
-{
-  Manager manager;
-  manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto started = manager.requestControlState(Manager::State::SERVO_J);
-  ASSERT_TRUE(started.success) << started.message;
-
-  const auto switched = manager.requestControlState(Manager::State::SERVO_P);
-  EXPECT_FALSE(switched.success);
-  EXPECT_EQ(Manager::State::SERVO_J, switched.current_state);
-  EXPECT_EQ(started.lease_id, switched.lease_id);
-}
-
-TEST(TestControlStateManager, ServoStartRequiresZeroLeaseId)
-{
-  Manager manager;
-  manager.updateRobotStatus(true, RobotMode::ENABLE);
-
-  const auto rejected = manager.requestControlState(Manager::State::SERVO_J, 42);
-  EXPECT_FALSE(rejected.success);
-  EXPECT_EQ(Manager::State::IDLE, rejected.current_state);
-  EXPECT_EQ(Manager::MotionOwner::NONE, manager.getSnapshot().motion_owner);
-}
-
-TEST(TestControlStateManager, WatchdogReleasesServoOwnership)
-{
-  Manager manager;
-  manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto started = manager.requestControlState(Manager::State::SERVO_P);
-  ASSERT_TRUE(started.success) << started.message;
-
+  EXPECT_FALSE(manager.release(Manager::State::SERVO_J, started.lease_id).success);
+  EXPECT_FALSE(manager.beginServoStop(started.lease_id + 1).success);
   ASSERT_TRUE(manager.beginServoStop(started.lease_id).success);
-  const auto timed_out = manager.handleServoWatchdogTimeout(started.lease_id);
-  EXPECT_TRUE(timed_out.success) << timed_out.message;
-  EXPECT_EQ(Manager::State::IDLE, timed_out.current_state);
-  EXPECT_EQ(Manager::NO_LEASE, timed_out.lease_id);
+  EXPECT_FALSE(manager.acceptsServoJTarget(started.lease_id));
+  EXPECT_TRUE(manager.release(Manager::State::SERVO_J, started.lease_id).success);
+  EXPECT_EQ(Manager::State::IDLE, manager.getState());
 }
 
 TEST(TestControlStateManager, RegularMotionAndServoAreMutuallyExclusive)
@@ -166,40 +126,53 @@ TEST(TestControlStateManager, RegularMotionAndServoAreMutuallyExclusive)
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
 
-  const auto regular = manager.tryAcquireRegularMotion();
+  const auto regular = manager.tryAcquire(Manager::State::REGULAR_MOTION);
   ASSERT_TRUE(regular.success) << regular.message;
-  ASSERT_NE(Manager::NO_LEASE, regular.lease_id);
+  EXPECT_EQ(Manager::State::REGULAR_MOTION, manager.getState());
+  EXPECT_FALSE(manager.tryAcquire(Manager::State::SERVO_J).success);
 
-  const auto servo_while_regular = manager.requestControlState(Manager::State::SERVO_J);
-  EXPECT_FALSE(servo_while_regular.success);
-
-  EXPECT_TRUE(manager.releaseRegularMotion(regular.lease_id).success);
-  const auto servo = manager.requestControlState(Manager::State::SERVO_J);
+  ASSERT_TRUE(
+    manager.release(Manager::State::REGULAR_MOTION, regular.lease_id).success);
+  const auto servo = manager.tryAcquire(Manager::State::SERVO_J);
   ASSERT_TRUE(servo.success) << servo.message;
-
-  const auto regular_while_servo = manager.tryAcquireRegularMotion();
-  EXPECT_FALSE(regular_while_servo.success);
+  EXPECT_FALSE(manager.tryAcquire(Manager::State::REGULAR_MOTION).success);
 }
 
-TEST(TestControlStateManager, RegularMotionLeaseSurvivesItsEmbeddedModes)
+TEST(TestControlStateManager, AcquiresAndReleasesRegularMotionByLease)
 {
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto regular = manager.tryAcquireRegularMotion();
+
+  const auto acquired = manager.tryAcquire(Manager::State::REGULAR_MOTION);
+  ASSERT_TRUE(acquired.success) << acquired.message;
+  EXPECT_EQ(Manager::State::REGULAR_MOTION, manager.getState());
+  EXPECT_FALSE(manager.tryAcquire(Manager::State::REGULAR_MOTION).success);
+
+  ASSERT_TRUE(
+    manager.release(Manager::State::REGULAR_MOTION, acquired.lease_id).success);
+  EXPECT_EQ(Manager::State::IDLE, manager.getState());
+  EXPECT_FALSE(
+    manager.release(Manager::State::REGULAR_MOTION, acquired.lease_id).success);
+}
+
+TEST(TestControlStateManager, RegularMotionStateSurvivesEmbeddedModes)
+{
+  Manager manager;
+  manager.updateRobotStatus(true, RobotMode::ENABLE);
+  const auto regular = manager.tryAcquire(Manager::State::REGULAR_MOTION);
   ASSERT_TRUE(regular.success) << regular.message;
 
   for (const auto mode : {RobotMode::RUNNING, RobotMode::PAUSE, RobotMode::JOG,
       RobotMode::ENABLE})
   {
     const auto snapshot = manager.updateRobotStatus(true, mode);
-    EXPECT_EQ(Manager::State::IDLE, snapshot.control_state);
-    EXPECT_EQ(Manager::MotionOwner::REGULAR_MOTION, snapshot.motion_owner);
+    EXPECT_EQ(Manager::State::REGULAR_MOTION, snapshot.control_state);
     EXPECT_EQ(regular.lease_id, snapshot.lease_id);
   }
 
-  const auto released = manager.releaseRegularMotion(regular.lease_id);
-  EXPECT_TRUE(released.success) << released.message;
-  EXPECT_EQ(Manager::State::IDLE, released.current_state);
+  EXPECT_TRUE(
+    manager.release(Manager::State::REGULAR_MOTION, regular.lease_id).success);
+  EXPECT_EQ(Manager::State::IDLE, manager.getState());
 }
 
 TEST(TestControlStateManager, OnlyOneConcurrentCallerAcquiresOwnership)
@@ -210,12 +183,12 @@ TEST(TestControlStateManager, OnlyOneConcurrentCallerAcquiresOwnership)
   constexpr std::size_t thread_count = 16;
   std::atomic<std::size_t> success_count{0};
   std::vector<std::thread> threads;
-  threads.reserve(thread_count);
-
   for (std::size_t index = 0; index < thread_count; ++index) {
     threads.emplace_back(
-      [&manager, &success_count]() {
-        if (manager.tryAcquireRegularMotion().success) {
+      [&manager, &success_count, index]() {
+        const auto state = index % 2 == 0 ?
+        Manager::State::REGULAR_MOTION : Manager::State::SERVO_J;
+        if (manager.tryAcquire(state).success) {
           ++success_count;
         }
       });
@@ -223,39 +196,25 @@ TEST(TestControlStateManager, OnlyOneConcurrentCallerAcquiresOwnership)
   for (auto & thread : threads) {
     thread.join();
   }
-
   EXPECT_EQ(1U, success_count.load());
 }
 
-TEST(TestControlStateManager, BothServoOwnersRejectRegularMotion)
-{
-  for (const auto servo_state : {Manager::State::SERVO_J, Manager::State::SERVO_P}) {
-    Manager manager;
-    manager.updateRobotStatus(true, RobotMode::ENABLE);
-    const auto servo = manager.requestControlState(servo_state);
-    ASSERT_TRUE(servo.success) << servo.message;
-    EXPECT_FALSE(manager.tryAcquireRegularMotion().success);
-  }
-}
-
-TEST(TestControlStateManager, ForeignAndStaleLeaseCannotReleaseCurrentOwnership)
+TEST(TestControlStateManager, StaleLeaseCannotReleaseNewOwner)
 {
   Manager manager;
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto first = manager.tryAcquireRegularMotion();
+  const auto first = manager.tryAcquire(Manager::State::REGULAR_MOTION);
   ASSERT_TRUE(first.success) << first.message;
-
-  EXPECT_FALSE(manager.releaseRegularMotion(first.lease_id + 1).success);
-  EXPECT_EQ(first.lease_id, manager.getSnapshot().lease_id);
 
   manager.updateRobotStatus(false, RobotMode::INVALID);
   manager.updateRobotStatus(true, RobotMode::ENABLE);
-  const auto second = manager.tryAcquireRegularMotion();
+  const auto second = manager.tryAcquire(Manager::State::REGULAR_MOTION);
   ASSERT_TRUE(second.success) << second.message;
   ASSERT_NE(first.lease_id, second.lease_id);
 
-  EXPECT_FALSE(manager.releaseRegularMotion(first.lease_id).success);
-  EXPECT_EQ(second.lease_id, manager.getSnapshot().lease_id);
+  EXPECT_FALSE(
+    manager.release(Manager::State::REGULAR_MOTION, first.lease_id).success);
+  EXPECT_TRUE(manager.owns(Manager::State::REGULAR_MOTION, second.lease_id));
 }
 
 }  // namespace

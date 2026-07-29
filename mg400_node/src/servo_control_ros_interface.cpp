@@ -14,119 +14,59 @@
 
 #include "mg400_node/servo_control_ros_interface.hpp"
 
-#include <algorithm>
 #include <array>
-#include <cmath>
-#include <limits>
 #include <stdexcept>
 #include <utility>
-#include <vector>
-
-#include <diagnostic_msgs/msg/diagnostic_status.hpp>
-#include <diagnostic_msgs/msg/key_value.hpp>
-#include <tf2/exceptions.h>
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace mg400_node
 {
-namespace
-{
-
-using DiagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus;
-using KeyValue = diagnostic_msgs::msg::KeyValue;
-
-std::string boolString(const bool value)
-{
-  return value ? "true" : "false";
-}
-
-KeyValue value(const std::string & key, const std::string & data)
-{
-  KeyValue output;
-  output.key = key;
-  output.value = data;
-  return output;
-}
-
-template<typename IntegerT>
-KeyValue integerValue(const std::string & key, const IntegerT data)
-{
-  return value(key, std::to_string(data));
-}
-
-std::int64_t nonnegativeAgeMilliseconds(
-  const mg400_interface::ServoControlSession::Clock::time_point & now,
-  const mg400_interface::ServoControlSession::Clock::time_point & then)
-{
-  if (then >= now) {
-    return 0;
-  }
-  return std::chrono::duration_cast<std::chrono::milliseconds>(now - then).count();
-}
-
-mg400_interface::ControlStateManager::MotionOwner ownerForServoType(
-  const mg400_interface::ControlStateManager::State servo_type)
-{
-  using Manager = mg400_interface::ControlStateManager;
-  return servo_type == Manager::State::SERVO_J ?
-         Manager::MotionOwner::SERVO_J : Manager::MotionOwner::SERVO_P;
-}
-
-}  // namespace
 
 ServoControlRosInterface::ServoControlRosInterface(
   rclcpp_lifecycle::LifecycleNode & node,
   Manager::SharedPtr manager,
-  const Options & options,
-  TransformPoseFunction transform_pose)
+  SafetyViolationState::SharedPtr safety_violation_state,
+  OperationalErrorState::SharedPtr operational_error_state)
 : node_(node),
   manager_(std::move(manager)),
-  options_(options),
+  control_transition_in_progress_(false),
   lifecycle_active_(false),
-  ros_rejected_target_count_(0),
-  transform_pose_(std::move(transform_pose))
+  safety_violation_state_(std::move(safety_violation_state)),
+  operational_error_state_(std::move(operational_error_state))
 {
   if (!this->manager_) {
     throw std::invalid_argument("Servo ROS interface requires a ControlStateManager");
   }
-  if (this->options_.diagnostics_period <= std::chrono::nanoseconds::zero()) {
-    throw std::invalid_argument("Servo diagnostics period must be positive");
+  if (!this->safety_violation_state_) {
+    throw std::invalid_argument("Servo ROS interface requires a safety violation state");
   }
-  if (this->options_.target_frame.empty()) {
-    throw std::invalid_argument("ServoP target frame must not be empty");
+  if (!this->operational_error_state_) {
+    throw std::invalid_argument("Servo ROS interface requires an operational error state");
   }
-
-  if (!this->transform_pose_) {
-    this->tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->node_.get_clock());
-    this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(
-      *this->tf_buffer_, this->node_.shared_from_this(), true);
-    this->transform_pose_ =
-      [this](
-      const geometry_msgs::msg::PoseStamped & input,
-      const std::string & target_frame,
-      geometry_msgs::msg::PoseStamped & output,
-      std::string & reason)
-      {
-        return this->defaultTransformPose(input, target_frame, output, reason);
-      };
-  }
-
   const auto control_state_qos =
     rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
   this->control_state_publisher_ =
     rclcpp::create_publisher<mg400_msgs::msg::ControlState>(
     this->node_, "control_state", control_state_qos);
-  this->diagnostics_publisher_ =
-    rclcpp::create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
-    this->node_, "servo_diagnostics", rclcpp::QoS(rclcpp::KeepLast(1)).reliable());
+  const auto servo_error_qos =
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
+  this->servo_error_publisher_ =
+    rclcpp::create_publisher<mg400_msgs::msg::ServoError>(
+    this->node_, "servo_error", servo_error_qos);
+  this->safety_violation_callback_ = this->safety_violation_state_->setChangeCallback(
+    [this]() {
+      this->publishServoError();
+    });
+  this->operational_error_callback_ = this->operational_error_state_->setChangeCallback(
+    [this]() {
+      this->publishServoError();
+    });
 
   this->service_callback_group_ = this->node_.create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive);
-  this->change_control_state_service_ = this->node_.create_service<ChangeControlState>(
-    "change_control_state",
+  this->enable_servo_j_service_ = this->node_.create_service<EnableServoJ>(
+    "enable_servo_j",
     std::bind(
-      &ServoControlRosInterface::handleChangeControlState, this,
+      &ServoControlRosInterface::handleEnableServoJ, this,
       std::placeholders::_1, std::placeholders::_2),
     rmw_qos_profile_services_default,
     this->service_callback_group_);
@@ -138,34 +78,19 @@ ServoControlRosInterface::ServoControlRosInterface(
       &ServoControlRosInterface::handleServoJTarget, this,
       std::placeholders::_1),
     target_subscription_options);
-  this->servo_p_subscriber_ = this->node_.create_subscription<mg400_msgs::msg::ServoP>(
-    "servo_p/target", rclcpp::QoS(rclcpp::KeepLast(1)),
-    std::bind(
-      &ServoControlRosInterface::handleServoPTarget, this,
-      std::placeholders::_1),
-    target_subscription_options);
-
-  this->diagnostics_timer_ = this->node_.create_wall_timer(
-    this->options_.diagnostics_period,
-    [this]() {
-      this->publishControlState();
-      this->publishDiagnostics();
-    });
-
   // This is a normal rclcpp publisher rather than a LifecyclePublisher, so the
   // configured UNAVAILABLE state is available to late subscribers immediately.
   this->publishControlState(true);
-  this->publishDiagnostics();
+  this->publishServoError();
 }
 
 ServoControlRosInterface::~ServoControlRosInterface()
 {
-  this->diagnostics_timer_.reset();
-  this->change_control_state_service_.reset();
+  // Stop and join state notifications before destroying ROS entities.
+  this->operational_error_callback_.reset();
+  this->safety_violation_callback_.reset();
+  this->enable_servo_j_service_.reset();
   this->servo_j_subscriber_.reset();
-  this->servo_p_subscriber_.reset();
-  this->tf_listener_.reset();
-  this->tf_buffer_.reset();
 }
 
 void ServoControlRosInterface::installSession(std::shared_ptr<Session> session)
@@ -173,15 +98,28 @@ void ServoControlRosInterface::installSession(std::shared_ptr<Session> session)
   if (!session) {
     throw std::invalid_argument("Cannot install an empty Servo Session");
   }
-  std::lock_guard<std::mutex> lock(this->operation_mutex_);
-  if (this->session_) {
-    throw std::logic_error("A Servo Session is already installed");
+  if (session->getSafetyViolationStateShared() != this->safety_violation_state_) {
+    throw std::invalid_argument(
+            "Servo Session and ROS interface must share one safety violation state");
+  }
+  if (session->getOperationalErrorStateShared() != this->operational_error_state_) {
+    throw std::invalid_argument(
+            "Servo Session and ROS interface must share one operational error state");
   }
   {
-    std::lock_guard<std::mutex> pointer_lock(this->session_pointer_mutex_);
-    this->session_ = std::move(session);
+    std::unique_lock<std::mutex> lock(this->operation_mutex_);
+    this->operation_cv_.wait(
+      lock, [this]() {return !this->control_transition_in_progress_;});
+    if (this->session_) {
+      throw std::logic_error("A Servo Session is already installed");
+    }
+    {
+      std::lock_guard<std::mutex> pointer_lock(this->session_pointer_mutex_);
+      this->session_ = std::move(session);
+    }
+    this->lifecycle_active_ = true;
   }
-  this->lifecycle_active_ = true;
+  this->publishServoError();
 }
 
 void ServoControlRosInterface::setLifecycleActive(const bool active)
@@ -194,8 +132,12 @@ ServoControlRosInterface::StopResult ServoControlRosInterface::stopForLifecycle(
   const std::string & reason)
 {
   std::shared_ptr<Session> stale_session;
+  std::shared_ptr<Session> session_to_stop;
+  Session::LeaseId lease_id = Manager::NO_LEASE;
   std::unique_lock<std::mutex> lock(this->operation_mutex_);
   this->lifecycle_active_ = false;
+  this->operation_cv_.wait(
+    lock, [this]() {return !this->control_transition_in_progress_;});
   if (!this->session_) {
     return StopResult{true, false, "No Servo Session is installed"};
   }
@@ -207,53 +149,80 @@ ServoControlRosInterface::StopResult ServoControlRosInterface::stopForLifecycle(
 
   const auto manager_snapshot = this->manager_->getSnapshot();
   if (manager_snapshot.lease_id != session_snapshot.lease_id ||
-    manager_snapshot.control_state != session_snapshot.servo_type ||
-    manager_snapshot.motion_owner != ownerForServoType(session_snapshot.servo_type))
+    manager_snapshot.control_state != Manager::State::SERVO_J)
   {
     {
       std::lock_guard<std::mutex> pointer_lock(this->session_pointer_mutex_);
-      this->retired_snapshot_ = session_snapshot;
-      this->retired_reason_ = reason + ": manager already revoked the old Servo lease";
       stale_session = std::move(this->session_);
     }
-    const auto retired_reason = this->retired_reason_;
+    const auto retired_reason = reason + ": manager already revoked the old Servo lease";
+    const bool report_lease_loss = manager_snapshot.connected;
     lock.unlock();
+    if (report_lease_loss) {
+      this->operational_error_state_->reportError(
+        mg400_interface::ServoOperationalErrorCode::SERVO_LEASE_LOST,
+        retired_reason);
+    }
     // ServoControlSession revalidates the lease before invoking the strategy,
     // so destruction of this stale epoch cannot issue ResetRobot.
     stale_session.reset();
     return StopResult{true, true, retired_reason};
   }
 
-  const auto stopped = this->session_->stop(session_snapshot.lease_id);
-  this->publishControlStateLocked(true);
-  if (!stopped.success) {
-    return StopResult{false, false, stopped.message};
+  session_to_stop = this->session_;
+  lease_id = session_snapshot.lease_id;
+  this->control_transition_in_progress_ = true;
+  lock.unlock();
+
+  Session::Result stopped{
+    false, session_snapshot.state, lease_id, "Servo lifecycle stop failed unexpectedly"};
+  try {
+    stopped = session_to_stop->stop();
+  } catch (const std::exception & error) {
+    stopped.message = std::string("Servo lifecycle stop threw: ") + error.what();
+    this->operational_error_state_->reportError(
+      mg400_interface::ServoOperationalErrorCode::INTERNAL_ERROR,
+      "The Servo lifecycle stop raised an unexpected exception");
+  } catch (...) {
+    stopped.message = "Servo lifecycle stop threw an unknown exception";
+    this->operational_error_state_->reportError(
+      mg400_interface::ServoOperationalErrorCode::INTERNAL_ERROR,
+      "The Servo lifecycle stop raised an unexpected exception");
   }
-  return StopResult{true, false, stopped.message};
+  {
+    std::lock_guard<std::mutex> operation_lock(this->operation_mutex_);
+    this->control_transition_in_progress_ = false;
+  }
+  this->operation_cv_.notify_all();
+  this->publishControlState(true);
+  return StopResult{stopped.success, false, stopped.message};
 }
 
-void ServoControlRosInterface::clearSession(const std::string & reason)
+void ServoControlRosInterface::clearSession()
 {
   std::shared_ptr<Session> old_session;
   {
-    std::lock_guard<std::mutex> lock(this->operation_mutex_);
+    std::unique_lock<std::mutex> lock(this->operation_mutex_);
     this->lifecycle_active_ = false;
+    this->operation_cv_.wait(
+      lock, [this]() {return !this->control_transition_in_progress_;});
     if (!this->session_) {
       return;
     }
     std::lock_guard<std::mutex> pointer_lock(this->session_pointer_mutex_);
-    this->retired_snapshot_ = this->session_->getSnapshot();
-    this->retired_reason_ = reason;
     old_session = std::move(this->session_);
   }
   old_session.reset();
+  this->publishServoError();
 }
 
 bool ServoControlRosInterface::retireSessionIfLeaseLost(const std::string & reason)
 {
   std::shared_ptr<Session> stale_session;
+  std::string operational_message;
+  bool report_lease_loss = false;
   {
-    std::lock_guard<std::mutex> lock(this->operation_mutex_);
+    std::unique_lock<std::mutex> lock(this->operation_mutex_);
     if (!this->session_) {
       return false;
     }
@@ -263,21 +232,40 @@ bool ServoControlRosInterface::retireSessionIfLeaseLost(const std::string & reas
     }
     const auto manager_snapshot = this->manager_->getSnapshot();
     if (manager_snapshot.lease_id == session_snapshot.lease_id &&
-      manager_snapshot.control_state == session_snapshot.servo_type &&
-      manager_snapshot.motion_owner == ownerForServoType(session_snapshot.servo_type))
+      manager_snapshot.control_state == Manager::State::SERVO_J)
     {
       return false;
     }
 
     this->lifecycle_active_ = false;
+    this->operation_cv_.wait(
+      lock, [this]() {return !this->control_transition_in_progress_;});
+    if (!this->session_) {
+      return false;
+    }
+    const auto current_session_snapshot = this->session_->getSnapshot();
+    if (current_session_snapshot.lease_id == Manager::NO_LEASE) {
+      return false;
+    }
+    const auto current_manager_snapshot = this->manager_->getSnapshot();
+    if (current_manager_snapshot.lease_id == current_session_snapshot.lease_id &&
+      current_manager_snapshot.control_state == Manager::State::SERVO_J)
+    {
+      return false;
+    }
     std::lock_guard<std::mutex> pointer_lock(this->session_pointer_mutex_);
-    this->retired_snapshot_ = session_snapshot;
-    this->retired_reason_ = reason;
+    operational_message = reason;
+    report_lease_loss = current_manager_snapshot.connected;
     stale_session = std::move(this->session_);
+  }
+  if (report_lease_loss) {
+    this->operational_error_state_->reportError(
+      mg400_interface::ServoOperationalErrorCode::SERVO_LEASE_LOST,
+      operational_message);
   }
   stale_session.reset();
   this->publishControlState(true);
-  this->publishDiagnostics();
+  this->publishServoError();
   return true;
 }
 
@@ -285,6 +273,29 @@ bool ServoControlRosInterface::hasSession() const
 {
   std::lock_guard<std::mutex> lock(this->operation_mutex_);
   return static_cast<bool>(this->session_);
+}
+
+bool ServoControlRosInterface::hasActiveServoLease() const
+{
+  std::lock_guard<std::mutex> lock(this->session_pointer_mutex_);
+  if (!this->session_) {
+    return false;
+  }
+  const auto snapshot = this->session_->getSnapshot();
+  return snapshot.lease_id != Manager::NO_LEASE &&
+         snapshot.state != Session::State::IDLE;
+}
+
+ServoControlRosInterface::SafetyViolationState::SharedPtr
+ServoControlRosInterface::getSafetyViolationStateShared() const noexcept
+{
+  return this->safety_violation_state_;
+}
+
+ServoControlRosInterface::OperationalErrorState::SharedPtr
+ServoControlRosInterface::getOperationalErrorStateShared() const noexcept
+{
+  return this->operational_error_state_;
 }
 
 void ServoControlRosInterface::publishControlState(const bool force)
@@ -296,7 +307,7 @@ void ServoControlRosInterface::publishControlStateLocked(const bool force)
 {
   const auto state = this->manager_->getState();
   {
-    std::lock_guard<std::mutex> lock(this->diagnostic_mutex_);
+    std::lock_guard<std::mutex> lock(this->publication_mutex_);
     if (!force && this->last_published_state_ && *this->last_published_state_ == state) {
       return;
     }
@@ -308,417 +319,134 @@ void ServoControlRosInterface::publishControlStateLocked(const bool force)
   this->control_state_publisher_->publish(message);
 }
 
-void ServoControlRosInterface::publishDiagnostics()
+void ServoControlRosInterface::publishServoError()
 {
-  const auto manager_snapshot = this->manager_->getSnapshot();
-  std::optional<Session::Snapshot> session_snapshot;
-  std::string retired_reason;
-  {
-    std::lock_guard<std::mutex> lock(this->session_pointer_mutex_);
-    if (this->session_) {
-      session_snapshot = this->session_->getSnapshot();
-    } else if (this->retired_snapshot_) {
-      session_snapshot = this->retired_snapshot_;
-    }
-    retired_reason = this->retired_reason_;
-  }
-
-  std::string last_ros_rejection;
-  {
-    std::lock_guard<std::mutex> lock(this->diagnostic_mutex_);
-    last_ros_rejection = this->last_ros_rejection_;
-  }
-
-  DiagnosticStatus status;
-  status.name = "mg400/servo_control";
-  status.hardware_id = this->options_.hardware_id;
-  status.level = DiagnosticStatus::OK;
-  status.message = "Servo control is ready";
-
-  status.values.push_back(
-    value(
-      "control_state", Manager::toString(manager_snapshot.control_state)));
-  status.values.push_back(
-    value(
-      "motion_owner", Manager::toString(manager_snapshot.motion_owner)));
-  status.values.push_back(
-    value(
-      "has_current_lease", boolString(manager_snapshot.lease_id != Manager::NO_LEASE)));
-  status.values.push_back(integerValue("lease_id", manager_snapshot.lease_id));
-  status.values.push_back(value("connected", boolString(manager_snapshot.connected)));
-  status.values.push_back(integerValue("robot_mode", manager_snapshot.robot_mode));
-  status.values.push_back(
-    value(
-      "accepting_servo_targets", boolString(manager_snapshot.accepting_servo_targets)));
-  status.values.push_back(
-    integerValue(
-      "ros_rejected_target_count", this->ros_rejected_target_count_.load()));
-  status.values.push_back(value("last_ros_rejection", last_ros_rejection));
-  status.values.push_back(value("retired_session_reason", retired_reason));
-
-  if (session_snapshot) {
-    const auto & snapshot = *session_snapshot;
-    const auto now = Session::Clock::now();
-    status.values.push_back(value("session_state", sessionStateName(snapshot.state)));
-    status.values.push_back(
-      value(
-        "servo_type", Manager::toString(snapshot.servo_type)));
-    status.values.push_back(value("has_target", boolString(snapshot.has_target)));
-    status.values.push_back(
-      value(
-        "target_age_ms",
-        snapshot.has_target_update_time ?
-        std::to_string(nonnegativeAgeMilliseconds(now, snapshot.target_updated_at)) : "n/a"));
-    status.values.push_back(
-      value(
-        "last_send_age_ms",
-        snapshot.has_last_send_time ?
-        std::to_string(nonnegativeAgeMilliseconds(now, snapshot.last_sent_at)) : "n/a"));
-    status.values.push_back(
-      value(
-        "watchdog_triggered", boolString(snapshot.watchdog_triggered)));
-    status.values.push_back(value("stop_cause", stopCauseName(snapshot.stop_cause)));
-    status.values.push_back(
-      integerValue(
-        "accepted_target_count", snapshot.accepted_target_count));
-    status.values.push_back(
-      integerValue(
-        "rejected_target_count",
-        snapshot.rejected_target_count + this->ros_rejected_target_count_.load()));
-    status.values.push_back(integerValue("sent_command_count", snapshot.sent_command_count));
-    status.values.push_back(
-      value(
-        "latest_motion_response_result",
-        snapshot.has_latest_response ?
-        responseResultName(snapshot.latest_response.result) : "unavailable"));
-    status.values.push_back(
-      value(
-        "controller_error_code",
-        snapshot.has_latest_response &&
-        snapshot.latest_response.error_code !=
-        mg400_interface::MotionResponse::ERROR_CODE_UNAVAILABLE ?
-        std::to_string(snapshot.latest_response.error_code) : "unavailable"));
-    status.values.push_back(
-      integerValue(
-        "response_drop_count", snapshot.dropped_response_count));
-    status.values.push_back(value("session_reason", snapshot.diagnostic));
-
-    if (snapshot.state == Session::State::FAULTED) {
-      status.level = DiagnosticStatus::ERROR;
-      status.message = snapshot.diagnostic;
-    } else if (snapshot.state == Session::State::STOPPING || snapshot.watchdog_triggered) {
-      status.level = DiagnosticStatus::WARN;
-      status.message = snapshot.diagnostic;
-    } else {
-      status.message = snapshot.diagnostic;
-    }
-  } else {
-    status.values.push_back(value("session_state", "NOT_INSTALLED"));
-  }
-
-  if (manager_snapshot.control_state == Manager::State::UNAVAILABLE &&
-    status.level != DiagnosticStatus::ERROR)
-  {
-    status.level = DiagnosticStatus::WARN;
-    status.message = retired_reason.empty() ?
-      "MG400 is unavailable for Servo control" : retired_reason;
-  }
-
-  diagnostic_msgs::msg::DiagnosticArray array;
-  array.header.stamp = this->node_.now();
-  array.status.push_back(std::move(status));
-  this->diagnostics_publisher_->publish(array);
+  auto message = makeServoErrorMessage(
+    this->safety_violation_state_->getSnapshot(),
+    this->operational_error_state_->getSnapshot());
+  message.header.stamp = this->node_.now();
+  message.header.frame_id.clear();
+  this->servo_error_publisher_->publish(message);
 }
 
-void ServoControlRosInterface::handleChangeControlState(
-  const std::shared_ptr<ChangeControlState::Request> request,
-  std::shared_ptr<ChangeControlState::Response> response)
+mg400_msgs::msg::ServoError ServoControlRosInterface::makeServoErrorMessage(
+  const SafetyViolationState::Snapshot & safety,
+  const OperationalErrorState::Snapshot & operational)
+{
+  mg400_msgs::msg::ServoError message;
+  message.safety_violation_code = static_cast<std::uint8_t>(safety.code);
+  if (message.safety_violation_code != mg400_msgs::msg::ServoError::SAFETY_NONE) {
+    message.safety_violation_message = safety.message;
+  }
+  message.operational_error_code = static_cast<std::uint8_t>(operational.code);
+  if (message.operational_error_code != mg400_msgs::msg::ServoError::OPERATIONAL_NONE) {
+    message.operational_error_message = operational.message;
+  }
+  return message;
+}
+
+void ServoControlRosInterface::handleEnableServoJ(
+  const std::shared_ptr<EnableServoJ::Request> request,
+  std::shared_ptr<EnableServoJ::Response> response)
 {
   response->success = false;
+  response->enabled = false;
   response->lease_id = Manager::NO_LEASE;
+  bool servo_rearmed = false;
+  std::shared_ptr<Session> transition_session;
+  bool transition_enable = false;
 
-  std::unique_lock<std::mutex> lock(this->operation_mutex_);
-  const auto requested_value = request->target_state.control_state;
-  if (requested_value > static_cast<std::uint8_t>(Manager::State::SERVO_P)) {
-    response->message = "Unknown control state";
-  } else if (requested_value == static_cast<std::uint8_t>(Manager::State::UNAVAILABLE)) {
-    response->message = "UNAVAILABLE cannot be requested";
-  } else if (!this->session_) {
-    response->message = "No Servo Session is available for this connection";
-  } else {
-    const auto requested_state = static_cast<Manager::State>(requested_value);
-    if (requested_state == Manager::State::IDLE) {
-      if (request->lease_id == Manager::NO_LEASE) {
-        response->message = "A non-zero active Servo lease is required to stop";
-      } else {
-        const auto stopped = this->session_->stop(request->lease_id);
-        response->success = stopped.success;
-        response->message = stopped.message;
-      }
-    } else if (request->lease_id != Manager::NO_LEASE) {
-      response->message = "A Servo start request must use lease ID zero";
-    } else if (!this->lifecycle_active_) {
-      response->message = "MG400Node is not active for Servo control";
+  {
+    std::lock_guard<std::mutex> lock(this->operation_mutex_);
+    if (!this->session_) {
+      response->message = "No Servo Session is available for this connection";
+    } else if (this->control_transition_in_progress_) {
+      response->message = "Another ServoJ enable transition is in progress";
+    } else if (request->enable && !this->lifecycle_active_) {
+      response->message = "MG400Node is not active for ServoJ control";
     } else {
-      const auto manager_snapshot = this->manager_->getSnapshot();
-      const bool direct_switch =
-        (manager_snapshot.control_state == Manager::State::SERVO_J ||
-        manager_snapshot.control_state == Manager::State::SERVO_P) &&
-        manager_snapshot.control_state != requested_state;
-      if (direct_switch) {
-        response->message = "Direct switching between SERVO_J and SERVO_P is not allowed";
-      } else {
-        const auto started = this->session_->start(requested_state);
-        response->success = started.success;
-        response->message = started.message;
-        if (started.success) {
-          response->lease_id = started.lease_id;
-        }
-      }
+      transition_session = this->session_;
+      transition_enable = request->enable;
+      this->control_transition_in_progress_ = true;
     }
   }
 
-  const auto actual_state = this->manager_->getState();
-  response->current_state.control_state = static_cast<std::uint8_t>(actual_state);
+  if (transition_session) {
+    Session::Result result{
+      false, Session::State::IDLE, Manager::NO_LEASE,
+      "EnableServoJ transition failed unexpectedly"};
+    try {
+      result = transition_enable ?
+        transition_session->start() : transition_session->stop();
+    } catch (const std::exception & error) {
+      result.message = std::string("EnableServoJ transition threw: ") + error.what();
+      this->operational_error_state_->reportError(
+        mg400_interface::ServoOperationalErrorCode::INTERNAL_ERROR,
+        "An EnableServoJ transition raised an unexpected exception");
+    } catch (...) {
+      result.message = "EnableServoJ transition threw an unknown exception";
+      this->operational_error_state_->reportError(
+        mg400_interface::ServoOperationalErrorCode::INTERNAL_ERROR,
+        "An EnableServoJ transition raised an unexpected exception");
+    }
+    response->success = result.success;
+    response->message = result.message;
+    if (result.success && transition_enable) {
+      response->lease_id = result.lease_id;
+      servo_rearmed = true;
+    }
+    {
+      std::lock_guard<std::mutex> lock(this->operation_mutex_);
+      this->control_transition_in_progress_ = false;
+    }
+    this->operation_cv_.notify_all();
+  }
+
+  response->enabled = this->manager_->getState() == Manager::State::SERVO_J;
   // On every failure, and after a successful stop, lease_id remains zero. A
-  // failed stop is retried with the lease retained by the caller and Manager.
-  this->publishControlStateLocked(true);
-  lock.unlock();
-  this->publishDiagnostics();
+  // failed stop can be retried with another enable=false request.
+  this->publishControlState(true);
+  if (servo_rearmed) {
+    // Both latch callbacks may have published an intermediate clear state.
+    // This explicit snapshot guarantees the final paired rearm state.
+    this->publishServoError();
+  }
 }
 
 void ServoControlRosInterface::handleServoJTarget(
   const mg400_msgs::msg::ServoJ::SharedPtr message)
 {
+  std::shared_ptr<Session> session;
+  std::string admission_rejection;
   std::unique_lock<std::mutex> lock(this->operation_mutex_, std::try_to_lock);
   if (!lock.owns_lock()) {
-    this->rejectRosTarget("ServoJ target rejected during a control-state transition");
-    return;
+    admission_rejection = "ServoJ target rejected during a Servo-state transition";
+  } else if (this->control_transition_in_progress_) {
+    admission_rejection = "ServoJ target rejected during a Servo-state transition";
+  } else if (!this->lifecycle_active_) {
+    admission_rejection = "ServoJ target rejected because MG400Node is not active";
+  } else if (!this->session_) {
+    admission_rejection = "ServoJ target rejected because no Session is installed";
+  } else {
+    session = this->session_;
   }
-  if (!this->lifecycle_active_) {
-    this->rejectRosTarget("ServoJ target rejected because MG400Node is not active");
-    return;
+  if (lock.owns_lock()) {
+    lock.unlock();
   }
-  if (!this->session_) {
-    this->rejectRosTarget("ServoJ target rejected because no Session is installed");
+  if (!admission_rejection.empty()) {
+    this->rejectRosTarget(admission_rejection);
     return;
   }
 
   const std::array<double, 4> target{{
     message->joint_angles[0], message->joint_angles[1],
     message->joint_angles[2], message->joint_angles[3]}};
-  if (!this->session_->updateServoJTarget(message->lease_id, target)) {
-    std::lock_guard<std::mutex> diagnostic_lock(this->diagnostic_mutex_);
-    this->last_ros_rejection_ = this->session_->getSnapshot().diagnostic;
-  }
-}
-
-void ServoControlRosInterface::handleServoPTarget(
-  const mg400_msgs::msg::ServoP::SharedPtr message)
-{
-  std::unique_lock<std::mutex> lock(this->operation_mutex_, std::try_to_lock);
-  if (!lock.owns_lock()) {
-    this->rejectRosTarget("ServoP target rejected during a control-state transition");
-    return;
-  }
-  if (!this->lifecycle_active_) {
-    this->rejectRosTarget("ServoP target rejected because MG400Node is not active");
-    return;
-  }
-  if (!this->session_) {
-    this->rejectRosTarget("ServoP target rejected because no Session is installed");
-    return;
-  }
-  if (message->pose.header.frame_id.empty()) {
-    this->rejectRosTarget("ServoP target frame_id is empty");
-    return;
-  }
-
-  std::string reason;
-  if (!finitePose(message->pose.pose, reason)) {
-    this->rejectRosTarget(reason);
-    return;
-  }
-  double unused_yaw = 0.0;
-  if (!quaternionToYaw(message->pose.pose.orientation, unused_yaw, reason)) {
-    this->rejectRosTarget(reason);
-    return;
-  }
-
-  geometry_msgs::msg::PoseStamped transformed;
-  try {
-    if (!this->transform_pose_(message->pose, this->options_.target_frame, transformed, reason)) {
-      this->rejectRosTarget(
-        reason.empty() ? "ServoP target TF transform failed" : reason);
-      return;
-    }
-  } catch (const std::exception & error) {
-    this->rejectRosTarget(std::string("ServoP target TF transform failed: ") + error.what());
-    return;
-  } catch (...) {
-    this->rejectRosTarget("ServoP target TF transform failed with an unknown exception");
-    return;
-  }
-
-  if (!finitePose(transformed.pose, reason)) {
-    this->rejectRosTarget("Transformed " + reason);
-    return;
-  }
-  double yaw = 0.0;
-  if (!quaternionToYaw(transformed.pose.orientation, yaw, reason)) {
-    this->rejectRosTarget("Transformed " + reason);
-    return;
-  }
-
-  if (!this->session_->updateServoPTarget(
-      message->lease_id,
-      transformed.pose.position.x,
-      transformed.pose.position.y,
-      transformed.pose.position.z,
-      yaw))
-  {
-    std::lock_guard<std::mutex> diagnostic_lock(this->diagnostic_mutex_);
-    this->last_ros_rejection_ = this->session_->getSnapshot().diagnostic;
-  }
-}
-
-std::uint64_t ServoControlRosInterface::getRosRejectedTargetCount() const noexcept
-{
-  return this->ros_rejected_target_count_.load();
-}
-
-std::string ServoControlRosInterface::getLastRosRejection() const
-{
-  std::lock_guard<std::mutex> lock(this->diagnostic_mutex_);
-  return this->last_ros_rejection_;
-}
-
-bool ServoControlRosInterface::quaternionToYaw(
-  const geometry_msgs::msg::Quaternion & quaternion,
-  double & yaw,
-  std::string & reason)
-{
-  const std::array<double, 4> values{{
-    quaternion.x, quaternion.y, quaternion.z, quaternion.w}};
-  if (!std::all_of(
-      values.begin(), values.end(), [](const double component) {return std::isfinite(component);}))
-  {
-    reason = "ServoP quaternion contains a non-finite value";
-    return false;
-  }
-
-  const double norm_squared =
-    quaternion.x * quaternion.x + quaternion.y * quaternion.y +
-    quaternion.z * quaternion.z + quaternion.w * quaternion.w;
-  if (!std::isfinite(norm_squared) || norm_squared <= std::numeric_limits<double>::epsilon()) {
-    reason = "ServoP quaternion has zero norm";
-    return false;
-  }
-  if (std::abs(norm_squared - 1.0) > 1.0e-3) {
-    reason = "ServoP quaternion is not normalized";
-    return false;
-  }
-
-  yaw = tf2::getYaw(quaternion);
-  if (!std::isfinite(yaw)) {
-    reason = "ServoP quaternion produced a non-finite yaw";
-    return false;
-  }
-  reason.clear();
-  return true;
+  static_cast<void>(session->updateServoJTarget(message->lease_id, target));
 }
 
 void ServoControlRosInterface::rejectRosTarget(const std::string & reason)
 {
-  ++this->ros_rejected_target_count_;
-  std::lock_guard<std::mutex> lock(this->diagnostic_mutex_);
-  this->last_ros_rejection_ = reason;
-}
-
-bool ServoControlRosInterface::defaultTransformPose(
-  const geometry_msgs::msg::PoseStamped & input,
-  const std::string & target_frame,
-  geometry_msgs::msg::PoseStamped & output,
-  std::string & reason)
-{
-  try {
-    this->tf_buffer_->transform(input, output, target_frame, tf2::durationFromSec(0.0));
-    reason.clear();
-    return true;
-  } catch (const tf2::TransformException & error) {
-    reason = std::string("ServoP target TF transform failed: ") + error.what();
-    return false;
-  }
-}
-
-bool ServoControlRosInterface::finitePose(
-  const geometry_msgs::msg::Pose & pose,
-  std::string & reason)
-{
-  const std::array<double, 7> values{{
-    pose.position.x, pose.position.y, pose.position.z,
-    pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w}};
-  if (!std::all_of(
-      values.begin(), values.end(), [](const double component) {return std::isfinite(component);}))
-  {
-    reason = "ServoP pose contains a non-finite value";
-    return false;
-  }
-  reason.clear();
-  return true;
-}
-
-const char * ServoControlRosInterface::sessionStateName(const Session::State state) noexcept
-{
-  switch (state) {
-    case Session::State::IDLE:
-      return "IDLE";
-    case Session::State::STARTING:
-      return "STARTING";
-    case Session::State::ACTIVE:
-      return "ACTIVE";
-    case Session::State::STOPPING:
-      return "STOPPING";
-    case Session::State::FAULTED:
-      return "FAULTED";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-const char * ServoControlRosInterface::stopCauseName(const Session::StopCause cause) noexcept
-{
-  switch (cause) {
-    case Session::StopCause::NONE:
-      return "NONE";
-    case Session::StopCause::EXPLICIT:
-      return "EXPLICIT";
-    case Session::StopCause::WATCHDOG:
-      return "WATCHDOG";
-    case Session::StopCause::FAULT:
-      return "FAULT";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-const char * ServoControlRosInterface::responseResultName(
-  const mg400_interface::MotionResponseResult result) noexcept
-{
-  switch (result) {
-    case mg400_interface::MotionResponseResult::SUCCESS:
-      return "SUCCESS";
-    case mg400_interface::MotionResponseResult::CONTROLLER_ERROR:
-      return "CONTROLLER_ERROR";
-    case mg400_interface::MotionResponseResult::TIMEOUT:
-      return "TIMEOUT";
-    case mg400_interface::MotionResponseResult::DISCONNECTED:
-      return "DISCONNECTED";
-    case mg400_interface::MotionResponseResult::PARSE_ERROR:
-      return "PARSE_ERROR";
-    default:
-      return "UNKNOWN";
-  }
+  RCLCPP_WARN(this->node_.get_logger(), "%s", reason.c_str());
 }
 
 }  // namespace mg400_node

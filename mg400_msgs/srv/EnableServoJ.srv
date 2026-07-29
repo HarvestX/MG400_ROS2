@@ -1,0 +1,14 @@
+# True to acquire ServoJ control; false to stop and release it.
+bool enable
+---
+# True when the requested operation completed successfully.
+bool success
+
+# Actual ServoJ ownership after handling the request.
+bool enabled
+
+# The active lease after a successful enable, zero otherwise.
+uint64 lease_id
+
+# Human-readable result or rejection reason.
+string message

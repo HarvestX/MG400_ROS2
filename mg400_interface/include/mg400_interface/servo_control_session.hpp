@@ -20,6 +20,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -27,18 +28,24 @@
 
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/control_state_manager.hpp"
+#include "mg400_interface/servo_feedback_state.hpp"
+#include "mg400_interface/servo_kinematics_validator.hpp"
+#include "mg400_interface/servo_operational_error.hpp"
+#include "mg400_interface/servo_safety_violation.hpp"
 #include "mg400_interface/servo_stop_strategy.hpp"
 
 namespace mg400_interface
 {
 
-/// ROS-independent owner and periodic runner for one ServoJ or ServoP lease.
+/// ROS-independent owner and periodic runner for one ServoJ lease.
 class ServoControlSession
 {
 public:
   using Clock = std::chrono::steady_clock;
   using LeaseId = ControlStateManager::LeaseId;
-  using ServoType = ControlStateManager::State;
+  using FeedbackState = ServoFeedbackState;
+  using OperationalErrorState = ServoOperationalErrorState;
+  using SafetyViolationState = ServoSafetyViolationState;
 
   enum class State
   {
@@ -63,6 +70,12 @@ public:
     std::chrono::nanoseconds target_watchdog_timeout = std::chrono::milliseconds(100);
     std::chrono::nanoseconds response_poll_period = std::chrono::milliseconds(5);
     std::chrono::nanoseconds stop_confirmation_timeout = std::chrono::seconds(2);
+    std::chrono::nanoseconds feedback_timeout = std::chrono::milliseconds(100);
+    double max_initial_joint_distance_rad = 0.0872665;
+    double max_joint_step_rad = 0.0174533;
+    std::function<void(const std::string &)> safety_log_callback;
+    std::function<void(ServoOperationalErrorCode, const std::string &)>
+    operational_log_callback;
   };
 
   struct Result
@@ -76,61 +89,52 @@ public:
   struct Snapshot
   {
     State state;
-    ServoType servo_type;
     LeaseId lease_id;
-    bool has_target;
-    bool has_target_update_time;
-    Clock::time_point target_updated_at;
-    bool watchdog_triggered;
     StopCause stop_cause;
-    std::uint64_t accepted_target_count;
-    std::uint64_t rejected_target_count;
-    std::uint64_t sent_command_count;
-    bool has_last_send_time;
-    Clock::time_point last_sent_at;
-    bool has_latest_response;
-    MotionResponse latest_response;
-    std::uint64_t dropped_response_count;
     std::string diagnostic;
   };
 
   ServoControlSession(
     ControlStateManager::SharedPtr control_state_manager,
     MotionCommander::SharedPtr motion_commander,
-    ServoStopStrategy::SharedPtr stop_strategy);
-  ServoControlSession(
-    ControlStateManager::SharedPtr control_state_manager,
-    MotionCommander::SharedPtr motion_commander,
     ServoStopStrategy::SharedPtr stop_strategy,
+    SafetyViolationState::SharedPtr safety_violation_state,
+    OperationalErrorState::SharedPtr operational_error_state,
+    FeedbackState::SharedPtr feedback_state,
     const Options & options);
   ~ServoControlSession();
 
   ServoControlSession(const ServoControlSession &) = delete;
   ServoControlSession & operator=(const ServoControlSession &) = delete;
 
-  /// Acquire a fresh Servo lease. Only SERVO_J and SERVO_P are accepted.
-  Result start(ServoType servo_type);
+  /// Acquire a fresh ServoJ lease.
+  Result start();
 
   /// Store a latest-only SI-unit target. No TCP operation occurs in these calls.
   bool updateServoJTarget(LeaseId lease_id, const std::array<double, 4> & joint_angles);
-  bool updateServoPTarget(
-    LeaseId lease_id, double x, double y, double z, double yaw);
 
-  /// Safely stop, or retry a failed stop, using the active lease.
-  Result stop(LeaseId lease_id);
+  /// Safely stop, or retry a failed stop, using this session's active lease.
+  Result stop();
 
   Snapshot getSnapshot() const;
+
+  SafetyViolationState::SharedPtr getSafetyViolationStateShared() const noexcept;
+  OperationalErrorState::SharedPtr getOperationalErrorStateShared() const noexcept;
 
 private:
   ControlStateManager::SharedPtr control_state_manager_;
   MotionCommander::SharedPtr motion_commander_;
   ServoStopStrategy::SharedPtr stop_strategy_;
+  SafetyViolationState::SharedPtr safety_violation_state_;
+  OperationalErrorState::SharedPtr operational_error_state_;
+  FeedbackState::SharedPtr feedback_state_;
+  FeedbackState::ConnectionEpoch connection_epoch_;
+  ServoKinematicsValidator kinematics_validator_;
   Options options_;
 
   mutable std::mutex mutex_;
   std::condition_variable cv_;
   State state_;
-  ServoType servo_type_;
   LeaseId lease_id_;
   bool has_target_;
   std::array<double, 4> target_;
@@ -140,18 +144,12 @@ private:
   Clock::time_point next_send_at_;
   Clock::time_point next_response_poll_at_;
   bool worker_should_exit_;
-  bool watchdog_triggered_;
   StopCause stop_cause_;
-  std::uint64_t accepted_target_count_;
-  std::uint64_t rejected_target_count_;
-  std::uint64_t sent_command_count_;
-  bool has_last_send_time_;
-  Clock::time_point last_sent_at_;
-  bool has_latest_response_;
-  MotionResponse latest_response_;
   std::uint64_t response_drop_baseline_;
-  std::uint64_t dropped_response_count_;
   std::string diagnostic_;
+  bool has_previous_successful_command_;
+  std::array<double, 4> previous_successful_target_;
+  bool safety_fault_requested_;
 
   mutable std::mutex mutex_worker_;
   std::thread worker_;
@@ -160,19 +158,36 @@ private:
   void workerLoop();
   void workerLoopImpl();
   bool monitorResponses(std::string & fault_message);
-  bool sendLatestTarget(ServoType servo_type, LeaseId lease_id);
+  bool sendLatestTarget(LeaseId lease_id);
+  bool rejectUnsafeTarget(
+    const ServoKinematicsValidator::Result & violation,
+    const std::string & diagnostic,
+    LeaseId lease_id);
+  bool rejectUnsafeSend(
+    ServoSafetyViolationCode code,
+    const std::string & message,
+    const std::string & detail);
+  void reportSafetyViolation(
+    ServoSafetyViolationCode code,
+    const std::string & message,
+    const std::string & detail);
+  void reportOperationalError(
+    ServoOperationalErrorCode code,
+    const std::string & message,
+    const std::string & detail);
+  bool targetMatchesSession(LeaseId lease_id);
   Result performStop(StopCause cause, LeaseId lease_id, const std::string & detail);
   void joinWorker();
   void requestWorkerExit();
   void advanceSendDeadlineLocked(const Clock::time_point & now);
   void advanceResponseDeadlineLocked(const Clock::time_point & now);
-  bool currentLeaseMatches(LeaseId lease_id, ServoType servo_type) const;
+  bool currentLeaseMatches(LeaseId lease_id) const;
   bool rejectTarget(const std::string & reason);
   Result localResult(bool success, LeaseId lease_id, const std::string & message) const;
 
-  static bool isServoType(ServoType servo_type) noexcept;
   static bool isFinite(const std::array<double, 4> & values) noexcept;
   static const char * responseResultName(MotionResponseResult result) noexcept;
+  static ServoOperationalErrorCode responseErrorCode(MotionResponseResult result) noexcept;
 };
 
 }  // namespace mg400_interface

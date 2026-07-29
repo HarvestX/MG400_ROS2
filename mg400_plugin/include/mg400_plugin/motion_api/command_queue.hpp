@@ -34,6 +34,7 @@
 #include <mg400_msgs/msg/mov_lio.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
+#include <mg400_plugin_base/regular_motion_action_reservations.hpp>
 #include <mg400_plugin/plugin_utils.hpp>
 #include <mg400_plugin/tf_manager.hpp>
 
@@ -44,7 +45,7 @@ class CommandQueue final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::CommandQueue;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
-  using GoalReservations = mg400_plugin_base::RegularMotionGoalReservations<
+  using GoalReservations = mg400_plugin_base::RegularMotionActionReservations<
     std::string, std::monostate>;
 
 private:

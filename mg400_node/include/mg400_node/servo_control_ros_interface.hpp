@@ -15,25 +15,19 @@
 #ifndef MG400_NODE__SERVO_CONTROL_ROS_INTERFACE_HPP_
 #define MG400_NODE__SERVO_CONTROL_ROS_INTERFACE_HPP_
 
-#include <atomic>
-#include <chrono>
+#include <condition_variable>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
 
-#include <diagnostic_msgs/msg/diagnostic_array.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <mg400_msgs/msg/control_state.hpp>
+#include <mg400_msgs/msg/servo_error.hpp>
 #include <mg400_msgs/msg/servo_j.hpp>
-#include <mg400_msgs/msg/servo_p.hpp>
-#include <mg400_msgs/srv/change_control_state.hpp>
+#include <mg400_msgs/srv/enable_servo_j.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
 
 #include "mg400_interface/control_state_manager.hpp"
 #include "mg400_interface/servo_control_session.hpp"
@@ -50,20 +44,9 @@ class ServoControlRosInterface
 public:
   using Manager = mg400_interface::ControlStateManager;
   using Session = mg400_interface::ServoControlSession;
-  using ChangeControlState = mg400_msgs::srv::ChangeControlState;
-  using TransformPoseFunction = std::function<bool (
-        const geometry_msgs::msg::PoseStamped &,
-        const std::string &,
-        geometry_msgs::msg::PoseStamped &,
-        std::string &)>;
-
-  struct Options
-  {
-    std::chrono::nanoseconds diagnostics_period = std::chrono::milliseconds(100);
-    std::string target_frame = "mg400_origin_link";
-    std::string hardware_id = "mg400";
-  };
-
+  using OperationalErrorState = mg400_interface::ServoOperationalErrorState;
+  using SafetyViolationState = mg400_interface::ServoSafetyViolationState;
+  using EnableServoJ = mg400_msgs::srv::EnableServoJ;
   struct StopResult
   {
     bool success;
@@ -74,8 +57,8 @@ public:
   ServoControlRosInterface(
     rclcpp_lifecycle::LifecycleNode & node,
     Manager::SharedPtr manager,
-    const Options & options,
-    TransformPoseFunction transform_pose = TransformPoseFunction());
+    SafetyViolationState::SharedPtr safety_violation_state,
+    OperationalErrorState::SharedPtr operational_error_state);
   ~ServoControlRosInterface();
 
   ServoControlRosInterface(const ServoControlRosInterface &) = delete;
@@ -91,74 +74,56 @@ public:
   StopResult stopForLifecycle(const std::string & reason);
 
   /// Detach a stopped or stale Session. It is destroyed before this call returns.
-  void clearSession(const std::string & reason);
+  void clearSession();
 
   /// Retire a Session whose lease was already revoked by connection/mode status.
   bool retireSessionIfLeaseLost(const std::string & reason);
 
   bool hasSession() const;
+  bool hasActiveServoLease() const;
+
+  SafetyViolationState::SharedPtr getSafetyViolationStateShared() const noexcept;
+  OperationalErrorState::SharedPtr getOperationalErrorStateShared() const noexcept;
 
   void publishControlState(bool force = false);
-  void publishDiagnostics();
+  void publishServoError();
+
+  static mg400_msgs::msg::ServoError makeServoErrorMessage(
+    const SafetyViolationState::Snapshot & safety,
+    const OperationalErrorState::Snapshot & operational);
 
   // Public handlers keep the ROS contract testable without sockets.
-  void handleChangeControlState(
-    const std::shared_ptr<ChangeControlState::Request> request,
-    std::shared_ptr<ChangeControlState::Response> response);
+  void handleEnableServoJ(
+    const std::shared_ptr<EnableServoJ::Request> request,
+    std::shared_ptr<EnableServoJ::Response> response);
   void handleServoJTarget(const mg400_msgs::msg::ServoJ::SharedPtr message);
-  void handleServoPTarget(const mg400_msgs::msg::ServoP::SharedPtr message);
-
-  std::uint64_t getRosRejectedTargetCount() const noexcept;
-  std::string getLastRosRejection() const;
-
-  static bool quaternionToYaw(
-    const geometry_msgs::msg::Quaternion & quaternion,
-    double & yaw,
-    std::string & reason);
 
 private:
   rclcpp_lifecycle::LifecycleNode & node_;
   Manager::SharedPtr manager_;
-  Options options_;
 
   mutable std::mutex operation_mutex_;
+  std::condition_variable operation_cv_;
+  bool control_transition_in_progress_;
   mutable std::mutex session_pointer_mutex_;
   std::shared_ptr<Session> session_;
   bool lifecycle_active_;
-  std::optional<Session::Snapshot> retired_snapshot_;
-  std::string retired_reason_;
+  SafetyViolationState::SharedPtr safety_violation_state_;
+  OperationalErrorState::SharedPtr operational_error_state_;
+  std::unique_ptr<SafetyViolationState::CallbackHandle> safety_violation_callback_;
+  std::unique_ptr<OperationalErrorState::CallbackHandle> operational_error_callback_;
 
-  mutable std::mutex diagnostic_mutex_;
-  std::atomic<std::uint64_t> ros_rejected_target_count_;
-  std::string last_ros_rejection_;
+  mutable std::mutex publication_mutex_;
   std::optional<Manager::State> last_published_state_;
 
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  TransformPoseFunction transform_pose_;
-
   rclcpp::CallbackGroup::SharedPtr service_callback_group_;
-  rclcpp::Service<ChangeControlState>::SharedPtr change_control_state_service_;
+  rclcpp::Service<EnableServoJ>::SharedPtr enable_servo_j_service_;
   rclcpp::Subscription<mg400_msgs::msg::ServoJ>::SharedPtr servo_j_subscriber_;
-  rclcpp::Subscription<mg400_msgs::msg::ServoP>::SharedPtr servo_p_subscriber_;
   rclcpp::Publisher<mg400_msgs::msg::ControlState>::SharedPtr control_state_publisher_;
-  rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_publisher_;
-  rclcpp::TimerBase::SharedPtr diagnostics_timer_;
+  rclcpp::Publisher<mg400_msgs::msg::ServoError>::SharedPtr servo_error_publisher_;
 
   void publishControlStateLocked(bool force);
   void rejectRosTarget(const std::string & reason);
-  bool defaultTransformPose(
-    const geometry_msgs::msg::PoseStamped & input,
-    const std::string & target_frame,
-    geometry_msgs::msg::PoseStamped & output,
-    std::string & reason);
-  static bool finitePose(
-    const geometry_msgs::msg::Pose & pose,
-    std::string & reason);
-  static const char * sessionStateName(Session::State state) noexcept;
-  static const char * stopCauseName(Session::StopCause cause) noexcept;
-  static const char * responseResultName(
-    mg400_interface::MotionResponseResult result) noexcept;
 };
 
 }  // namespace mg400_node
