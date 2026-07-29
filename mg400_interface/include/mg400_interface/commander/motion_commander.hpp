@@ -60,7 +60,6 @@ public:
   // Provisional MG400 Servo command format. These APIs use the same SI-unit
   // convention and port 30003 connection as the established motion commands.
   void servoJ(const si_rad, const si_rad, const si_rad, const si_rad);
-  void servoP(const si_m, const si_m, const si_m, const si_rad);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(

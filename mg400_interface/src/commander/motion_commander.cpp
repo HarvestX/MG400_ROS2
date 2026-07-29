@@ -63,17 +63,6 @@ void MotionCommander::servoJ(
   this->tcp_if_->sendCommand(buf);
 }
 
-void MotionCommander::servoP(
-  const si_m x, const si_m y, const si_m z, const si_rad yaw)
-{
-  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
-  char buf[100];
-  snprintf(
-    buf, sizeof(buf), "ServoP(%.3lf,%.3lf,%.3lf,%.3lf)",
-    m2mm(x), m2mm(y), m2mm(z), rad2degree(yaw));
-  this->tcp_if_->sendCommand(buf);
-}
-
 // DOBOT MG400 Official Command ---------------------------------------------
 void MotionCommander::movJ(
   const si_m x, const si_m y, const si_m z,
