@@ -70,7 +70,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>, GoalReservations::Lease);
+  void execute(const std::shared_ptr<GoalHandle>);
 
   // functions to handle each command
   void sendMovJ(const mg400_msgs::msg::MovJ &);

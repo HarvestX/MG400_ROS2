@@ -108,11 +108,13 @@ void CommandQueue::handle_accepted(
     goal_handle->abort(result);
     return;
   }
+  std::shared_ptr<GoalReservations::Lease> active_lease;
   try {
+    active_lease = std::make_shared<GoalReservations::Lease>(std::move(*lease));
     std::thread{
-      [this, goal_handle, lease = std::move(*lease)]() mutable {
+      [this, goal_handle, active_lease]() {
         try {
-          this->execute(goal_handle, std::move(lease));
+          this->execute(goal_handle);
         } catch (const std::exception & error) {
           RCLCPP_ERROR(this->node_logging_if_->get_logger(), "%s", error.what());
           auto result = std::make_shared<ActionT::Result>();
@@ -136,9 +138,7 @@ void CommandQueue::handle_accepted(
 }
 
 
-void CommandQueue::execute(
-  const std::shared_ptr<GoalHandle> goal_handle,
-  GoalReservations::Lease /*lease*/)
+void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
 {
   rclcpp::Rate control_freq(10);  // Hz
 

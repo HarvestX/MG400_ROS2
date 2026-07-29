@@ -63,7 +63,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>, GoalReservations::Lease);
+  void execute(const std::shared_ptr<GoalHandle>);
 };
 }  // namespace mg400_plugin
 #endif
