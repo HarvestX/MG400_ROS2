@@ -103,9 +103,9 @@ TEST(TestRegularMotionLease, StaleLeaseCannotReleaseNewOwner)
   EXPECT_EQ(current->id(), manager->getSnapshot().lease_id);
 }
 
-TEST(TestRegularMotionLease, ActionReservationTransfersLeaseAndPreparedContext)
+TEST(TestRegularMotionLease, ActionReservationTransfersLease)
 {
-  using Reservations = mg400_plugin_base::RegularMotionActionReservations<std::string, int>;
+  using Reservations = mg400_plugin_base::RegularMotionActionReservations<std::string>;
 
   const auto manager = makeEnabledManager();
   auto lease = acquire(manager);
@@ -113,15 +113,14 @@ TEST(TestRegularMotionLease, ActionReservationTransfersLeaseAndPreparedContext)
   const auto lease_id = lease->id();
 
   Reservations reservations;
-  ASSERT_TRUE(reservations.reserve("goal-1", {std::move(*lease), 42}));
+  ASSERT_TRUE(reservations.reserve("goal-1", std::move(*lease)));
   EXPECT_EQ(1U, reservations.size());
   EXPECT_FALSE(manager->tryAcquire(Manager::State::REGULAR_MOTION).success);
 
   auto execution = reservations.take("goal-1");
   ASSERT_TRUE(execution);
-  EXPECT_EQ(42, execution->context);
-  EXPECT_EQ(lease_id, execution->lease.id());
-  EXPECT_TRUE(execution->lease.isCurrent());
+  EXPECT_EQ(lease_id, execution->id());
+  EXPECT_TRUE(execution->isCurrent());
   EXPECT_EQ(0U, reservations.size());
 
   execution.reset();
@@ -130,15 +129,14 @@ TEST(TestRegularMotionLease, ActionReservationTransfersLeaseAndPreparedContext)
 
 TEST(TestRegularMotionLease, DuplicateActionGoalDoesNotReplaceReservation)
 {
-  using Reservations = mg400_plugin_base::RegularMotionActionReservations<std::string, int>;
+  using Reservations = mg400_plugin_base::RegularMotionActionReservations<std::string>;
 
   Reservations reservations;
-  ASSERT_TRUE(reservations.reserve("goal", {Lease{}, 1}));
-  EXPECT_FALSE(reservations.reserve("goal", {Lease{}, 2}));
+  ASSERT_TRUE(reservations.reserve("goal", Lease{}));
+  EXPECT_FALSE(reservations.reserve("goal", Lease{}));
 
   auto reserved = reservations.take("goal");
   ASSERT_TRUE(reserved);
-  EXPECT_EQ(1, reserved->context);
 }
 
 TEST(TestRegularMotionLease, UnconfirmedJogStopRetainsOwnershipFailClosed)

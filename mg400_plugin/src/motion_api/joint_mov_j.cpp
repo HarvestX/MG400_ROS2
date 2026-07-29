@@ -72,9 +72,8 @@ rclcpp_action::GoalResponse JointMovJ::handle_goal(
   if (!lease) {
     return rclcpp_action::GoalResponse::REJECT;
   }
-  GoalReservations::Entry reservation{std::move(*lease), std::monostate{}};
   if (!this->goal_reservations_.reserve(
-      mg400_plugin_base::makeActionGoalKey(uuid), std::move(reservation)))
+      mg400_plugin_base::makeActionGoalKey(uuid), std::move(*lease)))
   {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Duplicate Action goal UUID");
     return rclcpp_action::GoalResponse::REJECT;
@@ -96,21 +95,20 @@ rclcpp_action::CancelResponse JointMovJ::handle_cancel(
 void JointMovJ::handle_accepted(
   const std::shared_ptr<GoalHandle> goal_handle)
 {
-  auto reservation = this->goal_reservations_.take(
+  auto lease = this->goal_reservations_.take(
     mg400_plugin_base::makeActionGoalKey(goal_handle->get_goal_id()));
-  if (!reservation || !reservation->lease.isCurrent()) {
+  if (!lease || !lease->isCurrent()) {
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Accepted goal has no current motion lease");
     auto result = std::make_shared<ActionT::Result>();
     result->result = false;
     goal_handle->abort(result);
     return;
   }
-  auto execution = std::make_shared<GoalReservations::Entry>(std::move(*reservation));
   try {
     std::thread{
-      [this, goal_handle, execution]() {
+      [this, goal_handle, lease = std::move(*lease)]() mutable {
         try {
-          this->execute(goal_handle, *execution);
+          this->execute(goal_handle, std::move(lease));
         } catch (const std::exception & error) {
           RCLCPP_ERROR(this->node_logging_if_->get_logger(), "%s", error.what());
           auto result = std::make_shared<ActionT::Result>();
@@ -136,7 +134,7 @@ void JointMovJ::handle_accepted(
 
 void JointMovJ::execute(
   const std::shared_ptr<GoalHandle> goal_handle,
-  const GoalReservations::Entry & /*reservation*/)
+  GoalReservations::Lease /*lease*/)
 {
   rclcpp::Rate control_freq(10);  // Hz
 

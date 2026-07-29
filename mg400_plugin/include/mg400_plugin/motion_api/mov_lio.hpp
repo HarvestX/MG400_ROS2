@@ -37,8 +37,8 @@ class MovLIO final : public mg400_plugin_base::MotionApiPluginBase
 public:
   using ActionT = mg400_msgs::action::MovLIO;
   using GoalHandle = rclcpp_action::ServerGoalHandle<ActionT>;
-  using GoalReservations = mg400_plugin_base::RegularMotionActionReservations<
-    std::string, geometry_msgs::msg::PoseStamped>;
+  using GoalReservations =
+    mg400_plugin_base::RegularMotionActionReservations<std::string>;
 
 private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
@@ -63,7 +63,7 @@ private:
   rclcpp_action::CancelResponse handle_cancel(
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
-  void execute(const std::shared_ptr<GoalHandle>, const GoalReservations::Entry &);
+  void execute(const std::shared_ptr<GoalHandle>, GoalReservations::Lease);
 };
 }  // namespace mg400_plugin
 #endif
