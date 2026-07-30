@@ -17,13 +17,53 @@
 #include <algorithm>
 #include <cmath>
 #include <exception>
+#include <limits>
 #include <stdexcept>
 #include <utility>
+
+#include <mg400_common/kinematics.hpp>
 
 namespace mg400_interface
 {
 namespace
 {
+
+constexpr double FLOATING_POINT_TOLERANCE = 1.0e-12;
+
+ServoSafetyViolation validateServoJ(const std::array<double, 4> & joint_angles)
+{
+  const bool finite = std::all_of(
+    joint_angles.begin(), joint_angles.end(),
+    [](const double value) {return std::isfinite(value);});
+  if (!finite) {
+    return ServoSafetyViolation{
+      ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
+      "ServoJ target contains a non-finite value"};
+  }
+
+  Eigen::Vector4d joints;
+  joints << joint_angles[0], joint_angles[1], joint_angles[2], joint_angles[3];
+
+  // Separate unconditional ranges from the conditional J2 and J3-J2
+  // constraints so the reported code identifies the root cause.
+  mg400_common::kinematics::ConstraintOptions individual_options;
+  individual_options.j2_min_no_collision = individual_options.j2_min;
+  individual_options.j3_1_min = -std::numeric_limits<double>::max();
+  individual_options.j3_1_max = std::numeric_limits<double>::max();
+  if (!mg400_common::kinematics::check_constraints(joints, individual_options).allValid()) {
+    return ServoSafetyViolation{
+      ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
+      "ServoJ target violates an MG400 joint limit"};
+  }
+
+  if (!mg400_common::kinematics::check_constraints(joints).allValid()) {
+    return ServoSafetyViolation{
+      ServoSafetyViolationCode::SERVO_J_COUPLED_LIMIT,
+      "ServoJ target violates an MG400 coupled-joint constraint"};
+  }
+
+  return ServoSafetyViolation{};
+}
 
 class AtomicFlagReset
 {
@@ -184,9 +224,9 @@ bool ServoControlSession::updateServoJTarget(
     return false;
   }
 
-  const auto validation = this->kinematics_validator_.validateServoJ(joint_angles);
-  if (!validation.success) {
-    return this->rejectUnsafeTarget(validation, lease_id);
+  const auto violation = validateServoJ(joint_angles);
+  if (violation.code != ServoSafetyViolationCode::NONE) {
+    return this->rejectUnsafeTarget(violation, lease_id);
   }
 
   {
@@ -353,7 +393,6 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
     return true;
   }
 
-  constexpr double tolerance = ServoKinematicsValidator::FLOATING_POINT_TOLERANCE;
   if (!has_previous_successful_command) {
     const auto feedback = this->feedback_state_->getSnapshot();
     const auto now = Clock::now();
@@ -376,7 +415,9 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
 
     bool discontinuous = false;
     for (double difference : differences) {
-      if (difference > this->options_.max_initial_joint_distance_rad + tolerance) {
+      if (difference >
+        this->options_.max_initial_joint_distance_rad + FLOATING_POINT_TOLERANCE)
+      {
         discontinuous = true;
       }
     }
@@ -394,7 +435,7 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
 
     bool discontinuous = false;
     for (double difference : differences) {
-      if (difference > this->options_.max_joint_step_rad + tolerance) {
+      if (difference > this->options_.max_joint_step_rad + FLOATING_POINT_TOLERANCE) {
         discontinuous = true;
       }
     }
@@ -628,7 +669,7 @@ bool ServoControlSession::currentLeaseMatches(const LeaseId lease_id) const
 }
 
 bool ServoControlSession::rejectUnsafeTarget(
-  const ServoKinematicsValidator::Result & violation,
+  const ServoSafetyViolation & violation,
   const LeaseId lease_id)
 {
   {

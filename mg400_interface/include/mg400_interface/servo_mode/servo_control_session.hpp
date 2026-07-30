@@ -27,7 +27,6 @@
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/control_state_manager.hpp"
 #include "mg400_interface/servo_mode/servo_feedback_state.hpp"
-#include "mg400_interface/servo_mode/servo_kinematics_validator.hpp"
 #include "mg400_interface/servo_mode/servo_operational_error.hpp"
 #include "mg400_interface/servo_mode/servo_safety_violation.hpp"
 #include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
@@ -108,7 +107,6 @@ private:
   OperationalErrorState::SharedPtr operational_error_state_;
   FeedbackState::SharedPtr feedback_state_;
   FeedbackState::ConnectionEpoch connection_epoch_;
-  ServoKinematicsValidator kinematics_validator_;
   Options options_;
 
   mutable std::mutex mutex_;
@@ -134,7 +132,7 @@ private:
   void workerLoopImpl();
   bool sendLatestTarget(LeaseId lease_id);
   bool activeLeaseAcceptsTarget(LeaseId lease_id);
-  bool rejectUnsafeTarget(const ServoKinematicsValidator::Result & violation, LeaseId lease_id);
+  bool rejectUnsafeTarget(const ServoSafetyViolation & violation, LeaseId lease_id);
   bool rejectUnsafeSend(
     ServoSafetyViolationCode code,
     const std::string & message);

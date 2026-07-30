@@ -22,7 +22,6 @@ ament_auto_add_library(
       ./src/mg400_interface.cpp
       ./src/servo_mode/servo_control_session.cpp
       ./src/servo_mode/servo_feedback_state.cpp
-      ./src/servo_mode/servo_kinematics_validator.cpp
       ./src/servo_mode/servo_operational_error.cpp
       ./src/servo_mode/servo_safety_violation.cpp
       ./src/servo_mode/servo_stop_strategy.cpp
@@ -71,7 +70,6 @@ if(BUILD_TESTING)
   set(SERVO_MODE_TEST_TARGETS
     test_servo_control_session
     test_servo_feedback_state
-    test_servo_kinematics_validator
     test_servo_operational_error
     test_servo_safety_violation)
   foreach(TARGET ${SERVO_MODE_TEST_TARGETS})

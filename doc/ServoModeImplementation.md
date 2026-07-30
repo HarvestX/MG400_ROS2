@@ -30,6 +30,7 @@ One session represents one connection epoch. It owns:
 
 - the periodic steady-clock worker;
 - the latest target buffer;
+- finite-value, individual-joint, and coupled-joint target validation;
 - target watchdog state;
 - initial-feedback and command-step safety checks;
 - the active lease interaction with `ControlStateManager`; and
@@ -40,12 +41,6 @@ TCP. The worker checks the lease before sending and calls
 `MotionCommander::servoJ()`. The MVP keeps the existing send-only Motion TCP
 behavior and relies on TCP send failures, RobotMode, lease checks, and the
 target watchdog for fault handling.
-
-### `ServoKinematicsValidator`
-
-The validator checks finite input, individual MG400 joint limits, and coupled
-constraints using the canonical kinematics implementation in `mg400_common`.
-It returns structured safety codes and messages without depending on ROS.
 
 ### `ServoControlRosInterface`
 
@@ -93,7 +88,6 @@ snapshot whenever either state changes.
 | Test | Coverage |
 | --- | --- |
 | `test_control_state_manager.cpp` | State transitions, leases, RobotMode, and regular-motion exclusion |
-| `test_servo_kinematics_validator.cpp` | Joint and coupled constraints |
-| `test_servo_control_session.cpp` | Latest-only transmission, feedback checks, watchdog, stop retry, and stale epochs |
+| `test_servo_control_session.cpp` | Target validation, latest-only transmission, feedback checks, watchdog, stop retry, and stale epochs |
 | `test_servo_control_ros_interface.cpp` | ROS service contract, target admission, lifecycle behavior, QoS, and error publication |
 | `test_motion_commander.cpp` | TCP command formatting |
