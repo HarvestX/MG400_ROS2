@@ -44,7 +44,7 @@ void GetPose::configure(
 }
 
 void GetPose::onServiceCall(
-  const ServiceT::Request::SharedPtr,
+  const ServiceT::Request::SharedPtr /*req*/,
   ServiceT::Response::SharedPtr res)
 {
   res->error_id = -1;

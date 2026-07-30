@@ -317,7 +317,7 @@ void Mg400ControllerPanel::onGoalResponse(const GoalHandle::SharedPtr & goal_han
 }
 
 void Mg400ControllerPanel::onFeedback(
-  GoalHandle::SharedPtr, const ActionT::Feedback::ConstSharedPtr feedback)
+  GoalHandle::SharedPtr /*goal_handle*/, const ActionT::Feedback::ConstSharedPtr feedback)
 {
   RCLCPP_INFO(
     nh_->get_logger(), "current pose: (%lf, %lf, %lf)",

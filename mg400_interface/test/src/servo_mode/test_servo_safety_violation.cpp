@@ -106,6 +106,7 @@ TEST(ServoSafetyViolationState, ConcurrentReportSnapshotAndClearStayConsistent)
   std::atomic<bool> start{false};
   std::atomic<bool> inconsistent{false};
   std::vector<std::thread> threads;
+  threads.reserve(4);
 
   for (int writer = 0; writer < 4; ++writer) {
     threads.emplace_back(

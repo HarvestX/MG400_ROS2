@@ -21,9 +21,9 @@
 class TestJointHandler : public ::testing::Test
 {
 protected:
-  virtual void SetUp() {}
+  void SetUp() override {}
 
-  virtual void TearDown() {}
+  void TearDown() override {}
 };
 
 

@@ -284,7 +284,7 @@ void CommandQueueClient::goalResponseCallback(const GoalHandleCommandQueue::Shar
 }
 
 void CommandQueueClient::feedbackCallback(
-  GoalHandleCommandQueue::SharedPtr,
+  GoalHandleCommandQueue::SharedPtr /*goal_handle*/,
   const std::shared_ptr<const CommandQueue::Feedback> feedback)
 {
   logCurrentJointAngles(feedback);
@@ -390,7 +390,7 @@ void CommandQueueClient::handleCancelResult(
 
 void CommandQueueClient::showErrorID(mg400_msgs::msg::ErrorID error_id)
 {
-  if (error_id.controller.ids.size() > 0) {
+  if (!error_id.controller.ids.empty()) {
     RCLCPP_INFO(this->get_logger(), "Controller Error IDs:");
     for (auto id : error_id.controller.ids) {
       RCLCPP_INFO(this->get_logger(), "  %d", id);

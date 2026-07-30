@@ -66,7 +66,7 @@ void User::onServiceCall(
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "MG400 is not connected");
   }
 }
-}  // namsespace mg400_plugin
+}  // namespace mg400_plugin
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(

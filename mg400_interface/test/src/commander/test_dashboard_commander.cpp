@@ -113,7 +113,7 @@ class TestDashboardCommander : public ::testing::Test
 protected:
   std::unique_ptr<mg400_interface::DashboardCommander> commander;
   MockTcpInterface mock;
-  virtual void SetUp()
+  void SetUp() override
   {
     using namespace std::chrono_literals; // NOLINT
     this->commander =
@@ -121,7 +121,7 @@ protected:
       &this->mock, 1ms);
   }
 
-  virtual void TearDown() {}
+  void TearDown() override {}
 };
 
 TEST_F(TestDashboardCommander, EnableRobot) {

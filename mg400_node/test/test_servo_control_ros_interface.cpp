@@ -74,7 +74,7 @@ public:
   }
 };
 
-const auto ros_environment = ::testing::AddGlobalTestEnvironment(new RosEnvironment);
+const auto ROS_ENVIRONMENT = ::testing::AddGlobalTestEnvironment(new RosEnvironment);
 
 class FakeMotionTcpInterface : public mg400_interface::MotionTcpInterfaceBase
 {
@@ -111,14 +111,14 @@ private:
 class SequenceStopStrategy : public StopStrategy
 {
 public:
-  Result stop(const Clock::time_point &) override
+  Result stop(const Clock::time_point & /*deadline*/) override
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
     ++this->call_count_;
     if (this->results_.empty()) {
       return Result{Status::SUCCESS, "stop confirmed"};
     }
-    const auto result = this->results_.front();
+    auto result = this->results_.front();
     this->results_.pop_front();
     return result;
   }

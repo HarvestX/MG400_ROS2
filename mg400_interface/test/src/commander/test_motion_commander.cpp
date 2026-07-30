@@ -38,13 +38,13 @@ class TestMotionCommander : public ::testing::Test
 protected:
   std::unique_ptr<mg400_interface::MotionCommander> commander;
   MockTcpInterface mock;
-  virtual void SetUp()
+  void SetUp() override
   {
     this->commander =
       std::make_unique<mg400_interface::MotionCommander>(&this->mock);
   }
 
-  virtual void TearDown() {}
+  void TearDown() override {}
 };
 
 TEST_F(TestMotionCommander, MovJ) {

@@ -91,12 +91,12 @@ bool MG400Interface::deactivate()
   this->control_state_manager_->updateRobotStatus(false, 0);
 
   // disconnect each interface in parallel because it takes time sometimes.
-  std::thread discnt_dashboard_tcp_if_([this]() {this->dashboard_tcp_if_->disConnect();});
-  std::thread discnt_realtime_tcp_if_([this]() {this->realtime_tcp_interface->disConnect();});
-  std::thread discnt_motion_tcp_if_([this]() {this->motion_tcp_if_->disConnect();});
-  discnt_dashboard_tcp_if_.join();
-  discnt_realtime_tcp_if_.join();
-  discnt_motion_tcp_if_.join();
+  std::thread discnt_dashboard_tcp_if([this]() {this->dashboard_tcp_if_->disConnect();});
+  std::thread discnt_realtime_tcp_if([this]() {this->realtime_tcp_interface->disConnect();});
+  std::thread discnt_motion_tcp_if([this]() {this->motion_tcp_if_->disConnect();});
+  discnt_dashboard_tcp_if.join();
+  discnt_realtime_tcp_if.join();
+  discnt_motion_tcp_if.join();
 
   return true;
 }

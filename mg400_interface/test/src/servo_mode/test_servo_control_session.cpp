@@ -139,14 +139,14 @@ private:
 class FakeStopStrategy : public ServoStopStrategy
 {
 public:
-  Result stop(const Clock::time_point &) override
+  Result stop(const Clock::time_point & /*deadline*/) override
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
     ++this->call_count_;
     if (this->results_.empty()) {
       return Result{Status::SUCCESS, "fake stop confirmed"};
     }
-    const auto result = this->results_.front();
+    auto result = this->results_.front();
     this->results_.pop_front();
     return result;
   }
@@ -175,7 +175,7 @@ public:
   explicit FunctionStopStrategy(std::function<Result()> function)
   : function_(std::move(function)) {}
 
-  Result stop(const Clock::time_point &) override
+  Result stop(const Clock::time_point & /*deadline*/) override
   {
     return this->function_();
   }
@@ -209,10 +209,9 @@ struct SessionFixture
   std::unique_ptr<ServoControlSession> makeSession(
     const ServoControlSession::Options & options)
   {
-    return std::unique_ptr<ServoControlSession>(
-      new ServoControlSession(
-        manager, commander, stop_strategy, safety_state, operational_state,
-        [this]() {return this->getFeedback();}, options));
+    return std::make_unique<ServoControlSession>(
+      manager, commander, stop_strategy, safety_state, operational_state,
+      [this]() {return this->getFeedback();}, options);
   }
 
   void updateFeedback(

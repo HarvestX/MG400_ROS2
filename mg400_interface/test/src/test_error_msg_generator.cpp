@@ -20,14 +20,14 @@ class TestErrorMsgGenerator : public ::testing::Test
 {
 protected:
   std::unique_ptr<mg400_interface::ErrorMsgGenerator> generator_;
-  virtual void SetUp()
+  void SetUp() override
   {
     const std::string target = "alarm_controller.json";
     this->generator_ =
       std::make_unique<mg400_interface::ErrorMsgGenerator>(target);
     this->generator_->loadJsonFile();
   }
-  virtual void TearDown()
+  void TearDown() override
   {}
 };
 

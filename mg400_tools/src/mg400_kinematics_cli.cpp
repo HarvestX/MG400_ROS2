@@ -31,8 +31,8 @@ namespace
 
 enum class Mode
 {
-  kForward,
-  kInverse
+  FORWARD,
+  INVERSE
 };
 
 struct Config
@@ -45,7 +45,7 @@ struct Config
 
 std::string mode_name(Mode mode)
 {
-  return mode == Mode::kForward ? "fk" : "ik";
+  return mode == Mode::FORWARD ? "fk" : "ik";
 }
 
 void print_usage(std::ostream & stream)
@@ -97,9 +97,9 @@ Config parse_config(const std::vector<std::string> & args)
 
   Config config;
   if (args.front() == "fk") {
-    config.mode = Mode::kForward;
+    config.mode = Mode::FORWARD;
   } else if (args.front() == "ik") {
-    config.mode = Mode::kInverse;
+    config.mode = Mode::INVERSE;
   } else {
     throw std::invalid_argument("Unknown mode: " + args.front());
   }
@@ -112,12 +112,12 @@ Config parse_config(const std::vector<std::string> & args)
     } else if (arg == "--degrees") {
       config.angles_in_radians = false;
     } else if (arg == "--meters") {
-      if (config.mode != Mode::kInverse) {
+      if (config.mode != Mode::INVERSE) {
         throw std::invalid_argument("--meters is only supported in ik mode.");
       }
       config.positions_in_meters = true;
     } else if (arg == "--millimeters") {
-      if (config.mode != Mode::kInverse) {
+      if (config.mode != Mode::INVERSE) {
         throw std::invalid_argument("--millimeters is only supported in ik mode.");
       }
       config.positions_in_meters = false;
@@ -273,7 +273,7 @@ int main(int argc, char ** argv)
     const std::vector<std::string> program_args(args.begin() + 1, args.end());
     const Config config = parse_config(program_args);
 
-    const int exit_code = config.mode == Mode::kForward ? run_fk(config) : run_ik(config);
+    const int exit_code = config.mode == Mode::FORWARD ? run_fk(config) : run_ik(config);
     rclcpp::shutdown();
     return exit_code;
   } catch (const std::exception & ex) {

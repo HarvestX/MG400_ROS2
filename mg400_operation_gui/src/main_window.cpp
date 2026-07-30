@@ -465,7 +465,7 @@ void MainWindow::callEnableRobot()
   this->enable_client_->async_send_request(
     request, [this](rclcpp::Client<EnableRobot>::SharedFuture future) {
       try {
-        const auto response = future.get();
+        const auto & response = future.get();
         this->appendLog(
           response->result ? QStringLiteral("Enable に成功しました。") :
           serviceError(QStringLiteral("Enable"), response->error_id), !response->result);
@@ -493,7 +493,7 @@ void MainWindow::callDisableRobot()
   this->disable_client_->async_send_request(
     request, [this](rclcpp::Client<DisableRobot>::SharedFuture future) {
       try {
-        const auto response = future.get();
+        const auto & response = future.get();
         this->appendLog(
           response->result ? QStringLiteral("Disable に成功しました。") :
           serviceError(QStringLiteral("Disable"), response->error_id), !response->result);
@@ -517,7 +517,7 @@ void MainWindow::callClearError()
   this->clear_error_client_->async_send_request(
     request, [this](rclcpp::Client<ClearError>::SharedFuture future) {
       try {
-        const auto response = future.get();
+        const auto & response = future.get();
         this->appendLog(
           response->result ? QStringLiteral("ClearError に成功しました。") :
           serviceError(QStringLiteral("ClearError"), response->error_id), !response->result);
@@ -586,7 +586,7 @@ void MainWindow::beginServoStart()
     request, [this](rclcpp::Client<EnableServoJ>::SharedFuture future) {
       bool started = false;
       try {
-        const auto response = future.get();
+        const auto & response = future.get();
         started = response->success && response->lease_id != 0 &&
         response->enabled;
         if (started) {
@@ -666,7 +666,7 @@ void MainWindow::requestServoStop()
   this->enable_servo_j_client_->async_send_request(
     request, [this, stopping_lease](rclcpp::Client<EnableServoJ>::SharedFuture future) {
       try {
-        const auto response = future.get();
+        const auto & response = future.get();
         if (response->success &&
         !response->enabled)
         {
@@ -702,7 +702,7 @@ void MainWindow::publishServoTarget()
   for (std::size_t index = 0; index < degrees.size(); ++index) {
     message.joint_angles.at(index) = degrees.at(index) * PI / 180.0;
   }
-  this->servo_j_publisher_->publish(std::move(message));
+  this->servo_j_publisher_->publish(message);
 }
 
 void MainWindow::handleRobotMode(

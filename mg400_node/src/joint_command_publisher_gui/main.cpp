@@ -18,7 +18,7 @@
 int main(int argc, char * argv[])
 {
   // Initialize client library
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  setvbuf(stdout, nullptr, _IONBF, BUFSIZ);
 
   // Generate node
   rclcpp::init(argc, argv);

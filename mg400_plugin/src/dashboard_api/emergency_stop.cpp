@@ -45,7 +45,7 @@ void EmergencyStop::configure(
 }
 
 void EmergencyStop::onServiceCall(
-  const ServiceT::Request::SharedPtr,
+  const ServiceT::Request::SharedPtr /*req*/,
   ServiceT::Response::SharedPtr res)
 {
   res->result = false;
