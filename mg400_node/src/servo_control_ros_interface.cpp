@@ -54,10 +54,26 @@ ServoControlRosInterface::ServoControlRosInterface(
     this->node_, "servo_error", servo_error_qos);
   this->safety_violation_callback_ = this->safety_violation_state_->setChangeCallback(
     [this]() {
+      const auto error = this->safety_violation_state_->getSnapshot();
+      if (error.code != mg400_interface::ServoSafetyViolationCode::NONE) {
+        RCLCPP_ERROR(
+          this->node_.get_logger(), "%s: %s",
+          mg400_interface::toString(error.code), error.message.c_str());
+      }
       this->publishServoError();
     });
   this->operational_error_callback_ = this->operational_error_state_->setChangeCallback(
     [this]() {
+      const auto error = this->operational_error_state_->getSnapshot();
+      if (error.code == mg400_interface::ServoOperationalErrorCode::WATCHDOG_TIMEOUT) {
+        RCLCPP_WARN(
+          this->node_.get_logger(), "%s: %s",
+          mg400_interface::toString(error.code), error.message.c_str());
+      } else if (error.code != mg400_interface::ServoOperationalErrorCode::NONE) {
+        RCLCPP_ERROR(
+          this->node_.get_logger(), "%s: %s",
+          mg400_interface::toString(error.code), error.message.c_str());
+      }
       this->publishServoError();
     });
 
@@ -97,14 +113,6 @@ void ServoControlRosInterface::installSession(std::shared_ptr<Session> session)
 {
   if (!session) {
     throw std::invalid_argument("Cannot install an empty Servo Session");
-  }
-  if (session->getSafetyViolationStateShared() != this->safety_violation_state_) {
-    throw std::invalid_argument(
-            "Servo Session and ROS interface must share one safety violation state");
-  }
-  if (session->getOperationalErrorStateShared() != this->operational_error_state_) {
-    throw std::invalid_argument(
-            "Servo Session and ROS interface must share one operational error state");
   }
   {
     std::unique_lock<std::mutex> lock(this->operation_mutex_);
@@ -175,7 +183,7 @@ ServoControlRosInterface::StopResult ServoControlRosInterface::stopForLifecycle(
   lock.unlock();
 
   Session::Result stopped{
-    false, session_snapshot.state, lease_id, "Servo lifecycle stop failed unexpectedly"};
+    false, lease_id, "Servo lifecycle stop failed unexpectedly"};
   try {
     stopped = session_to_stop->stop();
   } catch (const std::exception & error) {
@@ -373,8 +381,7 @@ void ServoControlRosInterface::handleEnableServoJ(
 
   if (transition_session) {
     Session::Result result{
-      false, Session::State::IDLE, Manager::NO_LEASE,
-      "EnableServoJ transition failed unexpectedly"};
+      false, Manager::NO_LEASE, "EnableServoJ transition failed unexpectedly"};
     try {
       result = transition_enable ?
         transition_session->start() : transition_session->stop();

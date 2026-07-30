@@ -20,7 +20,7 @@
 
 #include <gtest/gtest.h>
 
-#include "mg400_interface/servo_safety_violation.hpp"
+#include "mg400_interface/servo_mode/servo_safety_violation.hpp"
 
 namespace
 {

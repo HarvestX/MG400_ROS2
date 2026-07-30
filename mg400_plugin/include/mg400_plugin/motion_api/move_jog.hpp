@@ -20,7 +20,6 @@
 #include <optional>
 
 #include <mg400_plugin_base/api_plugin_base.hpp>
-#include <mg400_plugin/motion_api/move_jog_stop_waiter.hpp>
 #include <mg400_msgs/srv/move_jog.hpp>
 
 

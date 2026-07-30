@@ -200,35 +200,23 @@ void MoveJog::handleStop(ServiceT::Response::SharedPtr res)
     return;
   }
 
-  const auto confirmation = waitForMoveJogStop(
-    deadline,
-    []() {return std::chrono::steady_clock::now();},
-    [this](const std::chrono::steady_clock::duration & remaining)
-    -> std::optional<mg400_interface::MotionResponse> {
-      mg400_interface::MotionResponse response;
-      if (!this->commander_->waitForResponse(response, remaining)) {
-        return std::nullopt;
-      }
-      return response;
-    },
-    [this]() {
-      using RobotMode = mg400_msgs::msg::RobotMode;
-      if (!this->mg400_interface_->ok()) {
-        return MoveJogRobotStatus::DISCONNECTED;
-      }
-      if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-        return MoveJogRobotStatus::ENABLED;
-      }
-      return MoveJogRobotStatus::WAITING;
-    },
-    [](const std::chrono::steady_clock::duration & duration) {
-      std::this_thread::sleep_for(duration);
-    });
-  if (confirmation.result != MoveJogStopResult::CONFIRMED) {
+  bool stop_confirmed = false;
+  while (std::chrono::steady_clock::now() < deadline) {
+    if (!this->mg400_interface_->ok()) {
+      break;
+    }
+    if (this->mg400_interface_->realtime_tcp_interface->isRobotMode(
+        mg400_msgs::msg::RobotMode::ENABLE))
+    {
+      stop_confirmed = true;
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  if (!stop_confirmed) {
     RCLCPP_ERROR(
       this->node_logging_if_->get_logger(),
       "MoveJog stop was not confirmed; retaining regular-motion ownership");
-    res->error_id = confirmation.controller_error_id;
     std::lock_guard<std::mutex> lock(this->jog_state_mutex_);
     this->jog_state_ = had_lease ? JogState::ACTIVE : JogState::IDLE;
     return;

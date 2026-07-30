@@ -35,7 +35,7 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 #include "mg400_interface/commander/motion_commander.hpp"
-#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 #include "mg400_node/mg400_node.hpp"
 #include "mg400_node/servo_control_ros_interface.hpp"
 
@@ -165,7 +165,6 @@ Session::Options sessionOptions()
   Session::Options options;
   options.send_period = 10ms;
   options.target_watchdog_timeout = 5s;
-  options.response_poll_period = 2ms;
   options.stop_confirmation_timeout = 50ms;
   return options;
 }
@@ -282,7 +281,7 @@ TEST(ServoControlRosInterface, IssuesSingleLeaseAndAllowsUnauthenticatedStopRetr
   EXPECT_EQ(Manager::NO_LEASE, stale_stop->lease_id);
 }
 
-TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseAndNonFiniteTarget)
+TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseAndFaultStopsForNonFiniteTarget)
 {
   Fixture fixture;
   const auto started = requestServoJ(*fixture.ros_interface, true);
@@ -298,16 +297,13 @@ TEST(ServoControlRosInterface, ServoJRejectsWrongLeaseAndNonFiniteTarget)
   non_finite->joint_angles[2] = std::numeric_limits<double>::infinity();
   fixture.ros_interface->handleServoJTarget(non_finite);
 
-  auto accepted = std::make_shared<mg400_msgs::msg::ServoJ>();
-  accepted->lease_id = started->lease_id;
-  accepted->joint_angles = {{0.1, 0.2, 0.3, 0.4}};
-  fixture.updateFeedback(accepted->joint_angles);
-  fixture.ros_interface->handleServoJTarget(accepted);
-
-  const auto snapshot = fixture.session->getSnapshot();
-  EXPECT_EQ(Session::State::ACTIVE, snapshot.state);
-  EXPECT_TRUE(
-    requestServoJ(*fixture.ros_interface, false)->success);
+  ASSERT_TRUE(
+    waitUntil(
+      [&fixture]() {
+        return fixture.session->getSnapshot().state == Session::State::IDLE;
+      }));
+  EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, fixture.safety_state->getSnapshot().code);
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
 }
 
 TEST(MG400Node, InvalidServoSafetyParameterFailsLifecycleConfigure)
@@ -376,7 +372,6 @@ TEST(ServoControlRosInterface, LifecycleStopFailureKeepsSessionAndLease)
   EXPECT_EQ(started->lease_id, fixture.manager->getSnapshot().lease_id);
   EXPECT_FALSE(fixture.manager->getSnapshot().accepting_servo_targets);
   EXPECT_EQ(Session::State::FAULTED, fixture.session->getSnapshot().state);
-  EXPECT_EQ("stop confirmation failed", fixture.session->getSnapshot().diagnostic);
 
   EXPECT_TRUE(
     requestServoJ(*fixture.ros_interface, false)->success);
@@ -610,16 +605,16 @@ TEST(ServoControlRosInterface, ErrorLatchesSurviveStopAndSessionReplacement)
       SafetyCode::SERVO_J_JOINT_LIMIT, "ServoJ target violates a joint limit"));
   ASSERT_TRUE(
     operational_state->reportError(
-      OperationalCode::MOTION_RESPONSE_TIMEOUT, "Servo Motion response timed out"));
+      OperationalCode::MOTION_TCP_SEND_FAILED, "Servo Motion send failed"));
 
   ASSERT_TRUE(
     requestServoJ(*fixture.ros_interface, false)->success);
   EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
-  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_TCP_SEND_FAILED, operational_state->getSnapshot().code);
 
   fixture.ros_interface->clearSession();
   EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
-  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_TCP_SEND_FAILED, operational_state->getSnapshot().code);
   auto replacement = std::make_shared<Session>(
     fixture.manager, fixture.commander, fixture.stop_strategy,
     safety_state, operational_state,
@@ -632,7 +627,7 @@ TEST(ServoControlRosInterface, ErrorLatchesSurviveStopAndSessionReplacement)
   const auto failed_start = requestServoJ(*fixture.ros_interface, true);
   EXPECT_FALSE(failed_start->success);
   EXPECT_EQ(SafetyCode::SERVO_J_JOINT_LIMIT, safety_state->getSnapshot().code);
-  EXPECT_EQ(OperationalCode::MOTION_RESPONSE_TIMEOUT, operational_state->getSnapshot().code);
+  EXPECT_EQ(OperationalCode::MOTION_TCP_SEND_FAILED, operational_state->getSnapshot().code);
   ASSERT_TRUE(
     fixture.manager->release(
       Manager::State::REGULAR_MOTION, regular_motion.lease_id).success);

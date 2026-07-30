@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/servo_safety_violation.hpp"
+#include "mg400_interface/servo_mode/servo_safety_violation.hpp"
 
 #include <condition_variable>
 #include <stdexcept>

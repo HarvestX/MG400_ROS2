@@ -28,7 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
-#include "mg400_interface/servo_feedback_state.hpp"
+#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 

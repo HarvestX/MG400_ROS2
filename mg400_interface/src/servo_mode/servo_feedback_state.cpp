@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/servo_feedback_state.hpp"
+#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
 
 #include <algorithm>
 #include <cmath>

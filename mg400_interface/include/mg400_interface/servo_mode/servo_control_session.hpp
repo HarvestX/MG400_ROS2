@@ -19,8 +19,6 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <cstdint>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -28,11 +26,11 @@
 
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/control_state_manager.hpp"
-#include "mg400_interface/servo_feedback_state.hpp"
-#include "mg400_interface/servo_kinematics_validator.hpp"
-#include "mg400_interface/servo_operational_error.hpp"
-#include "mg400_interface/servo_safety_violation.hpp"
-#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
+#include "mg400_interface/servo_mode/servo_kinematics_validator.hpp"
+#include "mg400_interface/servo_mode/servo_operational_error.hpp"
+#include "mg400_interface/servo_mode/servo_safety_violation.hpp"
+#include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 
 namespace mg400_interface
 {
@@ -50,38 +48,24 @@ public:
   enum class State
   {
     IDLE,
-    STARTING,
     ACTIVE,
     STOPPING,
     FAULTED,
-  };
-
-  enum class StopCause
-  {
-    NONE,
-    EXPLICIT,
-    WATCHDOG,
-    FAULT,
   };
 
   struct Options
   {
     std::chrono::nanoseconds send_period = std::chrono::milliseconds(30);
     std::chrono::nanoseconds target_watchdog_timeout = std::chrono::milliseconds(100);
-    std::chrono::nanoseconds response_poll_period = std::chrono::milliseconds(5);
     std::chrono::nanoseconds stop_confirmation_timeout = std::chrono::seconds(2);
     std::chrono::nanoseconds feedback_timeout = std::chrono::milliseconds(100);
     double max_initial_joint_distance_rad = 0.0872665;
     double max_joint_step_rad = 0.0174533;
-    std::function<void(const std::string &)> safety_log_callback;
-    std::function<void(ServoOperationalErrorCode, const std::string &)>
-    operational_log_callback;
   };
 
   struct Result
   {
     bool success;
-    State state;
     LeaseId lease_id;
     std::string message;
   };
@@ -90,8 +74,6 @@ public:
   {
     State state;
     LeaseId lease_id;
-    StopCause stop_cause;
-    std::string diagnostic;
   };
 
   ServoControlSession(
@@ -118,9 +100,6 @@ public:
 
   Snapshot getSnapshot() const;
 
-  SafetyViolationState::SharedPtr getSafetyViolationStateShared() const noexcept;
-  OperationalErrorState::SharedPtr getOperationalErrorStateShared() const noexcept;
-
 private:
   ControlStateManager::SharedPtr control_state_manager_;
   MotionCommander::SharedPtr motion_commander_;
@@ -142,11 +121,7 @@ private:
   Clock::time_point target_updated_at_;
   bool has_target_update_time_;
   Clock::time_point next_send_at_;
-  Clock::time_point next_response_poll_at_;
   bool worker_should_exit_;
-  StopCause stop_cause_;
-  std::uint64_t response_drop_baseline_;
-  std::string diagnostic_;
   bool has_previous_successful_command_;
   std::array<double, 4> previous_successful_target_;
   bool safety_fault_requested_;
@@ -157,37 +132,18 @@ private:
 
   void workerLoop();
   void workerLoopImpl();
-  bool monitorResponses(std::string & fault_message);
   bool sendLatestTarget(LeaseId lease_id);
-  bool rejectUnsafeTarget(
-    const ServoKinematicsValidator::Result & violation,
-    const std::string & diagnostic,
-    LeaseId lease_id);
+  bool activeLeaseAcceptsTarget(LeaseId lease_id);
+  bool rejectUnsafeTarget(const ServoKinematicsValidator::Result & violation, LeaseId lease_id);
   bool rejectUnsafeSend(
     ServoSafetyViolationCode code,
-    const std::string & message,
-    const std::string & detail);
-  void reportSafetyViolation(
-    ServoSafetyViolationCode code,
-    const std::string & message,
-    const std::string & detail);
-  void reportOperationalError(
-    ServoOperationalErrorCode code,
-    const std::string & message,
-    const std::string & detail);
-  bool targetMatchesSession(LeaseId lease_id);
-  Result performStop(StopCause cause, LeaseId lease_id, const std::string & detail);
+    const std::string & message);
+  void reportOperationalError(ServoOperationalErrorCode code, const std::string & message);
+  Result performStop(LeaseId lease_id);
   void joinWorker();
   void requestWorkerExit();
   void advanceSendDeadlineLocked(const Clock::time_point & now);
-  void advanceResponseDeadlineLocked(const Clock::time_point & now);
   bool currentLeaseMatches(LeaseId lease_id) const;
-  bool rejectTarget(const std::string & reason);
-  Result localResult(bool success, LeaseId lease_id, const std::string & message) const;
-
-  static bool isFinite(const std::array<double, 4> & values) noexcept;
-  static const char * responseResultName(MotionResponseResult result) noexcept;
-  static ServoOperationalErrorCode responseErrorCode(MotionResponseResult result) noexcept;
 };
 
 }  // namespace mg400_interface

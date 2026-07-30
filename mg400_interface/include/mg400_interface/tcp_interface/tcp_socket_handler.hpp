@@ -21,10 +21,6 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <cerrno>
-#include <atomic>
-#include <chrono>
-#include <cstdint>
-#include <mutex>
 #include <utility>
 #include <string>
 #include <rclcpp/rclcpp.hpp>
@@ -49,11 +45,10 @@ public:
   RCLCPP_UNIQUE_PTR_DEFINITIONS(TcpSocketHandler)
 
 private:
-  std::atomic<int> fd_;
+  int fd_;
   uint16_t port_;
   std::string ip_;
   std::atomic<bool> is_connected_;
-  std::mutex mutex_connect_;
 
 public:
   TcpSocketHandler(std::string, uint16_t);
@@ -65,13 +60,9 @@ public:
   void disConnect();
   bool isConnected() const;
   void send(const void *, uint32_t);
-  uint32_t recvSome(void *, uint32_t, const std::chrono::nanoseconds &);
   bool recv(void *, uint32_t, const std::chrono::nanoseconds &);
   bool recv(void *, uint32_t, uint32_t &, const std::chrono::nanoseconds &);
   std::string toString();
-
-private:
-  void closeSocket(int);
 };
 }  // namespace mg400_interface
 #endif

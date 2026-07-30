@@ -21,37 +21,6 @@ MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 {
 }
 
-bool MotionCommander::tryTakeResponse(MotionResponse & response)
-{
-  return this->tcp_if_->tryTakeResponse(response);
-}
-
-bool MotionCommander::waitForResponse(
-  MotionResponse & response, const std::chrono::nanoseconds & timeout)
-{
-  return this->tcp_if_->waitForResponse(response, timeout);
-}
-
-bool MotionCommander::getLatestResponse(MotionResponse & response) const
-{
-  return this->tcp_if_->getLatestResponse(response);
-}
-
-bool MotionCommander::getLatestError(MotionResponse & response) const
-{
-  return this->tcp_if_->getLatestError(response);
-}
-
-size_t MotionCommander::getPendingCommandCount() const
-{
-  return this->tcp_if_->getPendingCommandCount();
-}
-
-uint64_t MotionCommander::getDroppedCompletedResponseCount() const
-{
-  return this->tcp_if_->getDroppedCompletedResponseCount();
-}
-
 void MotionCommander::servoJ(
   const si_rad j1, const si_rad j2, const si_rad j3, const si_rad j4)
 {

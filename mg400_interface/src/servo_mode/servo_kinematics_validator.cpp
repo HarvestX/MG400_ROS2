@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/servo_kinematics_validator.hpp"
+#include "mg400_interface/servo_mode/servo_kinematics_validator.hpp"
 
 #include <algorithm>
 #include <cmath>
-#include <iomanip>
 #include <limits>
-#include <sstream>
 
 #include <mg400_common/kinematics.hpp>
 
@@ -34,14 +32,6 @@ bool finite(const std::array<double, 4> & values)
 {
   return std::all_of(
     values.begin(), values.end(), [](const double value) {return std::isfinite(value);});
-}
-
-std::string valuesToString(const std::array<double, 4> & values)
-{
-  std::ostringstream stream;
-  stream << std::setprecision(12) << '[' << values[0] << ", " << values[1] << ", " <<
-    values[2] << ", " << values[3] << ']';
-  return stream.str();
 }
 
 Eigen::Vector4d toEigen(const std::array<double, 4> & values)
@@ -74,36 +64,25 @@ ServoKinematicsValidator::Result ServoKinematicsValidator::validateServoJ(
   if (!finite(joint_angles_rad)) {
     return Result{
       false, ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
-      "ServoJ target contains a non-finite value",
-      "Non-finite ServoJ values were rejected before MG400 kinematics"};
+      "ServoJ target contains a non-finite value"};
   }
 
   const auto joints = toEigen(joint_angles_rad);
   const auto individual = checkIndividualJointConstraints(joints);
   if (!individual.allValid()) {
-    std::ostringstream detail;
-    detail << "ServoJ target(rad)=" << valuesToString(joint_angles_rad) <<
-      "; canonical individual constraint results: J1=" << individual.j1_valid <<
-      ", J2=" << individual.j2_valid << ", J3=" << individual.j3_valid <<
-      ", J4=" << individual.j4_valid << "; frame=MG400 joint coordinates";
     return Result{
       false, ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
-      "ServoJ target violates an MG400 joint limit", detail.str()};
+      "ServoJ target violates an MG400 joint limit"};
   }
 
   const auto full = mg400_common::kinematics::check_constraints(joints);
   if (!full.allValid()) {
-    std::ostringstream detail;
-    detail << "ServoJ target(rad)=" << valuesToString(joint_angles_rad) <<
-      "; canonical coupled constraint results: conditional_J2=" << full.j2_valid <<
-      ", J3_minus_J2=" << full.j3_1_valid << "; frame=MG400 joint coordinates";
     return Result{
       false, ServoSafetyViolationCode::SERVO_J_COUPLED_LIMIT,
-      "ServoJ target violates an MG400 coupled-joint constraint",
-      detail.str()};
+      "ServoJ target violates an MG400 coupled-joint constraint"};
   }
 
-  return Result{true, ServoSafetyViolationCode::NONE, {}, {}};
+  return Result{true, ServoSafetyViolationCode::NONE, {}};
 }
 
 }  // namespace mg400_interface

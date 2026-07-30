@@ -20,7 +20,7 @@
 #include <gtest/gtest.h>
 #include <mg400_common/kinematics.hpp>
 
-#include "mg400_interface/servo_kinematics_validator.hpp"
+#include "mg400_interface/servo_mode/servo_kinematics_validator.hpp"
 
 namespace
 {

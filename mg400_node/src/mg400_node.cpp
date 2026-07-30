@@ -519,21 +519,6 @@ bool MG400Node::loadAndValidateServoParameters()
     std::chrono::milliseconds(feedback_timeout_ms);
   this->servo_session_options_.max_initial_joint_distance_rad = safety_thresholds[0].second;
   this->servo_session_options_.max_joint_step_rad = safety_thresholds[1].second;
-  const auto logger = this->get_logger();
-  this->servo_session_options_.safety_log_callback =
-    [logger](const std::string & message) {RCLCPP_ERROR(logger, "%s", message.c_str());};
-  const auto clock = this->get_clock();
-  this->servo_session_options_.operational_log_callback =
-    [logger, clock](
-    const mg400_interface::ServoOperationalErrorCode code,
-    const std::string & message)
-    {
-      if (code == mg400_interface::ServoOperationalErrorCode::WATCHDOG_TIMEOUT) {
-        RCLCPP_WARN_THROTTLE(logger, *clock, 5000, "%s", message.c_str());
-      } else {
-        RCLCPP_ERROR_THROTTLE(logger, *clock, 5000, "%s", message.c_str());
-      }
-    };
   this->servo_session_options_.stop_confirmation_timeout =
     std::chrono::milliseconds(stop_timeout_ms);
   this->servo_stop_options_.confirmation_poll_period =

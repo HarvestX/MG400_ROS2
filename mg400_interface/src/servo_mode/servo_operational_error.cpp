@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/servo_operational_error.hpp"
+#include "mg400_interface/servo_mode/servo_operational_error.hpp"
 
 #include <condition_variable>
 #include <stdexcept>
@@ -30,16 +30,6 @@ const char * toString(const ServoOperationalErrorCode code) noexcept
       return "WATCHDOG_TIMEOUT";
     case ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED:
       return "MOTION_TCP_SEND_FAILED";
-    case ServoOperationalErrorCode::MOTION_RESPONSE_CONTROLLER_ERROR:
-      return "MOTION_RESPONSE_CONTROLLER_ERROR";
-    case ServoOperationalErrorCode::MOTION_RESPONSE_TIMEOUT:
-      return "MOTION_RESPONSE_TIMEOUT";
-    case ServoOperationalErrorCode::MOTION_RESPONSE_DISCONNECTED:
-      return "MOTION_RESPONSE_DISCONNECTED";
-    case ServoOperationalErrorCode::MOTION_RESPONSE_PARSE_ERROR:
-      return "MOTION_RESPONSE_PARSE_ERROR";
-    case ServoOperationalErrorCode::MOTION_RESPONSE_QUEUE_OVERFLOW:
-      return "MOTION_RESPONSE_QUEUE_OVERFLOW";
     case ServoOperationalErrorCode::SERVO_LEASE_LOST:
       return "SERVO_LEASE_LOST";
     case ServoOperationalErrorCode::REALTIME_CONNECTION_LOST:

@@ -19,7 +19,7 @@
 
 #include <gtest/gtest.h>
 
-#include "mg400_interface/servo_feedback_state.hpp"
+#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
 
 namespace
 {

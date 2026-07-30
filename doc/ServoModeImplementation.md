@@ -7,7 +7,7 @@ This document maps the ServoJ behavior to the repository implementation.
 | Package | Responsibility |
 | --- | --- |
 | `mg400_msgs` | Servo-state, target, error, and service definitions |
-| `mg400_interface` | ROS-independent lease arbitration, safety validation, periodic transmission, response monitoring, and safe stop |
+| `mg400_interface` | ROS-independent lease arbitration, safety validation, periodic transmission, and safe stop |
 | `mg400_node` | Lifecycle integration and ROS services, subscriptions, and publishers |
 | `mg400_operation_gui` | Optional interactive ServoJ client |
 
@@ -30,21 +30,22 @@ One session represents one connection epoch. It owns:
 
 - the periodic steady-clock worker;
 - the latest target buffer;
-- target and response watchdog state;
+- target watchdog state;
 - initial-feedback and command-step safety checks;
 - the active lease interaction with `ControlStateManager`; and
 - the safe-stop strategy.
 
-Target update methods do not write to TCP. The worker copies the latest target,
-revalidates it, checks the lease immediately before sending, and calls
-`MotionCommander::servoJ()`.
+Target update methods validate and buffer the latest target without writing to
+TCP. The worker checks the lease before sending and calls
+`MotionCommander::servoJ()`. The MVP keeps the existing send-only Motion TCP
+behavior and relies on TCP send failures, RobotMode, lease checks, and the
+target watchdog for fault handling.
 
 ### `ServoKinematicsValidator`
 
 The validator checks finite input, individual MG400 joint limits, and coupled
 constraints using the canonical kinematics implementation in `mg400_common`.
-It returns structured safety codes and diagnostic detail without depending on
-ROS.
+It returns structured safety codes and messages without depending on ROS.
 
 ### `ServoControlRosInterface`
 
@@ -93,6 +94,6 @@ snapshot whenever either state changes.
 | --- | --- |
 | `test_control_state_manager.cpp` | State transitions, leases, RobotMode, and regular-motion exclusion |
 | `test_servo_kinematics_validator.cpp` | Joint and coupled constraints |
-| `test_servo_control_session.cpp` | Latest-only transmission, feedback checks, watchdog, responses, stop retry, and stale epochs |
+| `test_servo_control_session.cpp` | Latest-only transmission, feedback checks, watchdog, stop retry, and stale epochs |
 | `test_servo_control_ros_interface.cpp` | ROS service contract, target admission, lifecycle behavior, QoS, and error publication |
 | `test_motion_commander.cpp` | TCP command formatting |

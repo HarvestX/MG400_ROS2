@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include "mg400_interface/servo_operational_error.hpp"
+#include "mg400_interface/servo_mode/servo_operational_error.hpp"
 
 namespace
 {
@@ -61,7 +61,7 @@ TEST(ServoOperationalErrorState, CallbackRunsOnlyForChangesAndWithoutStateMutex)
     });
 
   EXPECT_TRUE(state.reportError(Code::MOTION_TCP_SEND_FAILED, "send failed"));
-  EXPECT_FALSE(state.reportError(Code::MOTION_RESPONSE_TIMEOUT, "response timed out"));
+  EXPECT_FALSE(state.reportError(Code::STOP_RESET_FAILED, "ResetRobot failed"));
   EXPECT_TRUE(state.clearForRearm());
   EXPECT_EQ(2U, callback_count.load());
   static_cast<void>(callback);
@@ -73,20 +73,6 @@ TEST(ServoOperationalErrorCode, ConvertsEveryStableValueAndUnknown)
   EXPECT_STREQ("WATCHDOG_TIMEOUT", mg400_interface::toString(Code::WATCHDOG_TIMEOUT));
   EXPECT_STREQ(
     "MOTION_TCP_SEND_FAILED", mg400_interface::toString(Code::MOTION_TCP_SEND_FAILED));
-  EXPECT_STREQ(
-    "MOTION_RESPONSE_CONTROLLER_ERROR",
-    mg400_interface::toString(Code::MOTION_RESPONSE_CONTROLLER_ERROR));
-  EXPECT_STREQ(
-    "MOTION_RESPONSE_TIMEOUT", mg400_interface::toString(Code::MOTION_RESPONSE_TIMEOUT));
-  EXPECT_STREQ(
-    "MOTION_RESPONSE_DISCONNECTED",
-    mg400_interface::toString(Code::MOTION_RESPONSE_DISCONNECTED));
-  EXPECT_STREQ(
-    "MOTION_RESPONSE_PARSE_ERROR",
-    mg400_interface::toString(Code::MOTION_RESPONSE_PARSE_ERROR));
-  EXPECT_STREQ(
-    "MOTION_RESPONSE_QUEUE_OVERFLOW",
-    mg400_interface::toString(Code::MOTION_RESPONSE_QUEUE_OVERFLOW));
   EXPECT_STREQ("SERVO_LEASE_LOST", mg400_interface::toString(Code::SERVO_LEASE_LOST));
   EXPECT_STREQ(
     "REALTIME_CONNECTION_LOST", mg400_interface::toString(Code::REALTIME_CONNECTION_LOST));

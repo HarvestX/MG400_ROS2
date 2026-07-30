@@ -30,15 +30,15 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 #include "mg400_interface/control_state_manager.hpp"
-#include "mg400_interface/servo_control_session.hpp"
+#include "mg400_interface/servo_mode/servo_control_session.hpp"
 
 namespace mg400_node
 {
 
 /// ROS endpoint and message-conversion layer for ServoControlSession.
 ///
-/// Periodic transmission, the steady-clock watchdog, response monitoring, and
-/// the stop operation deliberately remain in ServoControlSession.
+/// Periodic transmission, the steady-clock watchdog, and the stop operation
+/// deliberately remain in ServoControlSession.
 class ServoControlRosInterface
 {
 public:

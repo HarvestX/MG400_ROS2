@@ -17,15 +17,15 @@ ament_auto_add_library(
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp
       ./src/control_state_manager.cpp
-      ./src/servo_feedback_state.cpp
-      ./src/servo_kinematics_validator.cpp
-      ./src/servo_control_session.cpp
-      ./src/servo_operational_error.cpp
-      ./src/servo_safety_violation.cpp
-      ./src/servo_stop_strategy.cpp
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
+      ./src/servo_mode/servo_control_session.cpp
+      ./src/servo_mode/servo_feedback_state.cpp
+      ./src/servo_mode/servo_kinematics_validator.cpp
+      ./src/servo_mode/servo_operational_error.cpp
+      ./src/servo_mode/servo_safety_violation.cpp
+      ./src/servo_mode/servo_stop_strategy.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
       ./src/tcp_interface/motion_tcp_interface.cpp
       ./src/tcp_interface/realtime_data_converter.cpp
@@ -61,16 +61,21 @@ if(BUILD_TESTING)
     test_control_state_manager
     test_error_msg_generator
     test_joint_handler
-    test_motion_tcp_interface
     test_realtime_data
-    test_servo_feedback_state
-    test_servo_kinematics_validator
-    test_servo_control_session
-    test_servo_operational_error
-    test_servo_safety_violation
     test_tcp_interface_lifecycle)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
+    target_link_libraries(${TARGET} ${PROJECT_NAME})
+  endforeach()
+
+  set(SERVO_MODE_TEST_TARGETS
+    test_servo_control_session
+    test_servo_feedback_state
+    test_servo_kinematics_validator
+    test_servo_operational_error
+    test_servo_safety_violation)
+  foreach(TARGET ${SERVO_MODE_TEST_TARGETS})
+    ament_add_gtest(${TARGET} test/src/servo_mode/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})
   endforeach()
 

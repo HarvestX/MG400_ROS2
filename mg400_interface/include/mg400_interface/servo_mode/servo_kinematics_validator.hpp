@@ -18,7 +18,7 @@
 #include <array>
 #include <string>
 
-#include "mg400_interface/servo_safety_violation.hpp"
+#include "mg400_interface/servo_mode/servo_safety_violation.hpp"
 
 namespace mg400_interface
 {
@@ -32,7 +32,6 @@ public:
     bool success{false};
     ServoSafetyViolationCode code{ServoSafetyViolationCode::NONE};
     std::string message;
-    std::string detail;
   };
 
   /// Central tolerance for safety comparison floating-point boundaries.

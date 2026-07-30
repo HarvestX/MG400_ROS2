@@ -33,15 +33,13 @@
 
 #include <mg400_msgs/msg/robot_mode.hpp>
 
-#include "mg400_interface/servo_control_session.hpp"
-#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_interface/servo_mode/servo_control_session.hpp"
+#include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 
 namespace
 {
 using namespace std::chrono_literals;  // NOLINT
 using Manager = mg400_interface::ControlStateManager;
-using MotionResponse = mg400_interface::MotionResponse;
-using MotionResponseResult = mg400_interface::MotionResponseResult;
 using ResetRobotStopStrategy = mg400_interface::ResetRobotStopStrategy;
 using ServoControlSession = mg400_interface::ServoControlSession;
 using ServoFeedbackState = mg400_interface::ServoFeedbackState;
@@ -72,9 +70,6 @@ public:
   {
     bool block = false;
     bool fail = false;
-    bool enqueue_response = false;
-    MotionResponseResult response_result = MotionResponseResult::SUCCESS;
-    int error_code = 0;
     {
       std::lock_guard<std::mutex> lock(this->mutex_);
       fail = this->fail_next_send_;
@@ -84,9 +79,6 @@ public:
       }
       this->commands_.push_back(command);
       block = this->block_first_send_ && this->commands_.size() == 1;
-      enqueue_response = this->auto_response_;
-      response_result = this->auto_response_result_;
-      error_code = this->auto_error_code_;
     }
     this->cv_.notify_all();
 
@@ -95,41 +87,7 @@ public:
       this->cv_block_.wait(lock, [this]() {return this->release_first_send_;});
     }
 
-    if (enqueue_response) {
-      MotionResponse response;
-      response.command = command;
-      response.result = response_result;
-      response.error_code = error_code;
-      std::lock_guard<std::mutex> lock(this->mutex_);
-      this->responses_.push_back(response);
-    }
   }
-
-  bool tryTakeResponse(MotionResponse & response) override
-  {
-    std::lock_guard<std::mutex> lock(this->mutex_);
-    if (this->responses_.empty()) {
-      return false;
-    }
-    response = this->responses_.front();
-    this->responses_.pop_front();
-    return true;
-  }
-
-  std::uint64_t getDroppedCompletedResponseCount() const override
-  {
-    std::lock_guard<std::mutex> lock(this->mutex_);
-    return this->dropped_response_count_;
-  }
-
-  void setAutoResponse(MotionResponseResult result, int error_code = 0)
-  {
-    std::lock_guard<std::mutex> lock(this->mutex_);
-    this->auto_response_ = true;
-    this->auto_response_result_ = result;
-    this->auto_error_code_ = error_code;
-  }
-
   void blockFirstSend()
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
@@ -169,13 +127,8 @@ private:
   mutable std::mutex mutex_;
   std::condition_variable cv_;
   std::vector<std::string> commands_;
-  std::deque<MotionResponse> responses_;
-  bool auto_response_{false};
-  MotionResponseResult auto_response_result_{MotionResponseResult::SUCCESS};
-  int auto_error_code_{0};
   bool block_first_send_{false};
   bool fail_next_send_{false};
-  std::uint64_t dropped_response_count_{0};
 
   std::mutex mutex_block_;
   std::condition_variable cv_block_;
@@ -274,12 +227,11 @@ ServoControlSession::Options quietOptions()
   ServoControlSession::Options options;
   options.send_period = 30ms;
   options.target_watchdog_timeout = 1s;
-  options.response_poll_period = 2ms;
   options.stop_confirmation_timeout = 50ms;
   return options;
 }
 
-TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongLeaseAndNonFiniteValues)
+TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongLease)
 {
   SessionFixture fixture;
   auto session = fixture.makeSession(quietOptions());
@@ -290,15 +242,34 @@ TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongLeaseAndNonFinite
   EXPECT_FALSE(
     session->updateServoJTarget(
       started.lease_id + 1, {{0.1, 0.2, 0.3, 0.4}}));
-  EXPECT_FALSE(
-    session->updateServoJTarget(
-      started.lease_id,
-      {{0.1, std::numeric_limits<double>::quiet_NaN(), 0.3, 0.4}}));
   EXPECT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
 
   const auto snapshot = session->getSnapshot();
   EXPECT_EQ(ServoControlSession::State::ACTIVE, snapshot.state);
   EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, NonFiniteTargetUsesSafetyFaultStopPath)
+{
+  SessionFixture fixture;
+  auto session = fixture.makeSession(quietOptions());
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  EXPECT_FALSE(
+    session->updateServoJTarget(
+      started.lease_id,
+      {{0.1, std::numeric_limits<double>::quiet_NaN(), 0.3, 0.4}}));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+  EXPECT_TRUE(fixture.tcp.commands().empty());
+  EXPECT_EQ(
+    ServoSafetyViolationCode::SERVO_J_JOINT_LIMIT,
+    fixture.safety_state->getSnapshot().code);
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
 }
 
 TEST(ServoControlSession, KinematicViolationIsNotBufferedAndUsesFaultStopPath)
@@ -531,7 +502,7 @@ TEST(ServoControlSession, SuccessfulRestartResetsPreviousTcpCommandToInitialStat
       ServoSafetyViolationCode::SERVO_J_COUPLED_LIMIT, "old safety fault"));
   ASSERT_TRUE(
     fixture.operational_state->reportError(
-      ServoOperationalErrorCode::MOTION_RESPONSE_TIMEOUT, "old operational fault"));
+      ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED, "old operational fault"));
 
   const std::array<double, 4> restarted_target{{0.5, 0.0, 0.2, 0.0}};
   started = session->start();
@@ -610,8 +581,6 @@ TEST(ServoControlSession, MissingFirstTargetTriggersWatchdogAndReleasesOnlyAfter
       [&session]() {
         return session->getSnapshot().state == ServoControlSession::State::IDLE;
       }));
-  const auto snapshot = session->getSnapshot();
-  EXPECT_EQ(ServoControlSession::StopCause::WATCHDOG, snapshot.stop_cause);
   EXPECT_EQ(1U, fixture.stop_strategy->callCount());
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
   EXPECT_TRUE(fixture.tcp.commands().empty());
@@ -643,55 +612,11 @@ TEST(ServoControlSession, FailedWatchdogStopRetainsLeaseAndSameLeaseCanRetry)
 
   const auto retried = session->stop();
   EXPECT_TRUE(retried.success) << retried.message;
-  EXPECT_EQ(
-    ServoControlSession::StopCause::WATCHDOG,
-    session->getSnapshot().stop_cause);
   EXPECT_EQ(2U, fixture.stop_strategy->callCount());
   EXPECT_EQ(Manager::NO_LEASE, fixture.manager->getSnapshot().lease_id);
   EXPECT_EQ(
     ServoOperationalErrorCode::WATCHDOG_TIMEOUT,
     fixture.operational_state->getSnapshot().code);
-}
-
-TEST(ServoControlSession, EveryServoResponseFailureUsesTheFaultStopPath)
-{
-  const std::vector<MotionResponseResult> failures{
-    MotionResponseResult::CONTROLLER_ERROR,
-    MotionResponseResult::TIMEOUT,
-    MotionResponseResult::DISCONNECTED,
-    MotionResponseResult::PARSE_ERROR};
-
-  for (const auto failure : failures) {
-    SessionFixture fixture;
-    fixture.tcp.setAutoResponse(
-      failure,
-      failure == MotionResponseResult::CONTROLLER_ERROR ? 17 : 0);
-    auto options = quietOptions();
-    options.send_period = 5ms;
-    auto session = fixture.makeSession(options);
-    const auto started = session->start();
-    ASSERT_TRUE(started.success) << started.message;
-    fixture.updateFeedback({{0.1, 0.2, 0.3, 0.4}});
-    ASSERT_TRUE(session->updateServoJTarget(started.lease_id, {{0.1, 0.2, 0.3, 0.4}}));
-
-    ASSERT_TRUE(
-      waitUntil(
-        [&session]() {
-          return session->getSnapshot().state == ServoControlSession::State::IDLE;
-        })) << "failure enum " << static_cast<int>(failure);
-    const auto snapshot = session->getSnapshot();
-    EXPECT_EQ(ServoControlSession::StopCause::FAULT, snapshot.stop_cause);
-    EXPECT_EQ(1U, fixture.stop_strategy->callCount());
-    const auto expected_code =
-      failure == MotionResponseResult::CONTROLLER_ERROR ?
-      ServoOperationalErrorCode::MOTION_RESPONSE_CONTROLLER_ERROR :
-      failure == MotionResponseResult::TIMEOUT ?
-      ServoOperationalErrorCode::MOTION_RESPONSE_TIMEOUT :
-      failure == MotionResponseResult::DISCONNECTED ?
-      ServoOperationalErrorCode::MOTION_RESPONSE_DISCONNECTED :
-      ServoOperationalErrorCode::MOTION_RESPONSE_PARSE_ERROR;
-    EXPECT_EQ(expected_code, fixture.operational_state->getSnapshot().code);
-  }
 }
 
 TEST(ServoControlSession, ForeignAndStaleStopCannotAffectANewerLease)

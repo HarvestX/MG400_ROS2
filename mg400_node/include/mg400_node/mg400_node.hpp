@@ -31,7 +31,7 @@
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 #include "mg400_node/servo_control_ros_interface.hpp"
 
 namespace mg400_node

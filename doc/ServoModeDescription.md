@@ -95,8 +95,8 @@ refreshes its steady-clock deadline. If the deadline expires, the session stops
 target admission, executes the safe-stop strategy, and releases ownership only
 after stop confirmation.
 
-The same stop path is used for explicit stops, watchdog expiry, response
-failures, safety violations, lifecycle deactivation, and destruction fallback.
+The same stop path is used for explicit stops, watchdog expiry, safety
+violations, TCP send failures, lifecycle deactivation, and destruction fallback.
 
 ## Safety and operational errors
 
@@ -112,8 +112,8 @@ ServoJ safety codes are:
 | `SAFETY_SERVO_J_COMMAND_DISCONTINUITY` | A target changed too far from its reference |
 | `SAFETY_REALTIME_FEEDBACK_UNAVAILABLE` | Initial feedback was absent, stale, or from another connection epoch |
 
-Operational errors cover watchdog expiry, TCP send and response failures,
-connection loss, lease loss, stop failures, and internal errors. Safety and
+Operational errors cover watchdog expiry, TCP send failures, connection loss,
+lease loss, stop failures, and internal errors. Safety and
 operational states are first-fault latches. A successful later ServoJ start
 rearms both latches.
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_interface/servo_stop_strategy.hpp"
+#include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 
 #include <algorithm>
 #include <exception>
