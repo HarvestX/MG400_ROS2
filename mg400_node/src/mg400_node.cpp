@@ -44,7 +44,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<int>("servo.stop_confirmation_poll_ms", 10);
   this->declare_parameter<int>("servo.safety.feedback_timeout_ms", 100);
   this->declare_parameter<double>("servo.safety.max_initial_joint_distance_rad", 0.0872665);
-  this->declare_parameter<double>("servo.safety.max_joint_step_rad", 0.0174533);
+  this->declare_parameter<double>("servo.safety.max_joint_step_rad", 0.0523599);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(

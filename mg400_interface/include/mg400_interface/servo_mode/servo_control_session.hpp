@@ -59,7 +59,7 @@ public:
     std::chrono::nanoseconds stop_confirmation_timeout = std::chrono::seconds(2);
     std::chrono::nanoseconds feedback_timeout = std::chrono::milliseconds(100);
     double max_initial_joint_distance_rad = 0.0872665;
-    double max_joint_step_rad = 0.0174533;
+    double max_joint_step_rad = 0.0523599;
   };
 
   struct Result

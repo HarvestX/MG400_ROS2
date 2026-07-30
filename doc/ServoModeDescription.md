@@ -127,7 +127,7 @@ rearms both latches.
 | `servo.stop_confirmation_poll_ms` | 10 | RobotMode polling interval during stop |
 | `servo.safety.feedback_timeout_ms` | 100 | Maximum age of initial realtime feedback |
 | `servo.safety.max_initial_joint_distance_rad` | 0.0872665 | Maximum first-target distance from feedback |
-| `servo.safety.max_joint_step_rad` | 0.0174533 | Maximum later step from the last successful command |
+| `servo.safety.max_joint_step_rad` | 0.0523599 | Maximum later step from the last successful command |
 
 All durations and safety thresholds must be positive. Safety thresholds must
 also be finite.
