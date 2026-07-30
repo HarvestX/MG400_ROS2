@@ -12,17 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <cstddef>
 
 #include <gtest/gtest.h>
 
+#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/realtime_data_converter.hpp"
+#include "mg400_interface/tcp_interface/realtime_data_snapshot.hpp"
 
 namespace
 {
 
 using mg400_interface::RealTimeData;
+using mg400_interface::RealtimeDataSnapshot;
+
+TEST(TestRealtimeData, ConvertsActualJointAnglesToRadians)
+{
+  RealtimeDataSnapshot snapshot;
+  snapshot.data.q_actual[0] = 0.0;
+  snapshot.data.q_actual[1] = 90.0;
+  snapshot.data.q_actual[2] = -180.0;
+  snapshot.data.q_actual[3] = 360.0;
+
+  const auto joints = snapshot.jointAnglesRad();
+
+  EXPECT_DOUBLE_EQ(0.0, joints[0]);
+  EXPECT_DOUBLE_EQ(90.0 * mg400_interface::TO_RADIAN, joints[1]);
+  EXPECT_DOUBLE_EQ(-180.0 * mg400_interface::TO_RADIAN, joints[2]);
+  EXPECT_DOUBLE_EQ(360.0 * mg400_interface::TO_RADIAN, joints[3]);
+}
+
+TEST(TestRealtimeData, SnapshotFreshnessIncludesTimeoutBoundaryAndConnectionEpoch)
+{
+  using namespace std::chrono_literals;  // NOLINT
+  RealtimeDataSnapshot snapshot;
+  snapshot.has_data = true;
+  snapshot.connection_epoch = 7;
+  snapshot.received_at = RealtimeDataSnapshot::Clock::now();
+
+  EXPECT_TRUE(snapshot.isFresh(7, 100ms, snapshot.received_at + 99ms));
+  EXPECT_TRUE(snapshot.isFresh(7, 100ms, snapshot.received_at + 100ms));
+  EXPECT_FALSE(snapshot.isFresh(7, 100ms, snapshot.received_at + 100ms + 1ns));
+  EXPECT_FALSE(snapshot.isFresh(8, 100ms, snapshot.received_at));
+
+  snapshot.has_data = false;
+  EXPECT_FALSE(snapshot.isFresh(7, 100ms, snapshot.received_at));
+}
 
 TEST(TestRealtimeData, ValidatesTransportFields)
 {

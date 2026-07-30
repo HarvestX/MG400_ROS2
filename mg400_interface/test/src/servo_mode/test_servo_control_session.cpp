@@ -35,14 +35,15 @@
 
 #include "mg400_interface/servo_mode/servo_control_session.hpp"
 #include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
+#include "mg400_interface/command_utils.hpp"
 
 namespace
 {
 using namespace std::chrono_literals;  // NOLINT
 using Manager = mg400_interface::ControlStateManager;
+using RealtimeDataSnapshot = mg400_interface::RealtimeDataSnapshot;
 using ResetRobotStopStrategy = mg400_interface::ResetRobotStopStrategy;
 using ServoControlSession = mg400_interface::ServoControlSession;
-using ServoFeedbackState = mg400_interface::ServoFeedbackState;
 using ServoOperationalErrorCode = mg400_interface::ServoOperationalErrorCode;
 using ServoOperationalErrorState = mg400_interface::ServoOperationalErrorState;
 using ServoSafetyViolationCode = mg400_interface::ServoSafetyViolationCode;
@@ -185,7 +186,7 @@ private:
 
 struct SessionFixture
 {
-  static constexpr ServoFeedbackState::ConnectionEpoch CONNECTION_EPOCH = 7;
+  static constexpr RealtimeDataSnapshot::ConnectionEpoch CONNECTION_EPOCH = 7;
 
   FakeMotionTcpInterface tcp;
   Manager::SharedPtr manager{std::make_shared<Manager>()};
@@ -196,12 +197,13 @@ struct SessionFixture
     std::make_shared<ServoSafetyViolationState>()};
   ServoOperationalErrorState::SharedPtr operational_state{
     std::make_shared<ServoOperationalErrorState>()};
-  ServoFeedbackState::SharedPtr feedback_state{
-    std::make_shared<ServoFeedbackState>(CONNECTION_EPOCH)};
+  mutable std::mutex feedback_mutex;
+  RealtimeDataSnapshot feedback_snapshot;
 
   SessionFixture()
   {
     manager->updateRobotStatus(true, RobotMode::ENABLE);
+    feedback_snapshot.connection_epoch = CONNECTION_EPOCH;
   }
 
   std::unique_ptr<ServoControlSession> makeSession(
@@ -210,15 +212,33 @@ struct SessionFixture
     return std::unique_ptr<ServoControlSession>(
       new ServoControlSession(
         manager, commander, stop_strategy, safety_state, operational_state,
-        feedback_state, options));
+        [this]() {return this->getFeedback();}, options));
   }
 
   void updateFeedback(
     const std::array<double, 4> & joints,
-    const ServoFeedbackState::Clock::time_point received_at =
-    ServoFeedbackState::Clock::now())
+    const RealtimeDataSnapshot::Clock::time_point received_at =
+    RealtimeDataSnapshot::Clock::now())
   {
-    feedback_state->update(joints, received_at);
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    for (std::size_t index = 0; index < joints.size(); ++index) {
+      this->feedback_snapshot.data.q_actual[index] = joints[index] * mg400_interface::TO_DEGREE;
+    }
+    this->feedback_snapshot.received_at = received_at;
+    this->feedback_snapshot.has_data = true;
+  }
+
+  void beginConnectionEpoch(const RealtimeDataSnapshot::ConnectionEpoch epoch)
+  {
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    this->feedback_snapshot = RealtimeDataSnapshot{};
+    this->feedback_snapshot.connection_epoch = epoch;
+  }
+
+  RealtimeDataSnapshot getFeedback() const
+  {
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    return this->feedback_snapshot;
   }
 };
 
@@ -364,10 +384,10 @@ TEST(ServoControlSession, InitialServoJDiscontinuityNeverReachesTcpAndFaultStops
     "Initial ServoJ target is too far from the current joint position", violation.message);
 }
 
-TEST(ServoControlSession, InitialCommandRejectsMissingStaleAndWrongEpochFeedback)
+TEST(ServoControlSession, InitialCommandRejectsUnavailableOrInvalidFeedback)
 {
-  enum class Case {MISSING, STALE, WRONG_EPOCH};
-  for (const auto test_case : {Case::MISSING, Case::STALE, Case::WRONG_EPOCH}) {
+  enum class Case {MISSING, STALE, WRONG_EPOCH, NON_FINITE};
+  for (const auto test_case : {Case::MISSING, Case::STALE, Case::WRONG_EPOCH, Case::NON_FINITE}) {
     SessionFixture fixture;
     auto options = quietOptions();
     options.send_period = 5ms;
@@ -379,10 +399,13 @@ TEST(ServoControlSession, InitialCommandRejectsMissingStaleAndWrongEpochFeedback
     if (test_case == Case::STALE) {
       fixture.updateFeedback(
         {{0.0, 0.0, 0.2, 0.0}},
-        ServoFeedbackState::Clock::now() - 20ms);
+        RealtimeDataSnapshot::Clock::now() - 20ms);
     } else if (test_case == Case::WRONG_EPOCH) {
-      fixture.feedback_state->beginConnectionEpoch(SessionFixture::CONNECTION_EPOCH + 1);
+      fixture.beginConnectionEpoch(SessionFixture::CONNECTION_EPOCH + 1);
       fixture.updateFeedback({{0.0, 0.0, 0.2, 0.0}});
+    } else if (test_case == Case::NON_FINITE) {
+      fixture.updateFeedback(
+        {{0.0, std::numeric_limits<double>::quiet_NaN(), 0.2, 0.0}});
     }
     ASSERT_TRUE(
       session->updateServoJTarget(started.lease_id, {{0.0, 0.0, 0.2, 0.0}}));
@@ -664,9 +687,11 @@ TEST(ServoControlSession, StaleStopCompletionCannotReleaseLeaseAcquiredDuringStr
     });
   auto safety_state = std::make_shared<ServoSafetyViolationState>();
   auto operational_state = std::make_shared<ServoOperationalErrorState>();
-  auto feedback_state = std::make_shared<ServoFeedbackState>(1);
+  RealtimeDataSnapshot feedback_snapshot;
+  feedback_snapshot.connection_epoch = 1;
   ServoControlSession session(
-    manager, commander, strategy, safety_state, operational_state, feedback_state,
+    manager, commander, strategy, safety_state, operational_state,
+    [&feedback_snapshot]() {return feedback_snapshot;},
     quietOptions());
   const auto old = session.start();
   ASSERT_TRUE(old.success) << old.message;

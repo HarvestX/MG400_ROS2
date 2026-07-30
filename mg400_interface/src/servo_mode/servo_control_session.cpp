@@ -90,15 +90,15 @@ ServoControlSession::ServoControlSession(
   ServoStopStrategy::SharedPtr stop_strategy,
   SafetyViolationState::SharedPtr safety_violation_state,
   OperationalErrorState::SharedPtr operational_error_state,
-  FeedbackState::SharedPtr feedback_state,
+  FeedbackReader feedback_reader,
   const Options & options)
 : control_state_manager_(std::move(control_state_manager)),
   motion_commander_(std::move(motion_commander)),
   stop_strategy_(std::move(stop_strategy)),
   safety_violation_state_(std::move(safety_violation_state)),
   operational_error_state_(std::move(operational_error_state)),
-  feedback_state_(std::move(feedback_state)),
-  connection_epoch_(this->feedback_state_ ? this->feedback_state_->connectionEpoch() : 0),
+  feedback_reader_(std::move(feedback_reader)),
+  connection_epoch_(0),
   options_(options),
   state_(State::IDLE),
   lease_id_(ControlStateManager::NO_LEASE),
@@ -126,8 +126,12 @@ ServoControlSession::ServoControlSession(
   if (!this->operational_error_state_) {
     throw std::invalid_argument("ServoControlSession requires an operational error state");
   }
-  if (!this->feedback_state_) {
-    throw std::invalid_argument("ServoControlSession requires a feedback state");
+  if (!this->feedback_reader_) {
+    throw std::invalid_argument("ServoControlSession requires a Realtime Feedback reader");
+  }
+  this->connection_epoch_ = this->feedback_reader_().connection_epoch;
+  if (this->connection_epoch_ == 0) {
+    throw std::invalid_argument("ServoControlSession requires an active feedback connection epoch");
   }
   if (this->options_.send_period <= std::chrono::nanoseconds::zero() ||
     this->options_.target_watchdog_timeout <= std::chrono::nanoseconds::zero() ||
@@ -394,9 +398,9 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
   }
 
   if (!has_previous_successful_command) {
-    const auto feedback = this->feedback_state_->getSnapshot();
+    const auto feedback = this->feedback_reader_();
     const auto now = Clock::now();
-    const bool received_after_start = feedback.has_feedback && feedback.received_at >= started_at;
+    const bool received_after_start = feedback.has_data && feedback.received_at >= started_at;
     if (!received_after_start ||
       !feedback.isFresh(this->connection_epoch_, this->options_.feedback_timeout, now))
     {
@@ -405,13 +409,23 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
         "Realtime Feedback is unavailable or stale for the initial Servo command");
     }
 
+    const auto current_joints = feedback.jointAnglesRad();
+    const bool finite_feedback = std::all_of(
+      current_joints.begin(), current_joints.end(),
+      [](const double value) {return std::isfinite(value);});
+    if (!finite_feedback) {
+      return this->rejectUnsafeSend(
+        ServoSafetyViolationCode::REALTIME_FEEDBACK_UNAVAILABLE,
+        "Realtime Feedback contains a non-finite joint position");
+    }
+
     std::array<double, 4> differences;
     for (std::size_t index = 0; index < 3; ++index) {
-      differences[index] = std::abs(target[index] - feedback.joint_angles_rad[index]);
+      differences[index] = std::abs(target[index] - current_joints[index]);
     }
     // The canonical MG400 constraint checker normalizes J4; J1-J3 remain
     // finite mechanical axes and therefore use an unwrapped difference.
-    differences[3] = shortestAngleDistance(target[3], feedback.joint_angles_rad[3]);
+    differences[3] = shortestAngleDistance(target[3], current_joints[3]);
 
     bool discontinuous = false;
     for (double difference : differences) {

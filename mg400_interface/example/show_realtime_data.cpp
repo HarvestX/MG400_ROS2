@@ -42,11 +42,12 @@ int main(int argc, char ** argv)
   }
 
   while (true) {
-    auto data = mg400_interface::RealTimeData();
+    const auto snapshot = rt_tcp_if->getLatestRealtimeData();
 
-    if (!rt_tcp_if->getRealtimeData(data)) {
+    if (!snapshot.has_data) {
       continue;
     }
+    const auto & data = snapshot.data;
 
     auto tmp = std::system("clear");
     (void)tmp;  // for compiler warning

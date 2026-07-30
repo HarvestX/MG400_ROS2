@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -28,8 +29,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
-#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
+#include "mg400_interface/tcp_interface/realtime_data_snapshot.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
 
@@ -49,12 +50,9 @@ private:
   using Pose = geometry_msgs::msg::Pose;
   const uint16_t PORT_ = 30004;
 
-  std::mutex mutex_current_joints_;
-  std::mutex mutex_rt_data_;
+  mutable std::mutex mutex_realtime_data_;
   std::mutex mutex_realtime_data_callback_;
-  std::array<double, 4> current_joints_;
-  std::shared_ptr<RealTimeData> rt_data_;
-  ServoFeedbackState::SharedPtr servo_feedback_state_;
+  RealtimeDataSnapshot realtime_data_snapshot_;
   RealtimeDataCallback realtime_data_callback_;
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
@@ -69,18 +67,19 @@ public:
 
   static rclcpp::Logger getLogger();
   bool isConnected();
-  bool isActive();
+  bool isActive() const;
 
-  void getCurrentJointStates(std::array<double, 4> &);
-  void getCurrentEndPose(Pose &);
-  bool getRealtimeData(RealTimeData &);
-  bool getRobotMode(uint64_t &);
-  bool isRobotMode(const uint64_t &);
-  ServoFeedbackState::SharedPtr getServoFeedbackStateShared() const noexcept;
+  bool getCurrentJointStates(std::array<double, 4> &) const;
+  bool getCurrentEndPose(Pose &) const;
+  RealtimeDataSnapshot getLatestRealtimeData() const;
+  bool getRobotMode(uint64_t &) const;
+  bool isRobotMode(const uint64_t &) const;
   void setRealtimeDataCallback(RealtimeDataCallback callback);
   void disConnect();
 
 private:
+  void beginConnectionEpoch();
+  void invalidateRealtimeData();
   void recvData();
 };
 }  // namespace mg400_interface

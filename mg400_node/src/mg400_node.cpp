@@ -118,7 +118,7 @@ void MG400Node::handleAutoConfigure()
   }
 }
 
-CallbackReturn MG400Node::on_configure(const State &)
+CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 {
   if (!this->loadAndValidateServoParameters()) {
     return CallbackReturn::FAILURE;
@@ -200,7 +200,7 @@ CallbackReturn MG400Node::on_configure(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_activate(const State &)
+CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 {
   this->connect_timer_.reset();
 
@@ -230,7 +230,7 @@ CallbackReturn MG400Node::on_activate(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_deactivate(const State &)
+CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 {
   if (!this->stopAndDestroyServoSession("Lifecycle deactivate")) {
     RCLCPP_ERROR(
@@ -257,7 +257,7 @@ CallbackReturn MG400Node::on_deactivate(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_cleanup(const State &)
+CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
 {
   if (!this->stopAndDestroyServoSession("Lifecycle cleanup")) {
     return CallbackReturn::FAILURE;
@@ -273,7 +273,7 @@ CallbackReturn MG400Node::on_cleanup(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_shutdown(const State &)
+CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
 {
   if (!this->stopAndDestroyServoSession("Lifecycle shutdown")) {
     return CallbackReturn::FAILURE;
@@ -289,7 +289,7 @@ CallbackReturn MG400Node::on_shutdown(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_error(const State &)
+CallbackReturn MG400Node::on_error(const State & /*previous_state*/)
 {
   if (!this->stopAndDestroyServoSession("Lifecycle error")) {
     return CallbackReturn::FAILURE;
@@ -384,10 +384,10 @@ void MG400Node::onErrorTimer()
         ss << "\t" << message << std::endl;
       }
     }
-    RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
+    RCLCPP_ERROR(this->get_logger(), "%s", ss.str().c_str());
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->get_logger(), ex.what());
+    RCLCPP_ERROR(this->get_logger(), "%s", ex.what());
     msg->controller.ids.emplace_back(-1);
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::out_of_range & ex) {
@@ -559,7 +559,13 @@ bool MG400Node::createServoSession()
       std::move(stop_strategy),
       this->servo_control_ros_interface_->getSafetyViolationStateShared(),
       this->servo_control_ros_interface_->getOperationalErrorStateShared(),
-      this->interface_->realtime_tcp_interface->getServoFeedbackStateShared(),
+      [weak_interface]() {
+        const auto interface = weak_interface.lock();
+        if (!interface || !interface->realtime_tcp_interface) {
+          return mg400_interface::RealtimeDataSnapshot{};
+        }
+        return interface->realtime_tcp_interface->getLatestRealtimeData();
+      },
       this->servo_session_options_);
     this->servo_control_ros_interface_->installSession(std::move(session));
     return true;

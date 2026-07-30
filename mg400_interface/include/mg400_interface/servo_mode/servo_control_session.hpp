@@ -19,6 +19,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -26,10 +27,10 @@
 
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/control_state_manager.hpp"
-#include "mg400_interface/servo_mode/servo_feedback_state.hpp"
 #include "mg400_interface/servo_mode/servo_operational_error.hpp"
 #include "mg400_interface/servo_mode/servo_safety_violation.hpp"
 #include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
+#include "mg400_interface/tcp_interface/realtime_data_snapshot.hpp"
 
 namespace mg400_interface
 {
@@ -38,9 +39,9 @@ namespace mg400_interface
 class ServoControlSession
 {
 public:
-  using Clock = std::chrono::steady_clock;
+  using Clock = RealtimeDataSnapshot::Clock;
   using LeaseId = ControlStateManager::LeaseId;
-  using FeedbackState = ServoFeedbackState;
+  using FeedbackReader = std::function<RealtimeDataSnapshot()>;
   using OperationalErrorState = ServoOperationalErrorState;
   using SafetyViolationState = ServoSafetyViolationState;
 
@@ -81,7 +82,7 @@ public:
     ServoStopStrategy::SharedPtr stop_strategy,
     SafetyViolationState::SharedPtr safety_violation_state,
     OperationalErrorState::SharedPtr operational_error_state,
-    FeedbackState::SharedPtr feedback_state,
+    FeedbackReader feedback_reader,
     const Options & options);
   ~ServoControlSession();
 
@@ -105,8 +106,8 @@ private:
   ServoStopStrategy::SharedPtr stop_strategy_;
   SafetyViolationState::SharedPtr safety_violation_state_;
   OperationalErrorState::SharedPtr operational_error_state_;
-  FeedbackState::SharedPtr feedback_state_;
-  FeedbackState::ConnectionEpoch connection_epoch_;
+  FeedbackReader feedback_reader_;
+  RealtimeDataSnapshot::ConnectionEpoch connection_epoch_;
   Options options_;
 
   mutable std::mutex mutex_;

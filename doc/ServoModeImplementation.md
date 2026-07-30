@@ -63,10 +63,14 @@ stop/destruction before TCP dependencies are destroyed.
 
 ## Concurrency model
 
-`ControlStateManager`, `ServoControlSession`, feedback state, and error latches
-protect their own state. The ROS interface serializes Servo-state transitions
-and rejects target callbacks while a transition is in progress. TCP calls and
-stop strategies run without holding the session state mutex.
+`ControlStateManager`, `ServoControlSession`, the Realtime TCP snapshot, and
+error latches protect their own state. The Realtime TCP interface atomically
+stores the latest packet together with its steady-clock receive time and
+connection epoch. `ServoControlSession` reads that snapshot through an injected
+reader when validating the initial command. The ROS interface serializes
+Servo-state transitions and rejects target callbacks while a transition is in
+progress. TCP calls and stop strategies run without holding the session state
+mutex.
 
 The important ordering rule is:
 
@@ -88,6 +92,7 @@ snapshot whenever either state changes.
 | Test | Coverage |
 | --- | --- |
 | `test_control_state_manager.cpp` | State transitions, leases, RobotMode, and regular-motion exclusion |
+| `test_realtime_data.cpp` | Packet validation, SI-unit joint conversion, and snapshot freshness |
 | `test_servo_control_session.cpp` | Target validation, latest-only transmission, feedback checks, watchdog, stop retry, and stale epochs |
 | `test_servo_control_ros_interface.cpp` | ROS service contract, target admission, lifecycle behavior, QoS, and error publication |
 | `test_motion_commander.cpp` | TCP command formatting |

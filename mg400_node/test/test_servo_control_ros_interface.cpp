@@ -34,6 +34,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 
+#include "mg400_interface/command_utils.hpp"
 #include "mg400_interface/commander/motion_commander.hpp"
 #include "mg400_interface/servo_mode/servo_stop_strategy.hpp"
 #include "mg400_node/mg400_node.hpp"
@@ -44,8 +45,8 @@ namespace
 
 using namespace std::chrono_literals;  // NOLINT
 using Manager = mg400_interface::ControlStateManager;
+using RealtimeDataSnapshot = mg400_interface::RealtimeDataSnapshot;
 using Session = mg400_interface::ServoControlSession;
-using FeedbackState = mg400_interface::ServoFeedbackState;
 using OperationalCode = mg400_interface::ServoOperationalErrorCode;
 using OperationalState = mg400_interface::ServoOperationalErrorState;
 using SafetyCode = mg400_interface::ServoSafetyViolationCode;
@@ -171,7 +172,7 @@ Session::Options sessionOptions()
 
 struct Fixture
 {
-  static constexpr FeedbackState::ConnectionEpoch CONNECTION_EPOCH = 41;
+  static constexpr RealtimeDataSnapshot::ConnectionEpoch CONNECTION_EPOCH = 41;
 
   std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node{makeNode()};
   Manager::SharedPtr manager{std::make_shared<Manager>()};
@@ -180,8 +181,8 @@ struct Fixture
     std::make_shared<mg400_interface::MotionCommander>(&tcp)};
   std::shared_ptr<SequenceStopStrategy> stop_strategy{
     std::make_shared<SequenceStopStrategy>()};
-  FeedbackState::SharedPtr feedback_state{
-    std::make_shared<FeedbackState>(CONNECTION_EPOCH)};
+  mutable std::mutex feedback_mutex;
+  RealtimeDataSnapshot feedback_snapshot;
   SafetyState::SharedPtr safety_state{std::make_shared<SafetyState>()};
   OperationalState::SharedPtr operational_state{std::make_shared<OperationalState>()};
   std::shared_ptr<Session> session;
@@ -190,18 +191,38 @@ struct Fixture
   Fixture()
   {
     manager->updateRobotStatus(true, RobotMode::ENABLE);
+    feedback_snapshot.connection_epoch = CONNECTION_EPOCH;
     ros_interface = std::make_unique<RosInterface>(
       *node, manager, safety_state, operational_state);
     session = std::make_shared<Session>(
       manager, commander, stop_strategy,
       ros_interface->getSafetyViolationStateShared(),
-      ros_interface->getOperationalErrorStateShared(), feedback_state, sessionOptions());
+      ros_interface->getOperationalErrorStateShared(),
+      [this]() {return this->getFeedback();}, sessionOptions());
     ros_interface->installSession(session);
   }
 
   void updateFeedback(const std::array<double, 4> & joints)
   {
-    feedback_state->update(joints);
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    for (std::size_t index = 0; index < joints.size(); ++index) {
+      this->feedback_snapshot.data.q_actual[index] = joints[index] * mg400_interface::TO_DEGREE;
+    }
+    this->feedback_snapshot.received_at = RealtimeDataSnapshot::Clock::now();
+    this->feedback_snapshot.has_data = true;
+  }
+
+  void beginConnectionEpoch(const RealtimeDataSnapshot::ConnectionEpoch epoch)
+  {
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    this->feedback_snapshot = RealtimeDataSnapshot{};
+    this->feedback_snapshot.connection_epoch = epoch;
+  }
+
+  RealtimeDataSnapshot getFeedback() const
+  {
+    std::lock_guard<std::mutex> lock(this->feedback_mutex);
+    return this->feedback_snapshot;
   }
 
   ~Fixture()
@@ -406,11 +427,12 @@ TEST(ServoControlRosInterface, RetiredConnectionEpochCannotAffectNewLease)
   EXPECT_FALSE(fixture.ros_interface->hasSession());
   EXPECT_EQ(0U, fixture.stop_strategy->callCount());
 
-  fixture.feedback_state->beginConnectionEpoch(Fixture::CONNECTION_EPOCH + 1);
+  fixture.beginConnectionEpoch(Fixture::CONNECTION_EPOCH + 1);
   auto new_session = std::make_shared<Session>(
     fixture.manager, fixture.commander, fixture.stop_strategy,
     fixture.ros_interface->getSafetyViolationStateShared(),
-    fixture.ros_interface->getOperationalErrorStateShared(), fixture.feedback_state,
+    fixture.ros_interface->getOperationalErrorStateShared(),
+    [&fixture]() {return fixture.getFeedback();},
     sessionOptions());
   fixture.session = new_session;
   fixture.ros_interface->installSession(new_session);
@@ -453,10 +475,11 @@ TEST(ServoControlRosInterface, PublishesErrorFieldsImmediatelyAndRearmsBothLatch
     std::make_shared<OperationalState>());
   auto safety_state = ros_interface.getSafetyViolationStateShared();
   auto operational_state = ros_interface.getOperationalErrorStateShared();
-  auto feedback_state = std::make_shared<FeedbackState>(61);
+  RealtimeDataSnapshot feedback_snapshot;
+  feedback_snapshot.connection_epoch = 61;
   auto session = std::make_shared<Session>(
     manager, commander, stop_strategy, safety_state, operational_state,
-    feedback_state, sessionOptions());
+    [&feedback_snapshot]() {return feedback_snapshot;}, sessionOptions());
   ros_interface.installSession(session);
 
   auto subscriber_node = std::make_shared<rclcpp::Node>("servo_error_subscriber");
@@ -618,7 +641,7 @@ TEST(ServoControlRosInterface, ErrorLatchesSurviveStopAndSessionReplacement)
   auto replacement = std::make_shared<Session>(
     fixture.manager, fixture.commander, fixture.stop_strategy,
     safety_state, operational_state,
-    fixture.feedback_state, sessionOptions());
+    [&fixture]() {return fixture.getFeedback();}, sessionOptions());
   fixture.session = replacement;
   fixture.ros_interface->installSession(replacement);
 
