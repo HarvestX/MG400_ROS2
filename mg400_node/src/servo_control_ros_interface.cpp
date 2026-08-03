@@ -448,7 +448,9 @@ void ServoControlRosInterface::handleServoJTarget(
   const std::array<double, 4> target{{
     message->joint_angles[0], message->joint_angles[1],
     message->joint_angles[2], message->joint_angles[3]}};
-  static_cast<void>(session->updateServoJTarget(message->lease_id, target));
+  if (!session->updateServoJTarget(message->lease_id, target)) {
+    this->rejectRosTarget("ServoJ target rejected by the active Session");
+  }
 }
 
 void ServoControlRosInterface::rejectRosTarget(const std::string & reason)

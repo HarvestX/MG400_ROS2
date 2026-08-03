@@ -136,9 +136,10 @@ ServoControlSession::ServoControlSession(
   if (this->options_.send_period <= std::chrono::nanoseconds::zero() ||
     this->options_.target_watchdog_timeout <= std::chrono::nanoseconds::zero() ||
     this->options_.stop_confirmation_timeout <= std::chrono::nanoseconds::zero() ||
-    this->options_.feedback_timeout <= std::chrono::nanoseconds::zero())
+    this->options_.feedback_timeout <= std::chrono::nanoseconds::zero() ||
+    this->options_.target_queue_capacity == 0)
   {
-    throw std::invalid_argument("ServoControlSession durations must be positive");
+    throw std::invalid_argument("ServoControlSession durations and queue capacity must be positive");
   }
   const std::array<double, 2> thresholds{{
     this->options_.max_initial_joint_distance_rad,
@@ -195,6 +196,7 @@ ServoControlSession::Result ServoControlSession::start()
     std::lock_guard<std::mutex> lock(this->mutex_);
     this->state_ = State::ACTIVE;
     this->lease_id_ = acquisition.lease_id;
+    this->pending_targets_.clear();
     this->has_target_ = false;
     this->started_at_ = now;
     this->has_target_update_time_ = false;
@@ -247,6 +249,10 @@ bool ServoControlSession::updateServoJTarget(
       this->cv_.notify_all();
       return false;
     }
+    if (this->pending_targets_.size() >= this->options_.target_queue_capacity) {
+      return false;
+    }
+    this->pending_targets_.push_back(joint_angles);
     this->target_ = joint_angles;
     this->has_target_ = true;
     this->target_updated_at_ = now;
@@ -359,7 +365,7 @@ void ServoControlSession::workerLoopImpl()
     }
 
     if (send_due) {
-      if (!this->sendLatestTarget(lease_id)) {
+      if (!this->sendNextTarget(lease_id)) {
         static_cast<void>(this->performStop(lease_id));
         return;
       }
@@ -367,11 +373,12 @@ void ServoControlSession::workerLoopImpl()
   }
 }
 
-bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
+bool ServoControlSession::sendNextTarget(const LeaseId lease_id)
 {
   std::array<double, 4> target;
   std::array<double, 4> previous_target;
   bool has_target = false;
+  bool has_queued_target = false;
   bool has_previous_successful_command = false;
   Clock::time_point started_at;
   {
@@ -382,7 +389,12 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
       return true;
     }
     has_target = this->has_target_;
-    target = this->target_;
+    has_queued_target = !this->pending_targets_.empty();
+    if (has_queued_target) {
+      target = this->pending_targets_.front();
+    } else if (has_target) {
+      target = this->target_;
+    }
     has_previous_successful_command = this->has_previous_successful_command_;
     previous_target = this->previous_successful_target_;
     started_at = this->started_at_;
@@ -482,6 +494,17 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
 
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
+    if (this->worker_should_exit_ || this->state_ != State::ACTIVE ||
+      this->lease_id_ != lease_id)
+    {
+      return true;
+    }
+    if (has_queued_target) {
+      if (this->pending_targets_.empty()) {
+        return true;
+      }
+      this->pending_targets_.pop_front();
+    }
     this->has_previous_successful_command_ = true;
     this->previous_successful_target_ = target;
     // Advance from the completion time so a delayed send cannot be followed by
@@ -558,6 +581,7 @@ ServoControlSession::Result ServoControlSession::performStop(const LeaseId lease
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
     this->state_ = State::STOPPING;
+    this->pending_targets_.clear();
     this->has_target_ = false;
     this->worker_should_exit_ = true;
   }
@@ -646,6 +670,7 @@ ServoControlSession::Result ServoControlSession::performStop(const LeaseId lease
     std::lock_guard<std::mutex> lock(this->mutex_);
     this->state_ = State::IDLE;
     this->lease_id_ = ControlStateManager::NO_LEASE;
+    this->pending_targets_.clear();
     this->has_target_ = false;
     this->has_target_update_time_ = false;
   }

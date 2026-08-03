@@ -19,6 +19,8 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -61,6 +63,7 @@ public:
     std::chrono::nanoseconds feedback_timeout = std::chrono::milliseconds(100);
     double max_initial_joint_distance_rad = 0.0872665;
     double max_joint_step_rad = 0.0523599;
+    std::size_t target_queue_capacity = 32;
   };
 
   struct Result
@@ -92,7 +95,7 @@ public:
   /// Acquire a fresh ServoJ lease.
   Result start();
 
-  /// Store a latest-only SI-unit target. No TCP operation occurs in these calls.
+  /// Append an SI-unit target to the bounded FIFO. No TCP operation occurs here.
   bool updateServoJTarget(LeaseId lease_id, const std::array<double, 4> & joint_angles);
 
   /// Safely stop, or retry a failed stop, using this session's active lease.
@@ -114,6 +117,7 @@ private:
   std::condition_variable cv_;
   State state_;
   LeaseId lease_id_;
+  std::deque<std::array<double, 4>> pending_targets_;
   bool has_target_;
   std::array<double, 4> target_;
   Clock::time_point started_at_;
@@ -131,7 +135,7 @@ private:
 
   void workerLoop();
   void workerLoopImpl();
-  bool sendLatestTarget(LeaseId lease_id);
+  bool sendNextTarget(LeaseId lease_id);
   bool activeLeaseAcceptsTarget(LeaseId lease_id);
   bool rejectUnsafeTarget(const ServoSafetyViolation & violation, LeaseId lease_id);
   bool rejectUnsafeSend(

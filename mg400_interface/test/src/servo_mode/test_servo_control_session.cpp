@@ -316,7 +316,7 @@ ServoControlSession::Options quietOptions()
   return options;
 }
 
-TEST(ServoControlSession, LatestOnlyTargetAdmissionRejectsWrongLease)
+TEST(ServoControlSession, TargetQueueAdmissionRejectsWrongLease)
 {
   SessionFixture fixture;
   auto session = fixture.makeSession(quietOptions());
@@ -381,7 +381,7 @@ TEST(ServoControlSession, KinematicViolationIsNotBufferedAndUsesFaultStopPath)
   }
 }
 
-TEST(ServoControlSession, SendsOnlyTheLatestTargetAtThePeriodicDeadline)
+TEST(ServoControlSession, SendsQueuedTargetsInArrivalOrder)
 {
   SessionFixture fixture;
   auto options = quietOptions();
@@ -390,16 +390,77 @@ TEST(ServoControlSession, SendsOnlyTheLatestTargetAtThePeriodicDeadline)
   const auto started = session->start();
   ASSERT_TRUE(started.success) << started.message;
   const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
-  const std::array<double, 4> latest{{0.01, 0.01, 0.21, 0.01}};
-  fixture.updateFeedback(latest);
+  const std::array<double, 4> second{{0.01, 0.01, 0.21, 0.01}};
+  fixture.updateFeedback(first);
   ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
-  ASSERT_TRUE(
-    session->updateServoJTarget(started.lease_id, latest));
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, second));
 
-  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
   const auto commands = fixture.tcp.commands();
-  ASSERT_FALSE(commands.empty());
-  EXPECT_EQ("ServoJ(0.573,0.573,12.032,0.573)", commands.front());
+  ASSERT_EQ(2U, commands.size());
+  EXPECT_EQ("ServoJ(0.000,0.000,11.459,0.000)", commands[0]);
+  EXPECT_EQ("ServoJ(0.573,0.573,12.032,0.573)", commands[1]);
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, QueuesTargetsReceivedWhileWaitingForMotionResponse)
+{
+  SessionFixture fixture;
+  fixture.tcp.blockFirstResponse();
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  const std::array<double, 4> second{{0.01, 0.0, 0.21, 0.0}};
+  const std::array<double, 4> third{{0.02, 0.0, 0.22, 0.0}};
+  fixture.updateFeedback(first);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, second));
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, third));
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  fixture.tcp.releaseFirstResponse();
+
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(3));
+  const auto commands = fixture.tcp.commands();
+  ASSERT_EQ(3U, commands.size());
+  EXPECT_EQ("ServoJ(0.000,0.000,11.459,0.000)", commands[0]);
+  EXPECT_EQ("ServoJ(0.573,0.000,12.032,0.000)", commands[1]);
+  EXPECT_EQ("ServoJ(1.146,0.000,12.605,0.000)", commands[2]);
+  EXPECT_TRUE(session->stop().success);
+}
+
+TEST(ServoControlSession, FullTargetQueueRejectsNewestTarget)
+{
+  SessionFixture fixture;
+  fixture.tcp.blockFirstResponse();
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  options.target_queue_capacity = 2;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> first{{0.0, 0.0, 0.2, 0.0}};
+  const std::array<double, 4> second{{0.01, 0.0, 0.21, 0.0}};
+  const std::array<double, 4> rejected{{0.02, 0.0, 0.22, 0.0}};
+  fixture.updateFeedback(first);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, first));
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(1));
+
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, second));
+  EXPECT_FALSE(session->updateServoJTarget(started.lease_id, rejected));
+  fixture.tcp.releaseFirstResponse();
+
+  ASSERT_TRUE(fixture.tcp.waitForCommandCount(2));
+  const auto commands = fixture.tcp.commands();
+  ASSERT_EQ(2U, commands.size());
+  EXPECT_EQ("ServoJ(0.000,0.000,11.459,0.000)", commands[0]);
+  EXPECT_EQ("ServoJ(0.573,0.000,12.032,0.000)", commands[1]);
   EXPECT_TRUE(session->stop().success);
 }
 
@@ -487,7 +548,7 @@ TEST(ServoControlSession, InitialCommandRejectsUnavailableOrInvalidFeedback)
   }
 }
 
-TEST(ServoControlSession, SubsequentServoJComparesLatestTargetWithLastTcpSuccess)
+TEST(ServoControlSession, SubsequentServoJComparesQueuedTargetWithLastTcpSuccess)
 {
   SessionFixture fixture;
   auto options = quietOptions();
@@ -507,14 +568,14 @@ TEST(ServoControlSession, SubsequentServoJComparesLatestTargetWithLastTcpSuccess
   ASSERT_TRUE(
     session->updateServoJTarget(started.lease_id, {{0.01, 0.0, 0.2, 0.0}}));
   ASSERT_TRUE(
-    session->updateServoJTarget(started.lease_id, {{0.02001, 0.0, 0.2, 0.0}}));
+    session->updateServoJTarget(started.lease_id, {{0.03001, 0.0, 0.2, 0.0}}));
 
   ASSERT_TRUE(
     waitUntil(
       [&session]() {
         return session->getSnapshot().state == ServoControlSession::State::IDLE;
       }));
-  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  EXPECT_EQ(2U, fixture.tcp.commands().size());
   EXPECT_EQ(
     ServoSafetyViolationCode::SERVO_J_COMMAND_DISCONTINUITY,
     fixture.safety_state->getSnapshot().code);
