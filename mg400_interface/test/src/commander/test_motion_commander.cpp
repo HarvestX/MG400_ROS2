@@ -63,11 +63,17 @@ protected:
   MockTcpInterface mock;
   void SetUp() override
   {
+    ON_CALL(this->mock, sendCommand(_)).WillByDefault(
+      [this](const std::string & command) {this->mock.last_command = command;});
     this->commander =
       std::make_unique<mg400_interface::MotionCommander>(&this->mock);
   }
 
-  void TearDown() override {}
+  void TearDown() override
+  {
+    EXPECT_EQ(1U, this->mock.receive_count);
+    EXPECT_EQ(std::chrono::milliseconds(100), this->mock.last_timeout);
+  }
 };
 
 TEST_F(TestMotionCommander, MovJ) {
@@ -126,6 +132,76 @@ TEST_F(TestMotionCommander, ServoJUsesDegreesWithoutOptionalArguments)
     mock, sendCommand(
       StrEq("ServoJ(90.000,-90.000,180.000,0.000)"))).Times(1);
   commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
+}
+
+TEST_F(TestMotionCommander, NormalizesDecimalNegativeZeroForMotionCommands)
+{
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("MovJ(0.000,-0.001,0.000,0.000)"))).Times(1);
+  commander->movJ(
+    -0.0000004, -0.0000006, -0.0,
+    -0.0004 * mg400_interface::TO_RADIAN);
+}
+
+TEST(CommandUtils, NormalizesOnlyNegativeZeroNumericTokens)
+{
+  EXPECT_EQ(
+    "Command(0.000,0.000000,0,-0.001,label-0.000)",
+    mg400_interface::normalizeNegativeZero(
+      "Command(-0.000,-0.000000,-0,-0.001,label-0.000)"));
+}
+
+TEST_F(TestMotionCommander, RejectsControllerErrorWithRawResponse)
+{
+  const std::string response =
+    "-10000,{},ServoJ(90.000,-90.000,180.000,0.000);";
+  mock.next_response = response;
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("ServoJ(90.000,-90.000,180.000,0.000)"))).Times(1);
+
+  try {
+    commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
+    FAIL() << "Expected controller error";
+  } catch (const std::runtime_error & error) {
+    EXPECT_THAT(error.what(), ::testing::HasSubstr("ErrorID=-10000"));
+    EXPECT_THAT(error.what(), ::testing::HasSubstr(response));
+  }
+}
+
+TEST_F(TestMotionCommander, RejectsInvalidResponseWithRawResponse)
+{
+  const std::string response = "invalid response;";
+  mock.next_response = response;
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("ServoJ(90.000,-90.000,180.000,0.000)"))).Times(1);
+
+  try {
+    commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
+    FAIL() << "Expected invalid response error";
+  } catch (const std::runtime_error & error) {
+    EXPECT_THAT(error.what(), ::testing::HasSubstr("Invalid Motion TCP response"));
+    EXPECT_THAT(error.what(), ::testing::HasSubstr(response));
+  }
+}
+
+TEST_F(TestMotionCommander, RejectsEchoMismatchWithRawResponse)
+{
+  const std::string response = "0,{},Sync();";
+  mock.next_response = response;
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("ServoJ(90.000,-90.000,180.000,0.000)"))).Times(1);
+
+  try {
+    commander->servoJ(M_PI_2, -M_PI_2, M_PI, 0.0);
+    FAIL() << "Expected response mismatch";
+  } catch (const std::runtime_error & error) {
+    EXPECT_THAT(error.what(), ::testing::HasSubstr("command mismatch"));
+    EXPECT_THAT(error.what(), ::testing::HasSubstr(response));
+  }
 }
 
 TEST_F(TestMotionCommander, MovLIO) {
@@ -256,4 +332,86 @@ TEST_F(TestMotionCommander, RelJointMovJ2) {
         "RelJointMovJ(90.000,90.000,90.000,0.000,SpeedJ=100,AccJ=50,CP=10)"))).Times(1);
   commander->relJointMovJ(
     M_PI_2, M_PI_2, M_PI_2, 0, 100, 50, 10);
+}
+
+namespace
+{
+
+class RecordingTcpInterface : public mg400_interface::MotionTcpInterfaceBase
+{
+public:
+  void sendCommand(const std::string & command) override
+  {
+    {
+      std::lock_guard<std::mutex> lock(this->mutex_);
+      this->last_command_ = command;
+      this->events_.push_back("send:" + command);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  std::string recvResponse(std::chrono::nanoseconds /*timeout*/) override
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->events_.push_back("recv:" + this->last_command_);
+    return "0,{}," + this->last_command_ + ";";
+  }
+
+  std::vector<std::string> events() const
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    return this->events_;
+  }
+
+private:
+  mutable std::mutex mutex_;
+  std::string last_command_;
+  std::vector<std::string> events_;
+};
+
+}  // namespace
+
+TEST(MotionCommander, ConcurrentCommandsKeepSendAndReceivePaired)
+{
+  RecordingTcpInterface tcp;
+  mg400_interface::MotionCommander commander(&tcp);
+  std::atomic<bool> start{false};
+  std::exception_ptr first_error;
+  std::exception_ptr second_error;
+
+  std::thread first(
+    [&]() {
+      while (!start.load()) {
+        std::this_thread::yield();
+      }
+      try {
+        commander.sync();
+      } catch (...) {
+        first_error = std::current_exception();
+      }
+    });
+  std::thread second(
+    [&]() {
+      while (!start.load()) {
+        std::this_thread::yield();
+      }
+      try {
+        commander.moveJog(mg400_msgs::msg::MoveJog::J1_POSITIVE);
+      } catch (...) {
+        second_error = std::current_exception();
+      }
+    });
+
+  start.store(true);
+  first.join();
+  second.join();
+
+  EXPECT_EQ(nullptr, first_error);
+  EXPECT_EQ(nullptr, second_error);
+  const auto events = tcp.events();
+  ASSERT_EQ(4U, events.size());
+  EXPECT_EQ(0U, events[0].find("send:"));
+  EXPECT_EQ("recv:" + events[0].substr(5), events[1]);
+  EXPECT_EQ(0U, events[2].find("send:"));
+  EXPECT_EQ("recv:" + events[2].substr(5), events[3]);
 }

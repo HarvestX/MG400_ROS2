@@ -165,3 +165,55 @@ TEST(ResponseParser, takeInt)
   const auto res = mg400_interface::ResponseParser::takeInt(response.ret_val);
   ASSERT_EQ(res, 1);
 }
+
+TEST(ResponseParser, ParsesEmptyReturnValueForMotionResponse)
+{
+  const std::string packet = "0,{},ServoJ(1.000,2.000,3.000,4.000);";
+  mg400_interface::DashboardResponse response{};
+
+  ASSERT_TRUE(mg400_interface::ResponseParser::parseResponse(packet, response));
+  EXPECT_EQ(0, response.error_id);
+  EXPECT_EQ("{}", response.ret_val);
+  EXPECT_EQ("ServoJ(1.000,2.000,3.000,4.000)", response.func_name);
+}
+
+TEST(ResponseParser, ParsesNonzeroErrorId)
+{
+  const std::string packet = "-10000,{},ServoJ(1.000,2.000,3.000,4.000);";
+  mg400_interface::DashboardResponse response{};
+
+  ASSERT_TRUE(mg400_interface::ResponseParser::parseResponse(packet, response));
+  EXPECT_EQ(-10000, response.error_id);
+}
+
+TEST(ResponseParser, RejectsIncompleteAndMalformedResponsesWithoutThrowing)
+{
+  const std::vector<std::string> invalid_packets{
+    "",
+    "0,",
+    "0,{},ServoJ()",
+    "not-an-error-id,{},ServoJ();",
+    "0,{,ServoJ();",
+    "0,ServoJ();",
+    "0,{},;"};
+
+  for (const auto & packet : invalid_packets) {
+    mg400_interface::DashboardResponse response{42, "stale", "stale"};
+    EXPECT_FALSE(mg400_interface::ResponseParser::parseResponse(packet, response)) << packet;
+    EXPECT_EQ(0, response.error_id);
+    EXPECT_TRUE(response.ret_val.empty());
+    EXPECT_TRUE(response.func_name.empty());
+  }
+}
+
+TEST(ResponseParser, RejectsDataAfterTerminator)
+{
+  mg400_interface::DashboardResponse response{};
+
+  EXPECT_FALSE(
+    mg400_interface::ResponseParser::parseResponse(
+      "0,{},ServoJ();0,{},Sync();", response));
+  EXPECT_FALSE(
+    mg400_interface::ResponseParser::parseResponse(
+      "0,{},ServoJ();unexpected", response));
+}

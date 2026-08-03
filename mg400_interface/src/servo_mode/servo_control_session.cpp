@@ -471,12 +471,12 @@ bool ServoControlSession::sendLatestTarget(const LeaseId lease_id)
   } catch (const std::exception & error) {
     this->reportOperationalError(
       ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED,
-      std::string("Failed to send a Servo command on the Motion TCP connection: ") + error.what());
+      std::string("Motion TCP Servo command failed: ") + error.what());
     return false;
   } catch (...) {
     this->reportOperationalError(
       ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED,
-      "Failed to send a Servo command on the Motion TCP connection");
+      "Motion TCP Servo command failed");
     return false;
   }
 

@@ -15,7 +15,9 @@
 #ifndef __MG400_INTERFACE_COMMAND_UTILS_HPP__
 #define __MG400_INTERFACE_COMMAND_UTILS_HPP__
 
+#include <cctype>
 #include <cmath>
+#include <string>
 
 namespace mg400_interface
 {
@@ -50,6 +52,40 @@ inline si_mm m2mm(const si_m val)
 inline si_m mm2m(const si_mm val)
 {
   return val * TO_M;
+}
+
+inline std::string normalizeNegativeZero(const std::string & command)
+{
+  std::string normalized = command;
+  std::size_t position = 0;
+
+  while ((position = normalized.find("-0", position)) != std::string::npos) {
+    const auto is_identifier_character = [](const char character) {
+        const auto value = static_cast<unsigned char>(character);
+        return std::isalnum(value) != 0 || character == '_' || character == '.';
+      };
+    const bool starts_numeric_token =
+      position == 0 || !is_identifier_character(normalized[position - 1]);
+
+    std::size_t end = position + 2;
+    bool is_zero = true;
+    if (end < normalized.size() && normalized[end] == '.') {
+      const auto fraction_begin = ++end;
+      while (end < normalized.size() && normalized[end] == '0') {
+        ++end;
+      }
+      is_zero = end > fraction_begin;
+    }
+    const bool ends_numeric_token =
+      end == normalized.size() || !is_identifier_character(normalized[end]);
+
+    if (starts_numeric_token && is_zero && ends_numeric_token) {
+      normalized.erase(position, 1);
+    } else {
+      position = end;
+    }
+  }
+  return normalized;
 }
 
 }  // namespace mg400_interface

@@ -14,6 +14,7 @@
 
 #include "mg400_interface/commander/response_parser.hpp"
 
+#include <cctype>
 #include <sstream>
 
 namespace mg400_interface
@@ -58,50 +59,71 @@ bool ResponseParser::parseResponse(
   const std::string & packet,
   DashboardResponse & response)
 {
-  // Remove white space
-  std::string substr;
-  std::string buf;
-  int search_mode_counter = 0;
-  for (char s : packet) {
-    switch (search_mode_counter) {
-      case 0:
-        if (s == ',') {
-          response.error_id = std::stoi(buf);
-          buf.clear();
-          // go to next search mode
-          search_mode_counter++;
-          continue;
-        }
-        break;
-      case 1:
-        if (buf.back() == '}' && s == ',') {
-          response.ret_val = buf;
-          buf.clear();
-          search_mode_counter++;
-          continue;
-        }
-        break;
-      case 2:
-        if (s == ';') {
-          response.func_name = buf;
-          return true;
-        }
-        break;
-      case 3:
-      // fall through
-      default:
-        return false;
-    }
-    if (s == '\n') {
-      continue;
-    }
-    if (s == ' ') {
-      continue;
-    }
+  response = DashboardResponse{};
 
-    buf.push_back(s);
+  std::string compact;
+  compact.reserve(packet.size());
+  for (const unsigned char character : packet) {
+    if (!std::isspace(character)) {
+      compact.push_back(static_cast<char>(character));
+    }
   }
-  return false;
+
+  const auto error_separator = compact.find(',');
+  if (error_separator == std::string::npos || error_separator == 0) {
+    return false;
+  }
+
+  int error_id = 0;
+  try {
+    std::size_t parsed_length = 0;
+    error_id = std::stoi(compact.substr(0, error_separator), &parsed_length);
+    if (parsed_length != error_separator) {
+      return false;
+    }
+  } catch (const std::exception &) {
+    return false;
+  }
+
+  const auto return_start = error_separator + 1;
+  if (return_start >= compact.size() || compact[return_start] != '{') {
+    return false;
+  }
+
+  std::size_t return_end = std::string::npos;
+  std::size_t brace_depth = 0;
+  for (std::size_t index = return_start; index < compact.size(); ++index) {
+    if (compact[index] == '{') {
+      ++brace_depth;
+    } else if (compact[index] == '}') {
+      if (brace_depth == 0) {
+        return false;
+      }
+      --brace_depth;
+      if (brace_depth == 0) {
+        return_end = index;
+        break;
+      }
+    }
+  }
+  if (return_end == std::string::npos || return_end + 1 >= compact.size() ||
+    compact[return_end + 1] != ',')
+  {
+    return false;
+  }
+
+  const auto function_start = return_end + 2;
+  const auto terminator = compact.find(';', function_start);
+  if (terminator == std::string::npos || terminator + 1 != compact.size() ||
+    terminator == function_start)
+  {
+    return false;
+  }
+
+  response.error_id = error_id;
+  response.ret_val = compact.substr(return_start, return_end - return_start + 1);
+  response.func_name = compact.substr(function_start, terminator - function_start);
+  return true;
 }
 
 size_t ResponseParser::countArrayElements(const std::string & response)

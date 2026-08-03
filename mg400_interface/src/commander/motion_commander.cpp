@@ -21,15 +21,38 @@ MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 {
 }
 
+void MotionCommander::execute(
+  const std::string & command, std::chrono::nanoseconds timeout) const
+{
+  const auto normalized_command = normalizeNegativeZero(command);
+  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
+  this->tcp_if_->sendCommand(normalized_command);
+  const auto packet = this->tcp_if_->recvResponse(timeout);
+
+  DashboardResponse response{};
+  if (!ResponseParser::parseResponse(packet, response)) {
+    throw std::runtime_error("Invalid Motion TCP response: " + packet);
+  }
+  if (response.func_name != normalized_command) {
+    throw std::runtime_error(
+            "Motion TCP response command mismatch: expected=" + normalized_command +
+            ", actual=" + response.func_name + ", raw response=" + packet);
+  }
+  if (response.error_id != 0) {
+    throw std::runtime_error(
+            normalized_command + " failed: ErrorID=" + std::to_string(response.error_id) +
+            ", raw response=" + packet);
+  }
+}
+
 void MotionCommander::servoJ(
   const si_rad j1, const si_rad j2, const si_rad j3, const si_rad j4)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf), "ServoJ(%.3lf,%.3lf,%.3lf,%.3lf)",
     rad2degree(j1), rad2degree(j2), rad2degree(j3), rad2degree(j4));
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------
@@ -37,7 +60,6 @@ void MotionCommander::movJ(
   const si_m x, const si_m y, const si_m z,
   const double r, const int8_t speed_j, const int8_t acc_j, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[200];
   snprintf(
     buf, sizeof(buf),
@@ -55,14 +77,13 @@ void MotionCommander::movJ(
   }
 
   snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), ")");
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::movL(
   const si_m x, const si_m y, const si_m z,
   const si_rad r, const int8_t speed_l, const int8_t acc_l, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -80,14 +101,13 @@ void MotionCommander::movL(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::jointMovJ(
   const si_rad j1, const si_rad j2, const si_rad j3, const si_rad j4,
   const int8_t speed_j, const int8_t acc_j, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -105,7 +125,7 @@ void MotionCommander::jointMovJ(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::movLIO(
@@ -129,7 +149,6 @@ void MotionCommander::movLIO(
   const DOStatus::_status_type & status,
   const int8_t speed_l, const int8_t acc_l, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -148,7 +167,7 @@ void MotionCommander::movLIO(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::movJIO(
@@ -170,7 +189,6 @@ void MotionCommander::movJIO(
   const DOStatus::_status_type & status,
   const int8_t speed_j, const int8_t acc_j, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -189,7 +207,7 @@ void MotionCommander::movJIO(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 /* https://github.com/Dobot-Arm/TCP-IP-CR-Python/issues/4#:~:text=The%20arc%20function%20needs%20to%20be%20fixed%20by%20Dobot
@@ -219,19 +237,17 @@ void MotionCommander::moveJog(const MoveJog::SharedPtr & jog_mode)
 
 void MotionCommander::moveJog(const MoveJog::_jog_mode_type & jog_mode)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(buf, sizeof(buf), "MoveJog(%s)", jog_mode.c_str());
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 
 void MotionCommander::sync()
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(buf, sizeof(buf), "Sync()");
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::relMovJUser(
@@ -247,7 +263,6 @@ void MotionCommander::relMovJUser(
   const si_m x, const si_m y, const si_m z, const si_rad r, const User::_user_type & user,
   const int8_t speed_j, const int8_t acc_j, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -265,7 +280,7 @@ void MotionCommander::relMovJUser(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::relMovLUser(
@@ -282,7 +297,6 @@ void MotionCommander::relMovLUser(
   const si_m x, const si_m y, const si_m z, const si_rad r, const User::_user_type & user,
   const int8_t speed_l, const int8_t acc_l, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -300,14 +314,13 @@ void MotionCommander::relMovLUser(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 void MotionCommander::relJointMovJ(
   const si_rad j1, const si_rad j2, const si_rad j3, const si_rad j4,
   const int8_t speed_j, const int8_t acc_j, const int8_t cp)
 {
-  std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
   char buf[100];
   snprintf(
     buf, sizeof(buf),
@@ -325,7 +338,7 @@ void MotionCommander::relJointMovJ(
   }
 
   strncat(buf, ")", sizeof(buf) - strlen(buf) - 1);
-  this->tcp_if_->sendCommand(buf);
+  this->execute(buf, MOTION_RESPONSE_TIMEOUT);
 }
 
 // End DOBOT MG400 Official Command -----------------------------------------

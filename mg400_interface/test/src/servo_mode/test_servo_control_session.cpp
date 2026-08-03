@@ -569,6 +569,86 @@ TEST(ServoControlSession, TcpSendFailureUsesFaultStopPath)
     fixture.operational_state->getSnapshot().code);
 }
 
+TEST(ServoControlSession, MotionResponseTimeoutUsesFaultStopPath)
+{
+  SessionFixture fixture;
+  fixture.tcp.failNextResponse();
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> target{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  const auto error = fixture.operational_state->getSnapshot();
+  EXPECT_EQ(ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED, error.code);
+  EXPECT_NE(std::string::npos, error.message.find("Motion TCP Servo command failed"));
+  EXPECT_NE(std::string::npos, error.message.find("response timeout"));
+}
+
+TEST(ServoControlSession, ControllerErrorResponseUsesFaultStopPath)
+{
+  SessionFixture fixture;
+  fixture.tcp.respondNextWith(
+    "-10000,{},ServoJ(0.000,0.000,11.459,0.000);");
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> target{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  const auto error = fixture.operational_state->getSnapshot();
+  EXPECT_EQ(ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED, error.code);
+  EXPECT_NE(std::string::npos, error.message.find("ErrorID=-10000"));
+}
+
+TEST(ServoControlSession, InvalidMotionResponseUsesFaultStopPath)
+{
+  SessionFixture fixture;
+  fixture.tcp.respondNextWith("invalid response;");
+  auto options = quietOptions();
+  options.send_period = 5ms;
+  auto session = fixture.makeSession(options);
+  const auto started = session->start();
+  ASSERT_TRUE(started.success) << started.message;
+
+  const std::array<double, 4> target{{0.0, 0.0, 0.2, 0.0}};
+  fixture.updateFeedback(target);
+  ASSERT_TRUE(session->updateServoJTarget(started.lease_id, target));
+  ASSERT_TRUE(
+    waitUntil(
+      [&session]() {
+        return session->getSnapshot().state == ServoControlSession::State::IDLE;
+      }));
+
+  EXPECT_EQ(1U, fixture.tcp.commands().size());
+  EXPECT_EQ(1U, fixture.stop_strategy->callCount());
+  const auto error = fixture.operational_state->getSnapshot();
+  EXPECT_EQ(ServoOperationalErrorCode::MOTION_TCP_SEND_FAILED, error.code);
+  EXPECT_NE(std::string::npos, error.message.find("Invalid Motion TCP response"));
+}
+
 TEST(ServoControlSession, SuccessfulRestartResetsPreviousTcpCommandToInitialState)
 {
   SessionFixture fixture;

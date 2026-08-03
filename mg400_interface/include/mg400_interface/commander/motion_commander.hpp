@@ -15,7 +15,9 @@
 #ifndef __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 #define __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 
+#include <chrono>
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include <mg400_msgs/msg/distance_mode.hpp>
@@ -26,6 +28,7 @@
 #include <mg400_msgs/msg/user.hpp>
 
 #include "mg400_interface/command_utils.hpp"
+#include "mg400_interface/commander/response_parser.hpp"
 #include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 
 namespace mg400_interface
@@ -45,6 +48,9 @@ private:
 
   MotionTcpInterfaceBase * tcp_if_;
   mutable std::mutex mutex_tcp_if_;
+  inline static constexpr std::chrono::milliseconds MOTION_RESPONSE_TIMEOUT{100};
+
+  void execute(const std::string &, std::chrono::nanoseconds) const;
 
 public:
   MotionCommander() = delete;

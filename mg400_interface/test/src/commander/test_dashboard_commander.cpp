@@ -136,6 +136,19 @@ TEST_F(TestDashboardCommander, EnableRobot) {
     commander->enableRobot());
 }
 
+TEST_F(TestDashboardCommander, NormalizesDecimalNegativeZero)
+{
+  EXPECT_CALL(
+    mock, sendCommand(
+      StrEq("EnableRobot(0.000,-0.001,0.000,-1.000)"))).Times(1);
+  EXPECT_CALL(
+    mock, recvResponse()).WillOnce(
+    Return("0,{},EnableRobot(0.000,-0.001,0.000,-1.000);"));
+
+  ASSERT_NO_THROW(
+    commander->enableRobot(4, -0.0004, -0.0006, -0.0, -1.0));
+}
+
 TEST_F(TestDashboardCommander, DisableRobot) {
   EXPECT_CALL(
     mock, sendCommand(

@@ -522,14 +522,15 @@ const rclcpp::Logger DashboardCommander::getLogger()
 std::string DashboardCommander::sendAndWaitResponse(
   const std::string & command) const
 {
+  const auto normalized_command = normalizeNegativeZero(command);
   std::lock_guard<std::mutex> lock_tcp_if(this->mutex_tcp_if_);
-  this->tcp_if_->sendCommand(command);
+  this->tcp_if_->sendCommand(normalized_command);
 
   const auto start = this->clock_->now();
   const auto timeout = rclcpp::Duration(this->TIMEOUT);
   while (this->clock_->now() - start < timeout) {
     std::string res = this->tcp_if_->recvResponse();
-    if (res.find(command) != std::string::npos) {
+    if (res.find(normalized_command) != std::string::npos) {
       // Could find response candidates
       return res;
     }
