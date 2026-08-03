@@ -15,10 +15,12 @@
 #ifndef __MG400_INTERFACE_TCP_INTERFACE_MOTION_TCP_INTERFACE_HPP__
 #define __MG400_INTERFACE_TCP_INTERFACE_MOTION_TCP_INTERFACE_HPP__
 
-#include <cstdlib>
-
-#include <string>
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <thread>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -33,7 +35,9 @@ class MotionTcpInterfaceBase
 {
 public:
   MotionTcpInterfaceBase() {}
+  virtual ~MotionTcpInterfaceBase() = default;
   virtual void sendCommand(const std::string &) = 0;
+  virtual std::string recvResponse(std::chrono::nanoseconds) = 0;
 };
 
 class MotionTcpInterface : public MotionTcpInterfaceBase
@@ -43,7 +47,9 @@ public:
   RCLCPP_UNIQUE_PTR_DEFINITIONS(MotionTcpInterface)
 
 private:
-  const uint16_t PORT_ = 30003;
+  static constexpr uint16_t DEFAULT_PORT = 30003;
+  static constexpr std::size_t MAX_RESPONSE_SIZE = 4096;
+  static constexpr std::size_t RECEIVE_CHUNK_SIZE = 512;
 
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
@@ -52,12 +58,14 @@ private:
 public:
   MotionTcpInterface() = delete;
   explicit MotionTcpInterface(const std::string &);
-  ~MotionTcpInterface();
+  MotionTcpInterface(const std::string &, uint16_t);
+  ~MotionTcpInterface() override;
   void init() noexcept;
 
   static rclcpp::Logger getLogger();
-  bool isConnected();
+  bool isConnected() const;
   void sendCommand(const std::string &) override;
+  std::string recvResponse(std::chrono::nanoseconds) override;
   void disConnect();
 
 private:

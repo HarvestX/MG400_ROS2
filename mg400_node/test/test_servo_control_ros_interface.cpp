@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -86,6 +87,15 @@ public:
       this->commands_.push_back(command);
     }
     this->cv_.notify_all();
+  }
+
+  std::string recvResponse(std::chrono::nanoseconds /*timeout*/) override
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    if (this->commands_.empty()) {
+      throw std::runtime_error("response requested before a command was sent");
+    }
+    return "0,{}," + this->commands_.back() + ";";
   }
 
   bool waitForCommandCount(

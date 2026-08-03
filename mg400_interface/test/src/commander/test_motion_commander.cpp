@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
+#include <chrono>
+#include <exception>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <mg400_interface/commander/motion_commander.hpp>
 
@@ -30,6 +38,21 @@ public:
   : mg400_interface::MotionTcpInterfaceBase() {}
 
   MOCK_METHOD(void, sendCommand, (const std::string &), (override));
+
+  std::string recvResponse(std::chrono::nanoseconds timeout) override
+  {
+    ++this->receive_count;
+    this->last_timeout = timeout;
+    if (!this->next_response.empty()) {
+      return this->next_response;
+    }
+    return "0,{}," + this->last_command + ";";
+  }
+
+  std::string last_command;
+  std::string next_response;
+  std::size_t receive_count{0};
+  std::chrono::nanoseconds last_timeout{0};
 };
 
 

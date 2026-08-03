@@ -14,20 +14,26 @@
 
 #include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 
+#include <algorithm>
+#include <array>
+#include <stdexcept>
+
 namespace mg400_interface
 {
 
 MotionTcpInterface::MotionTcpInterface(const std::string & ip)
+: MotionTcpInterface(ip, DEFAULT_PORT)
+{}
+
+MotionTcpInterface::MotionTcpInterface(const std::string & ip, uint16_t port)
 {
   this->is_running_ = false;
-  this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
+  this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, port);
 }
 
 MotionTcpInterface::~MotionTcpInterface()
 {
-  if (this->is_running_) {
-    this->disConnect();
-  }
+  this->disConnect();
 }
 
 rclcpp::Logger MotionTcpInterface::getLogger()
@@ -64,7 +70,7 @@ void MotionTcpInterface::checkConnection()
   }
 }
 
-bool MotionTcpInterface::isConnected()
+bool MotionTcpInterface::isConnected() const
 {
   return this->tcp_socket_->isConnected();
 }
@@ -72,15 +78,70 @@ bool MotionTcpInterface::isConnected()
 void MotionTcpInterface::disConnect()
 {
   this->is_running_ = false;
-  if (this->thread_->joinable()) {
+  this->tcp_socket_->disConnect();
+  if (this->thread_ && this->thread_->joinable()) {
     this->thread_->join();
   }
-  this->tcp_socket_->disConnect();
+  this->thread_.reset();
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
 void MotionTcpInterface::sendCommand(const std::string & cmd)
 {
   this->tcp_socket_->send(cmd.data(), cmd.size());
+}
+
+std::string MotionTcpInterface::recvResponse(std::chrono::nanoseconds timeout)
+{
+  if (timeout <= std::chrono::nanoseconds::zero()) {
+    this->tcp_socket_->disConnect();
+    throw TcpSocketException("Motion TCP response timeout");
+  }
+
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  std::string response;
+  response.reserve(256);
+  std::array<char, RECEIVE_CHUNK_SIZE> chunk{};
+
+  while (true) {
+    const auto now = std::chrono::steady_clock::now();
+    if (now >= deadline) {
+      this->tcp_socket_->disConnect();
+      throw TcpSocketException("Motion TCP response timeout");
+    }
+
+    const auto received = this->tcp_socket_->recvSome(
+      chunk.data(), chunk.size(), deadline - now);
+    if (received == 0) {
+      this->tcp_socket_->disConnect();
+      throw TcpSocketException("Motion TCP response timeout");
+    }
+
+    const auto end = chunk.begin() + static_cast<std::ptrdiff_t>(received);
+    const auto terminator = std::find(chunk.begin(), end, ';');
+    const auto frame_size = terminator == end ?
+      received : static_cast<std::size_t>(std::distance(chunk.begin(), terminator)) + 1;
+
+    if (response.size() + frame_size > MAX_RESPONSE_SIZE) {
+      this->tcp_socket_->disConnect();
+      throw TcpSocketException("Motion TCP response exceeded 4096 bytes");
+    }
+    response.append(chunk.data(), frame_size);
+
+    if (terminator != end) {
+      if (frame_size != received) {
+        this->tcp_socket_->disConnect();
+        throw TcpSocketException(
+                "Motion TCP stream contained data after the response terminator");
+      }
+      RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
+      return response;
+    }
+
+    if (response.size() >= MAX_RESPONSE_SIZE) {
+      this->tcp_socket_->disConnect();
+      throw TcpSocketException("Motion TCP response exceeded 4096 bytes");
+    }
+  }
 }
 }  // namespace mg400_interface

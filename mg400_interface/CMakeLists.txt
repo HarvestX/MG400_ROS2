@@ -59,6 +59,7 @@ if(BUILD_TESTING)
     test_control_state_manager
     test_error_msg_generator
     test_joint_handler
+    test_motion_tcp_interface
     test_realtime_data
     test_tcp_interface_lifecycle)
   foreach(TARGET ${TEST_TARGETS})

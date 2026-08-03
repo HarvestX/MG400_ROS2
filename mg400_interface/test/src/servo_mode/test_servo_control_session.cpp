@@ -89,6 +89,64 @@ public:
     }
 
   }
+
+  std::string recvResponse(std::chrono::nanoseconds /*timeout*/) override
+  {
+    bool block = false;
+    {
+      std::lock_guard<std::mutex> lock(this->mutex_);
+      ++this->response_count_;
+      block = this->block_first_response_ && this->response_count_ == 1;
+    }
+    if (block) {
+      std::unique_lock<std::mutex> lock(this->mutex_response_block_);
+      this->cv_response_block_.wait(
+        lock, [this]() {return this->release_first_response_;});
+    }
+
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    if (this->fail_next_response_) {
+      this->fail_next_response_ = false;
+      throw std::runtime_error("simulated Motion TCP response timeout");
+    }
+    if (!this->responses_.empty()) {
+      auto response = this->responses_.front();
+      this->responses_.pop_front();
+      return response;
+    }
+    if (this->commands_.empty()) {
+      throw std::runtime_error("response requested before a command was sent");
+    }
+    return "0,{}," + this->commands_.back() + ";";
+  }
+
+  void respondNextWith(const std::string & response)
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->responses_.push_back(response);
+  }
+
+  void failNextResponse()
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->fail_next_response_ = true;
+  }
+
+  void blockFirstResponse()
+  {
+    std::lock_guard<std::mutex> lock(this->mutex_);
+    this->block_first_response_ = true;
+  }
+
+  void releaseFirstResponse()
+  {
+    {
+      std::lock_guard<std::mutex> lock(this->mutex_response_block_);
+      this->release_first_response_ = true;
+    }
+    this->cv_response_block_.notify_all();
+  }
+
   void blockFirstSend()
   {
     std::lock_guard<std::mutex> lock(this->mutex_);
@@ -128,12 +186,20 @@ private:
   mutable std::mutex mutex_;
   std::condition_variable cv_;
   std::vector<std::string> commands_;
+  std::deque<std::string> responses_;
   bool block_first_send_{false};
   bool fail_next_send_{false};
+  bool fail_next_response_{false};
+  bool block_first_response_{false};
+  std::size_t response_count_{0};
 
   std::mutex mutex_block_;
   std::condition_variable cv_block_;
   bool release_first_send_{false};
+
+  std::mutex mutex_response_block_;
+  std::condition_variable cv_response_block_;
+  bool release_first_response_{false};
 };
 
 class FakeStopStrategy : public ServoStopStrategy

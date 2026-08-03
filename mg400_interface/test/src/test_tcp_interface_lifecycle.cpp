@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include "mg400_interface/tcp_interface/dashboard_tcp_interface.hpp"
+#include "mg400_interface/tcp_interface/motion_tcp_interface.hpp"
 #include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
 
 namespace
@@ -31,6 +32,14 @@ TEST(TestTcpInterfaceLifecycle, DashboardDisconnectBeforeInitIsSafe)
 TEST(TestTcpInterfaceLifecycle, RealtimeDisconnectBeforeInitIsSafe)
 {
   mg400_interface::RealtimeFeedbackTcpInterface interface("127.0.0.1");
+
+  EXPECT_NO_THROW(interface.disConnect());
+  EXPECT_NO_THROW(interface.disConnect());
+}
+
+TEST(TestTcpInterfaceLifecycle, MotionDisconnectBeforeInitIsSafe)
+{
+  mg400_interface::MotionTcpInterface interface("127.0.0.1");
 
   EXPECT_NO_THROW(interface.disConnect());
   EXPECT_NO_THROW(interface.disConnect());
