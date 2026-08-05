@@ -45,16 +45,16 @@ MG400JoyInterfaceNode::MG400JoyInterfaceNode(const rclcpp::NodeOptions & node_op
 
   this->mg400_reset_robot_clnt_ =
     this->create_client<mg400_msgs::srv::ResetRobot>(
-    "reset_robot", rmw_qos_profile_default, this->callback_group_);
+    "reset_robot", rclcpp::ServicesQoS(), this->callback_group_);
   this->mg400_move_jog_clnt_ =
     this->create_client<mg400_msgs::srv::MoveJog>(
-    "move_jog", rmw_qos_profile_default, this->callback_group_);
+    "move_jog", rclcpp::ServicesQoS(), this->callback_group_);
   this->mg400_enable_robot_clnt_ =
     this->create_client<mg400_msgs::srv::EnableRobot>(
-    "enable_robot", rmw_qos_profile_default, this->callback_group_);
+    "enable_robot", rclcpp::ServicesQoS(), this->callback_group_);
   this->mg400_disable_robot_clnt_ =
     this->create_client<mg400_msgs::srv::DisableRobot>(
-    "disable_robot", rmw_qos_profile_default, this->callback_group_);
+    "disable_robot", rclcpp::ServicesQoS(), this->callback_group_);
 
   this->rm_sub_ = this->create_subscription<RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS().keep_last(1),

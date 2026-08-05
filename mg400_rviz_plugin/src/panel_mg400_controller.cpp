@@ -127,10 +127,10 @@ void Mg400ControllerPanel::onInitialize()
 
   mg400_enable_robot_clnt_ =
     nh_->create_client<mg400_msgs::srv::EnableRobot>(
-    "/mg400/enable_robot", rmw_qos_profile_default, this->callback_group_);
+    "/mg400/enable_robot", rclcpp::ServicesQoS(), this->callback_group_);
   mg400_disable_robot_clnt_ =
     nh_->create_client<mg400_msgs::srv::DisableRobot>(
-    "/mg400/disable_robot", rmw_qos_profile_default, this->callback_group_);
+    "/mg400/disable_robot", rclcpp::ServicesQoS(), this->callback_group_);
 
   this->mg400_movj_clnt_ = rclcpp_action::create_client<ActionT>(
     nh_, "/mg400/mov_j", this->callback_group_);
