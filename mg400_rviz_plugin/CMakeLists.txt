@@ -7,6 +7,7 @@ endif()
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -14,12 +15,13 @@ set(include_files
   include/mg400_rviz_plugin/panel_mg400_controller.hpp)
 
 foreach(header "${include_files}")
-  qt5_wrap_cpp(include_wrapped "${header}")
+  qt6_wrap_cpp(include_wrapped "${header}")
 endforeach()
 
 file(GLOB src_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*.cpp)
 set(MY_LIB_NAME ${PROJECT_NAME})
 ament_auto_add_library(${MY_LIB_NAME} SHARED ${src_files} ${include_wrapped})
+target_link_libraries(${MY_LIB_NAME} Qt6::Widgets)
 
 pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
 
