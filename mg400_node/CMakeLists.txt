@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 # Joint State Publisher GUI =========================================
 ament_auto_add_executable(
@@ -18,8 +18,8 @@ ament_auto_add_executable(
     ./src/joint_state_publisher_gui/main.cpp
     ./src/joint_state_publisher_gui/main_window.cpp)
 target_include_directories(
-  joint_state_publisher_gui PRIVATE include ${Qt5Widgets_INCLUDE_DIRS})
-target_link_libraries(joint_state_publisher_gui Qt5::Widgets)
+  joint_state_publisher_gui PRIVATE include ${Qt6Widgets_INCLUDE_DIRS})
+target_link_libraries(joint_state_publisher_gui Qt6::Widgets)
 set_property(TARGET joint_state_publisher_gui PROPERTY AUTOMOC ON)
 set_property(TARGET joint_state_publisher_gui PROPERTY AUTOUIC ON)
 set_property(TARGET joint_state_publisher_gui PROPERTY AUTORCC ON)
@@ -31,8 +31,8 @@ ament_auto_add_executable(
     ./src/joint_command_publisher_gui/main.cpp
     ./src/joint_command_publisher_gui/main_window.cpp)
 target_include_directories(
-  joint_command_publisher_gui PRIVATE include ${Qt5Widgets_INCLUDE_DIRS})
-target_link_libraries(joint_command_publisher_gui Qt5::Widgets)
+  joint_command_publisher_gui PRIVATE include ${Qt6Widgets_INCLUDE_DIRS})
+target_link_libraries(joint_command_publisher_gui Qt6::Widgets)
 set_property(TARGET joint_command_publisher_gui PROPERTY AUTOMOC ON)
 set_property(TARGET joint_command_publisher_gui PROPERTY AUTOUIC ON)
 set_property(TARGET joint_command_publisher_gui PROPERTY AUTORCC ON)

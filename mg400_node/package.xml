@@ -21,8 +21,7 @@
 
   <exec_depend>mg400_plugin</exec_depend>
 
-  <build_depend>qtbase5-dev</build_depend>
-  <build_depend>qt5-qmake</build_depend>
+  <build_depend>qt6-base-dev</build_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
