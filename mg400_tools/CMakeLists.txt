@@ -27,7 +27,11 @@ unset(TARGET)
 # validate_kinematics_with_solutions =============
 set(TARGET validate_kinematics_with_solutions)
 ament_auto_add_executable(${TARGET} src/${TARGET}.cpp)
-ament_target_dependencies(${TARGET} mg400_common mg400_msgs)
+if(TARGET mg400_common::mg400_common)
+  target_link_libraries(${TARGET} mg400_common::mg400_common)
+elseif(TARGET mg400_common)
+  target_link_libraries(${TARGET} mg400_common)
+endif()
 target_include_directories(
   ${TARGET} PRIVATE
   ${MG400_COMMON_SOURCE_INCLUDE_DIR}
@@ -45,7 +49,11 @@ unset(TARGET)
 # mg400_kinematics_cli ============================
 set(TARGET mg400_kinematics_cli)
 ament_auto_add_executable(${TARGET} src/${TARGET}.cpp)
-ament_target_dependencies(${TARGET} mg400_common)
+if(TARGET mg400_common::mg400_common)
+  target_link_libraries(${TARGET} mg400_common::mg400_common)
+elseif(TARGET mg400_common)
+  target_link_libraries(${TARGET} mg400_common)
+endif()
 target_include_directories(${TARGET} PRIVATE ${MG400_COMMON_SOURCE_INCLUDE_DIR})
 unset(TARGET)
 
