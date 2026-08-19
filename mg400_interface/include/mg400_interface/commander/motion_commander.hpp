@@ -48,7 +48,7 @@ private:
 
   MotionTcpInterfaceBase * tcp_if_;
   mutable std::mutex mutex_tcp_if_;
-  inline static constexpr std::chrono::milliseconds MOTION_RESPONSE_TIMEOUT{100};
+  inline static constexpr std::chrono::milliseconds MOTION_RESPONSE_TIMEOUT{1000};
 
   void execute(const std::string &, std::chrono::nanoseconds) const;
 

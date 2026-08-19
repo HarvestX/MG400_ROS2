@@ -72,7 +72,7 @@ protected:
   void TearDown() override
   {
     EXPECT_EQ(1U, this->mock.receive_count);
-    EXPECT_EQ(std::chrono::milliseconds(100), this->mock.last_timeout);
+    EXPECT_EQ(std::chrono::milliseconds(1000), this->mock.last_timeout);
   }
 };
 
