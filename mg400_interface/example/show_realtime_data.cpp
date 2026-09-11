@@ -21,21 +21,32 @@
 int main(int argc, char ** argv)
 {
   std::string ip = "127.0.0.1";
-  if (argc == 2) {
-    ip = argv[1];
+  bool use_estimator = false;
+
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg(argv[i]);
+    if (arg == "--use-external-force-estimator") {
+      use_estimator = true;
+    } else {
+      ip = arg;
+    }
   }
 
   std::cout << "Connecting to: " << ip << std::endl;
+  std::cout << "External force estimator: " << (use_estimator ? "enabled" : "disabled")
+            << std::endl;
 
   auto rt_tcp_if =
     std::make_unique<mg400_interface::RealtimeFeedbackTcpInterface>(ip);
-  auto db_tcp_if =
-    std::make_unique<mg400_interface::DashboardTcpInterface>(ip);
+
+  if (use_estimator) {
+    auto estimator = std::make_shared<mg400_interface::ExternalForceEstimator>();
+    rt_tcp_if->setExternalForceEstimator(estimator);
+  }
 
   rt_tcp_if->init();
-  db_tcp_if->init();
 
-  while (!rt_tcp_if->isConnected() || !db_tcp_if->isConnected()) {
+  while (!rt_tcp_if->isConnected()) {
     std::cout << "Waiting for the connection..." << std::endl;
     using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(1s);
@@ -177,6 +188,18 @@ int main(int argc, char ** argv)
     printf(
       "center_z:\t\t\t%.3lf\n",
       data.center_z);
+
+    if (use_estimator) {
+      std::array<double, 6> ext_force;
+      if (rt_tcp_if->getExternalForce(ext_force)) {
+        printf(
+          "external_force:\t\t\t"
+          "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
+          ext_force[0], ext_force[1], ext_force[2],
+          ext_force[3], ext_force[4], ext_force[5]);
+      }
+    }
+
     using namespace std::chrono_literals;  // NOLINT
     rclcpp::sleep_for(100ms);
   }

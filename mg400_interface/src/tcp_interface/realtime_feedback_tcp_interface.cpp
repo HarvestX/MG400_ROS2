@@ -71,6 +71,16 @@ void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
   JointHandler::getEndPose(this->current_joints_, pose);
 }
 
+bool RealtimeFeedbackTcpInterface::getExternalForce(std::array<double, 6> & force)
+{
+  std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
+  if (!this->has_external_force_) {
+    return false;
+  }
+  force = this->external_force_;
+  return true;
+}
+
 bool RealtimeFeedbackTcpInterface::getRealtimeData(RealTimeData & data)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
@@ -113,6 +123,15 @@ void RealtimeFeedbackTcpInterface::disConnect()
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
+void RealtimeFeedbackTcpInterface::setExternalForceEstimator(
+  ExternalForceEstimator::SharedPtr estimator,
+  const bool use_estimated)
+{
+  std::lock_guard<std::mutex> lock(this->mutex_rt_data_);
+  this->estimator_ = std::move(estimator);
+  this->use_estimated_external_force_ = use_estimated;
+}
+
 void RealtimeFeedbackTcpInterface::recvData()
 {
   using namespace std::chrono_literals;  // NOLINT
@@ -142,6 +161,20 @@ void RealtimeFeedbackTcpInterface::recvData()
         // Success
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = std::move(recvd_data);
+
+        // If an external force estimator is registered and enabled, run it
+        // and store the result in the separate external_force_ member.
+        // When the robot is disabled, zero out external_force_ to avoid spurious
+        // estimates from un-powered actuators.
+        if (this->use_estimated_external_force_ && this->estimator_) {
+          if (this->rt_data_->robot_mode == kRobotModeDisabled) {
+            this->external_force_.fill(0.0);
+            this->has_external_force_ = true;
+          } else if (this->estimator_->update(*this->rt_data_)) {
+            this->external_force_ = this->estimator_->getEstimatedExternalForce();
+            this->has_external_force_ = true;
+          }
+        }
       }
 
       std::lock_guard<std::mutex> lock_current_joints(this->mutex_current_joints_);
