@@ -289,7 +289,7 @@ ExternalForceEstimator::solveWrenchWithMinSingularValue(
   const Eigen::Matrix4d map = jacobian.transpose();
   const Eigen::JacobiSVD<Eigen::Matrix4d> svd(
     map, Eigen::ComputeFullU | Eigen::ComputeFullV);
-  const auto singular_values = svd.singularValues();
+  const auto & singular_values = svd.singularValues();
   const double min_singular_value = singular_values(singular_values.size() - 1);
 
   if (min_singular_value < this->config_.min_singular_value) {
