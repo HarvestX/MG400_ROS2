@@ -79,7 +79,7 @@ public:
   /// Minimum singular value below which a Jacobian singularity warning is emitted.
   static constexpr double kDefaultMinSingularValue = 1.0e-4;
 
-  /// Damped least-squares regularisation lambda for the wrench solve.
+  /// Damped least-squares regularization lambda for the wrench solve.
   static constexpr double kDefaultDampingLambda = 1.0e-4;
 
   /// Per-joint soft deadband applied to measured torque after compensation [Nm].
