@@ -20,10 +20,13 @@
 #include <vector>
 #include <memory>
 
+#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_msgs/srv/get_external_force.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include "mg400_interface/external_force_estimator.hpp"
 #include <mg400_plugin_base/api_loader_base.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <pluginlib/class_loader.hpp>
@@ -75,12 +78,18 @@ private:
   rclcpp::TimerBase::SharedPtr error_timer_;
   rclcpp::TimerBase::SharedPtr interface_check_timer_;
   rclcpp::TimerBase::SharedPtr connect_timer_;
+  rclcpp::TimerBase::SharedPtr external_force_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
   rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr external_force_pub_;
 
+  rclcpp::Service<mg400_msgs::srv::GetExternalForce>::SharedPtr get_external_force_srv_;
+
+  mg400_interface::ExternalForceEstimator::SharedPtr external_force_estimator_;
+  bool external_force_estimator_enabled_;
   bool connection_interrupted_;
 
   rclcpp::TimerBase::SharedPtr autoconfigure_timer_;
@@ -96,6 +105,12 @@ public:
   void onRobotModeTimer();
   void onErrorTimer();
   void onInterfaceCheckTimer();
+  void onExternalForceTimer();
+
+private:
+  void onGetExternalForce(
+    mg400_msgs::srv::GetExternalForce::Request::SharedPtr request,
+    mg400_msgs::srv::GetExternalForce::Response::SharedPtr response);
 
 private:
   CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;

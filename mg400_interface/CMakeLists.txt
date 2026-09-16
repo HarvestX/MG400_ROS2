@@ -17,6 +17,7 @@ ament_auto_add_library(
       ./src/commander/motion_commander.cpp
       ./src/commander/response_parser.cpp
       ./src/error_msg_generator.cpp
+      ./src/external_force_estimator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
