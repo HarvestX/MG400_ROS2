@@ -24,7 +24,7 @@ namespace mg400_interface
 
 class RealtimeFeedbackTcpInterface;
 
-/// Read-only view of the robot state derived from realtime feedback.
+// Read-only view of the robot state derived from realtime feedback.
 class RobotStateMachine
 {
 public:
@@ -50,19 +50,19 @@ public:
     bool feedback_fresh{false};
   };
 
-  /// Construct the state machine in UNKNOWN state.
+  // Construct the state machine in UNKNOWN state.
   RobotStateMachine() noexcept;
 
-  /// Return the latest state derived from realtime feedback.
+  // Return the latest state derived from realtime feedback.
   State getState() const;
 
-  /// Return whether the latest state matches the expected state.
+  // Return whether the latest state matches the expected state.
   bool isState(State expected) const;
 
-  /// Return an internally consistent snapshot for ROS publication.
+  // Return an internally consistent snapshot for ROS publication.
   Snapshot getSnapshot() const;
 
-  /// Convert a raw Dobot RobotMode value into a driver state.
+  // Convert a raw Dobot RobotMode value into a driver state.
   static State fromRobotMode(uint64_t robot_mode) noexcept;
 
 private:
