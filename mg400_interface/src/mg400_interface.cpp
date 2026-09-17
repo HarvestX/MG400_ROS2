@@ -28,6 +28,7 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
   this->motion_tcp_if_ = std::make_unique<MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface = std::make_shared<RealtimeFeedbackTcpInterface>(
     this->IP, frame_id_prefix);
+  this->robot_state_machine = this->realtime_tcp_interface->getRobotStateMachine();
 
   this->controller_error_msg_generator =
     std::make_unique<ErrorMsgGenerator>("alarm_controller.json");

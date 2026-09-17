@@ -27,6 +27,7 @@
 
 #include "mg400_interface/joint_handler.hpp"
 #include "mg400_interface/error_msg_generator.hpp"
+#include "mg400_interface/robot_state_machine.hpp"
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -42,6 +43,7 @@ public:
   DashboardCommander::SharedPtr dashboard_commander;
   MotionCommander::SharedPtr motion_commander;
   RealtimeFeedbackTcpInterface::SharedPtr realtime_tcp_interface;
+  RobotStateMachine::ConstSharedPtr robot_state_machine;
 
   ErrorMsgGenerator::UniquePtr controller_error_msg_generator;
   ErrorMsgGenerator::UniquePtr servo_error_msg_generator;

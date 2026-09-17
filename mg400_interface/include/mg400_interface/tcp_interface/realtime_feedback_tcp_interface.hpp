@@ -23,6 +23,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/joint_handler.hpp"
+#include "mg400_interface/robot_state_machine.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
@@ -49,6 +50,7 @@ private:
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   TcpSocketHandler::SharedPtr tcp_socket_;
+  RobotStateMachine::SharedPtr robot_state_machine_;
 
 public:
   RealtimeFeedbackTcpInterface() = delete;
@@ -66,6 +68,7 @@ public:
   bool getRealtimeData(RealTimeData &);
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
+  RobotStateMachine::ConstSharedPtr getRobotStateMachine() const noexcept;
   void disConnect();
 
 private:
