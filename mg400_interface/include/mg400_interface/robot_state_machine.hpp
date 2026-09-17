@@ -15,9 +15,9 @@
 #ifndef MG400_INTERFACE__ROBOT_STATE_MACHINE_HPP_
 #define MG400_INTERFACE__ROBOT_STATE_MACHINE_HPP_
 
-#include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 namespace mg400_interface
 {
@@ -33,24 +33,34 @@ public:
 
   enum class State : uint8_t
   {
-    UNKNOWN,
-    NOT_READY,
-    MANUAL,
-    DISABLED,
-    ENABLED,
-    RUNNING,
-    PAUSED_OR_JOG,
-    ERROR,
+    UNKNOWN = 0,
+    NOT_READY = 1,
+    MANUAL = 2,
+    DISABLED = 3,
+    ENABLED = 4,
+    RUNNING = 5,
+    PAUSED_OR_JOG = 6,
+    ERROR = 7,
+  };
+
+  struct Snapshot
+  {
+    State state{State::UNKNOWN};
+    uint64_t raw_robot_mode{0};
+    bool feedback_fresh{false};
   };
 
   /// Construct the state machine in UNKNOWN state.
   RobotStateMachine() noexcept;
 
   /// Return the latest state derived from realtime feedback.
-  State getState() const noexcept;
+  State getState() const;
 
   /// Return whether the latest state matches the expected state.
-  bool isState(State expected) const noexcept;
+  bool isState(State expected) const;
+
+  /// Return an internally consistent snapshot for ROS publication.
+  Snapshot getSnapshot() const;
 
   /// Convert a raw Dobot RobotMode value into a driver state.
   static State fromRobotMode(uint64_t robot_mode) noexcept;
@@ -58,10 +68,11 @@ public:
 private:
   friend class RealtimeFeedbackTcpInterface;
 
-  void update(uint64_t robot_mode) noexcept;
-  void reset() noexcept;
+  void update(uint64_t robot_mode);
+  void reset();
 
-  std::atomic<State> state_;
+  mutable std::mutex mutex_;
+  Snapshot snapshot_;
 };
 
 }  // namespace mg400_interface

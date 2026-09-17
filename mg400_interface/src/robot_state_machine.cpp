@@ -20,18 +20,24 @@ namespace mg400_interface
 {
 
 RobotStateMachine::RobotStateMachine() noexcept
-: state_(State::UNKNOWN)
+: snapshot_{}
 {
 }
 
-RobotStateMachine::State RobotStateMachine::getState() const noexcept
+RobotStateMachine::State RobotStateMachine::getState() const
 {
-  return this->state_.load();
+  return this->getSnapshot().state;
 }
 
-bool RobotStateMachine::isState(const State expected) const noexcept
+bool RobotStateMachine::isState(const State expected) const
 {
   return this->getState() == expected;
+}
+
+RobotStateMachine::Snapshot RobotStateMachine::getSnapshot() const
+{
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  return this->snapshot_;
 }
 
 RobotStateMachine::State RobotStateMachine::fromRobotMode(const uint64_t robot_mode) noexcept
@@ -61,14 +67,19 @@ RobotStateMachine::State RobotStateMachine::fromRobotMode(const uint64_t robot_m
   }
 }
 
-void RobotStateMachine::update(const uint64_t robot_mode) noexcept
+void RobotStateMachine::update(const uint64_t robot_mode)
 {
-  this->state_.store(fromRobotMode(robot_mode));
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  this->snapshot_.state = fromRobotMode(robot_mode);
+  this->snapshot_.raw_robot_mode = robot_mode;
+  this->snapshot_.feedback_fresh = true;
 }
 
-void RobotStateMachine::reset() noexcept
+void RobotStateMachine::reset()
 {
-  this->state_.store(State::UNKNOWN);
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  this->snapshot_.state = State::UNKNOWN;
+  this->snapshot_.feedback_fresh = false;
 }
 
 }  // namespace mg400_interface
