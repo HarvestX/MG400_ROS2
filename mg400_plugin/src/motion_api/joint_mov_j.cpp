@@ -52,18 +52,7 @@ void JointMovJ::configure(
 rclcpp_action::GoalResponse JointMovJ::handle_goal(
   const rclcpp_action::GoalUUID & /*uuid*/, ActionT::Goal::ConstSharedPtr /*goal*/)
 {
-  if (!this->mg400_interface_->ok()) {
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "MG400 is not connected");
-    return rclcpp_action::GoalResponse::REJECT;
-  }
-
-  using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-    uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+  if (!this->isMotionCommandReady("JointMovJ")) {
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -113,6 +102,11 @@ void JointMovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
     RCLCPP_ERROR(this->node_logging_if_->get_logger(), "The angles are outside of the range.");
     result->result = false;
     result->error_id.controller.ids.emplace_back(18);
+    goal_handle->abort(result);
+    return;
+  }
+
+  if (!this->isMotionCommandReady("JointMovJ")) {
     goal_handle->abort(result);
     return;
   }

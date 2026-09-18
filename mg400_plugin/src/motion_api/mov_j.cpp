@@ -58,18 +58,7 @@ void MovJ::configure(
 rclcpp_action::GoalResponse MovJ::handle_goal(
   const rclcpp_action::GoalUUID &, ActionT::Goal::ConstSharedPtr goal)
 {
-  if (!this->mg400_interface_->ok()) {
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "MG400 is not connected");
-    return rclcpp_action::GoalResponse::REJECT;
-  }
-
-  using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-    uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+  if (!this->isMotionCommandReady("MovJ")) {
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -135,6 +124,11 @@ void MovJ::execute(const std::shared_ptr<GoalHandle> goal_handle)
     // ErrorID 18: Inverse kinematics error with result out of working area
     result->result = false;
     result->error_id.controller.ids.emplace_back(18);
+    goal_handle->abort(result);
+    return;
+  }
+
+  if (!this->isMotionCommandReady("MovJ")) {
     goal_handle->abort(result);
     return;
   }

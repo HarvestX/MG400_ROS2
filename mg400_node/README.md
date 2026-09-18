@@ -31,6 +31,16 @@ The following API interface plugin will be loaded by default
   - `MovL`
   - `MovLIO`
 
+### State topics
+
+- `robot_mode`: Raw RobotMode value from realtime feedback.
+- `robot_state`: Normalized read-only state with the last raw RobotMode and feedback freshness.
+
+The `robot_state` topic uses reliable, transient-local, keep-last-one QoS so a
+late subscriber receives the latest state. When realtime feedback becomes stale
+or the interface disconnects, `state` becomes `UNKNOWN` and `feedback_fresh`
+becomes `false` while `raw_robot_mode` retains the last valid value.
+
 ## Joint State Publisher Gui
 
 Start joint state publisher GUI.

@@ -19,6 +19,7 @@ ament_auto_add_library(
       ./src/error_msg_generator.cpp
       ./src/joint_handler.cpp
       ./src/mg400_interface.cpp
+      ./src/robot_state_machine.cpp
       ./src/tcp_interface/dashboard_tcp_interface.cpp
       ./src/tcp_interface/motion_tcp_interface.cpp
       ./src/tcp_interface/realtime_feedback_tcp_interface.cpp
@@ -51,7 +52,8 @@ if(BUILD_TESTING)
 
   set(TEST_TARGETS
     test_error_msg_generator
-    test_joint_handler)
+    test_joint_handler
+    test_robot_state_machine)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gtest(${TARGET} test/src/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

@@ -23,6 +23,7 @@
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
+#include <mg400_msgs/msg/robot_state.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <mg400_plugin_base/api_loader_base.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
@@ -78,6 +79,7 @@ private:
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::RobotState>::SharedPtr robot_state_pub_;
   rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
 
@@ -107,6 +109,7 @@ private:
 
   void runTimer();
   void cancelTimer();
+  mg400_interface::RobotStateMachine::Snapshot publishRobotState();
 
   void handleAutoConfigure();
 };
