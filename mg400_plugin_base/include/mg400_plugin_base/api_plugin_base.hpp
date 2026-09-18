@@ -15,6 +15,7 @@
 #ifndef __MG400_PLUGIN_BASE_API_PLUGIN_BASE_HPP__
 #define __MG400_PLUGIN_BASE_API_PLUGIN_BASE_HPP__
 
+#include <cinttypes>
 #include <memory>
 #include <string>
 
@@ -22,6 +23,7 @@
 #include <rclcpp/node_interfaces/node_base_interface.hpp>
 #include <rclcpp/node_interfaces/node_logging_interface.hpp>
 #include <rclcpp/node_interfaces/node_services_interface.hpp>
+#include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_interface/mg400_interface.hpp>
 
 namespace mg400_plugin_base
@@ -99,6 +101,61 @@ class DashboardApiPluginBase
 class MotionApiPluginBase
   : public ApiPluginBase<mg400_interface::MotionCommander>
 {
+public:
+  /// Select state rules for starting a motion command or stopping an active jog.
+  enum class CommandPolicy
+  {
+    STANDARD,
+    JOG_STOP,
+  };
+
+  /// Return whether a coherent robot-state snapshot permits the requested command.
+  static bool isMotionStateReady(
+    const mg400_interface::RobotStateMachine::Snapshot & snapshot,
+    const CommandPolicy policy = CommandPolicy::STANDARD) noexcept
+  {
+    using RobotMode = mg400_msgs::msg::RobotMode;
+    using State = mg400_interface::RobotStateMachine::State;
+
+    if (!snapshot.feedback_fresh) {
+      return false;
+    }
+    if (snapshot.state == State::ENABLED) {
+      return true;
+    }
+    return policy == CommandPolicy::JOG_STOP &&
+           snapshot.state == State::PAUSED_OR_JOG &&
+           snapshot.raw_robot_mode == RobotMode::JOG;
+  }
+
+protected:
+  /// Validate connection and robot state, and log the rejection reason.
+  bool isMotionCommandReady(
+    const char * command_name,
+    const CommandPolicy policy = CommandPolicy::STANDARD) const
+  {
+    if (!this->mg400_interface_ || !this->mg400_interface_->robot_state_machine) {
+      RCLCPP_ERROR(
+        this->node_logging_if_->get_logger(),
+        "%s rejected: MG400 interface is not configured", command_name);
+      return false;
+    }
+
+    const auto snapshot = this->mg400_interface_->robot_state_machine->getSnapshot();
+    const bool interface_ok = this->mg400_interface_->ok();
+    if (interface_ok && isMotionStateReady(snapshot, policy)) {
+      return true;
+    }
+
+    RCLCPP_ERROR(
+      this->node_logging_if_->get_logger(),
+      "%s rejected: interface_ok=%s, state=%u, raw_robot_mode=%" PRIu64
+      ", feedback_fresh=%s",
+      command_name, interface_ok ? "true" : "false",
+      static_cast<unsigned int>(snapshot.state),
+      snapshot.raw_robot_mode, snapshot.feedback_fresh ? "true" : "false");
+    return false;
+  }
 };
 }  // namespace mg400_plugin_base
 #endif

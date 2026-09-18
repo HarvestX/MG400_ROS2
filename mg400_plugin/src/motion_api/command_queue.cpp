@@ -60,18 +60,7 @@ void CommandQueue::configure(
 rclcpp_action::GoalResponse CommandQueue::handle_goal(
   const rclcpp_action::GoalUUID & /*uuid*/, ActionT::Goal::ConstSharedPtr goal)
 {
-  if (!this->mg400_interface_->ok()) {
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "MG400 is not connected");
-    return rclcpp_action::GoalResponse::REJECT;
-  }
-
-  using RobotMode = mg400_msgs::msg::RobotMode;
-  if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
-    uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+  if (!this->isMotionCommandReady("CommandQueue")) {
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -110,6 +99,11 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
   result->result = false;
+
+  if (!this->isMotionCommandReady("CommandQueue")) {
+    goal_handle->abort(result);
+    return;
+  }
 
   const auto update_pose_and_angles =
     [&](geometry_msgs::msg::PoseStamped & pose, std::array<double, 4> & angles) -> void
@@ -282,6 +276,11 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
     batch_start < goal->commands.size();
     batch_start += enable_sync_every)
   {
+    if (!this->isMotionCommandReady("CommandQueue")) {
+      goal_handle->abort(result);
+      return;
+    }
+
     const size_t batch_end = std::min(batch_start + enable_sync_every, goal->commands.size());
     const int sent_in_batch = this->sendCommand(goal->commands, batch_start, batch_end);
     sent_command_count += sent_in_batch;
