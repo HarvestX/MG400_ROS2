@@ -33,8 +33,10 @@ TEST(ServoJCommander, FourAxisFormatMatchesMG400Example)
 {
   MockMotionTcp tcp;
   mg400_interface::MotionCommander commander(&tcp);
-  EXPECT_CALL(tcp, sendCommand(testing::StrEq(
-    "ServoJ(90.000000,-45.000000,0.000000,180.000000,t=0.0500)\n")));
+  EXPECT_CALL(
+    tcp, sendCommand(
+      testing::StrEq(
+        "ServoJ(90.000000,-45.000000,0.000000,180.000000,t=0.0500)\n")));
   commander.servoJ({M_PI_2, -M_PI_4, 0.0, M_PI}, 0.05);
 }
 
