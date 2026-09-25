@@ -31,6 +31,10 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
+  this->declare_parameter<std::string>("servo_j_wire_format", "four_axes_with_t");
+  this->declare_parameter<double>("servo_j_default_t", 0.1);
+  this->declare_parameter<double>("servo_j_aheadtime", 50.0);
+  this->declare_parameter<double>("servo_j_gain", 500.0);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(
@@ -51,6 +55,9 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 MG400Node::~MG400Node()
 {
   this->cancelTimer();
+  if (this->servo_j_controller_) {
+    this->servo_j_controller_->deactivate();
+  }
   if (this->interface_) {
     this->interface_->deactivate();
   }
@@ -101,6 +108,17 @@ CallbackReturn MG400Node::on_configure(const State &)
     std::make_shared<mg400_interface::MG400Interface>(this->ip_address_);
   if (!this->interface_->configure(this->get_parameter("prefix").as_string())) {
     RCLCPP_ERROR(this->get_logger(), "Failed to configure MG400Interface.");
+    return CallbackReturn::FAILURE;
+  }
+  try {
+    this->servo_j_controller_ = std::make_unique<ServoJController>(
+      *this, this->interface_,
+      this->get_parameter("servo_j_wire_format").as_string(),
+      this->get_parameter("servo_j_default_t").as_double(),
+      this->get_parameter("servo_j_aheadtime").as_double(),
+      this->get_parameter("servo_j_gain").as_double());
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to configure ServoJ: %s", e.what());
     return CallbackReturn::FAILURE;
   }
 
@@ -166,6 +184,7 @@ CallbackReturn MG400Node::on_activate(const State &)
     }
     return CallbackReturn::FAILURE;
   }
+  this->servo_j_controller_->activate();
 
   this->runTimer();
   this->publishRobotState();
@@ -180,6 +199,7 @@ CallbackReturn MG400Node::on_deactivate(const State &)
 {
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
+  this->servo_j_controller_->deactivate();
 
   this->cancelTimer();
   this->interface_->deactivate();
@@ -196,6 +216,7 @@ CallbackReturn MG400Node::on_deactivate(const State &)
 CallbackReturn MG400Node::on_cleanup(const State &)
 {
   this->mg400_connected_pub_.reset();
+  this->servo_j_controller_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
@@ -210,6 +231,7 @@ CallbackReturn MG400Node::on_cleanup(const State &)
 CallbackReturn MG400Node::on_shutdown(const State &)
 {
   this->cancelTimer();
+  this->servo_j_controller_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
@@ -225,6 +247,7 @@ CallbackReturn MG400Node::on_shutdown(const State &)
 CallbackReturn MG400Node::on_error(const State &)
 {
   this->cancelTimer();
+  this->servo_j_controller_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();

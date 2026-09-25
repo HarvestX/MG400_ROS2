@@ -67,19 +67,55 @@ RobotStateMachine::State RobotStateMachine::fromRobotMode(const uint64_t robot_m
   }
 }
 
+bool RobotStateMachine::tryBeginServoSession()
+{
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  if (this->servo_session_active_ || !this->snapshot_.feedback_fresh ||
+    this->snapshot_.state != State::ENABLED)
+  {
+    return false;
+  }
+  this->servo_session_active_ = true;
+  this->snapshot_.state = State::SERVO;
+  return true;
+}
+
+void RobotStateMachine::endServoSession()
+{
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  this->servo_session_active_ = false;
+  this->snapshot_.state = this->snapshot_.feedback_fresh ?
+    fromRobotMode(this->snapshot_.raw_robot_mode) : State::UNKNOWN;
+}
+
+bool RobotStateMachine::isServoSessionActive() const
+{
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  return this->servo_session_active_;
+}
+
 void RobotStateMachine::update(const uint64_t robot_mode)
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
   this->snapshot_.state = fromRobotMode(robot_mode);
   this->snapshot_.raw_robot_mode = robot_mode;
   this->snapshot_.feedback_fresh = true;
+  if (this->servo_session_active_) {
+    if (this->snapshot_.state == State::ENABLED || this->snapshot_.state == State::RUNNING) {
+      this->snapshot_.state = State::SERVO;
+    } else {
+      this->servo_session_active_ = false;
+    }
+  }
 }
 
 void RobotStateMachine::reset()
 {
   std::lock_guard<std::mutex> lock(this->mutex_);
   this->snapshot_.state = State::UNKNOWN;
+  this->snapshot_.raw_robot_mode = 0;
   this->snapshot_.feedback_fresh = false;
+  this->servo_session_active_ = false;
 }
 
 }  // namespace mg400_interface

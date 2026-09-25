@@ -66,6 +66,8 @@ public:
   void getCurrentJointStates(std::array<double, 4> &);
   void getCurrentEndPose(Pose &);
   bool getRealtimeData(RealTimeData &);
+  bool tryBeginServoSession();
+  void endServoSession();
   bool getRobotMode(uint64_t &);
   bool isRobotMode(const uint64_t &);
   RobotStateMachine::ConstSharedPtr getRobotStateMachine() const noexcept;

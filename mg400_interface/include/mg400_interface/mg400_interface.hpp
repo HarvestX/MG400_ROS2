@@ -61,6 +61,8 @@ public:
   bool configure(const std::string & = "");
 
   bool activate();
+  bool tryBeginServoSession();
+  void endServoSession();
   bool deactivate();
   bool ok();
 

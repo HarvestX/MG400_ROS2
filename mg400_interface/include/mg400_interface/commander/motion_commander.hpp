@@ -15,6 +15,7 @@
 #ifndef __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 #define __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -49,6 +50,19 @@ private:
 public:
   MotionCommander() = delete;
   explicit MotionCommander(MotionTcpInterfaceBase *);
+
+  enum class ServoJFormat
+  {
+    FOUR_AXES_WITH_T,
+    SIX_AXES,
+    WITH_T,
+    FULL,
+  };
+
+  // The MG400 profile sends four joints and t; legacy profiles pad J5 and J6.
+  void servoJ(
+    const std::array<double, 4> & joints, double t, ServoJFormat format,
+    double aheadtime = 50.0, double gain = 500.0);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(

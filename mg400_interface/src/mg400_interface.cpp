@@ -108,6 +108,16 @@ bool MG400Interface::ok()
          this->realtime_tcp_interface->isActive();
 }
 
+bool MG400Interface::tryBeginServoSession()
+{
+  return this->realtime_tcp_interface->tryBeginServoSession();
+}
+
+void MG400Interface::endServoSession()
+{
+  this->realtime_tcp_interface->endServoSession();
+}
+
 const rclcpp::Logger MG400Interface::getLogger() noexcept
 {
   return rclcpp::get_logger("MG400Interface");

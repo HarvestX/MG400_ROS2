@@ -24,7 +24,7 @@ namespace mg400_interface
 
 TEST(TestRobotStateMachine, InitialStateIsUnknown)
 {
-  const RobotStateMachine state_machine;
+  RobotStateMachine state_machine;
 
   EXPECT_EQ(state_machine.getState(), RobotStateMachine::State::UNKNOWN);
   EXPECT_TRUE(state_machine.isState(RobotStateMachine::State::UNKNOWN));
@@ -32,6 +32,8 @@ TEST(TestRobotStateMachine, InitialStateIsUnknown)
   const auto snapshot = state_machine.getSnapshot();
   EXPECT_EQ(snapshot.raw_robot_mode, mg400_msgs::msg::RobotState::RAW_MODE_UNAVAILABLE);
   EXPECT_FALSE(snapshot.feedback_fresh);
+  EXPECT_FALSE(state_machine.isServoSessionActive());
+  EXPECT_FALSE(state_machine.tryBeginServoSession());
 }
 
 TEST(TestRobotStateMachine, MapsRobotModes)
@@ -66,6 +68,7 @@ TEST(TestRobotStateMachine, StateValuesMatchRosMessage)
   EXPECT_EQ(static_cast<uint8_t>(State::RUNNING), Message::RUNNING);
   EXPECT_EQ(static_cast<uint8_t>(State::PAUSED_OR_JOG), Message::PAUSED_OR_JOG);
   EXPECT_EQ(static_cast<uint8_t>(State::ERROR), Message::ERROR);
+  EXPECT_EQ(static_cast<uint8_t>(State::SERVO), Message::SERVO);
 }
 
 }  // namespace mg400_interface

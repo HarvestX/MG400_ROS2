@@ -62,7 +62,8 @@ if(BUILD_TESTING)
   set(TEST_TARGETS
     test_response_parser
     test_motion_commander
-    test_dashboard_commander)
+    test_dashboard_commander
+    test_servo_j)
   foreach(TARGET ${TEST_TARGETS})
     ament_add_gmock(${TARGET} test/src/commander/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})

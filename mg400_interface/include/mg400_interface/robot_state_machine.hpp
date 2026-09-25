@@ -41,6 +41,7 @@ public:
     RUNNING = 5,
     PAUSED_OR_JOG = 6,
     ERROR = 7,
+    SERVO = 8,
   };
 
   struct Snapshot
@@ -65,6 +66,11 @@ public:
   // Convert a raw Dobot RobotMode value into a driver state.
   static State fromRobotMode(uint64_t robot_mode) noexcept;
 
+  // A local ServoJ session overlays feedback-derived ENABLE/RUNNING states.
+  bool tryBeginServoSession();
+  void endServoSession();
+  bool isServoSessionActive() const;
+
 private:
   friend class RealtimeFeedbackTcpInterface;
 
@@ -73,6 +79,7 @@ private:
 
   mutable std::mutex mutex_;
   Snapshot snapshot_;
+  bool servo_session_active_{false};
 };
 
 }  // namespace mg400_interface

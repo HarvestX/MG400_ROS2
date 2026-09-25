@@ -111,6 +111,16 @@ RealtimeFeedbackTcpInterface::getRobotStateMachine() const noexcept
   return this->robot_state_machine_;
 }
 
+bool RealtimeFeedbackTcpInterface::tryBeginServoSession()
+{
+  return this->robot_state_machine_->tryBeginServoSession();
+}
+
+void RealtimeFeedbackTcpInterface::endServoSession()
+{
+  this->robot_state_machine_->endServoSession();
+}
+
 void RealtimeFeedbackTcpInterface::disConnect()
 {
   this->robot_state_machine_->reset();
