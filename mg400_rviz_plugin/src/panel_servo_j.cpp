@@ -224,18 +224,19 @@ ServoJPanel::ServoJPanel(QWidget * parent)
     });
 
   ui_timer_ = new QTimer(this);
-  connect(limits_checkbox_, &QCheckBox::toggled, this, [this](bool checked) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (state_.phase != Phase::IDLE) {
-      const QSignalBlocker blocker(limits_checkbox_);
-      limits_checkbox_->setChecked(state_.limits_enabled);
-      return;
-    }
-    state_.limits_enabled = checked;
-    state_.detail = checked ?
+  connect(
+    limits_checkbox_, &QCheckBox::toggled, this, [this](bool checked) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (state_.phase != Phase::IDLE) {
+        const QSignalBlocker blocker(limits_checkbox_);
+        limits_checkbox_->setChecked(state_.limits_enabled);
+        return;
+      }
+      state_.limits_enabled = checked;
+      state_.detail = checked ?
       "Speed and acceleration limits enabled" :
       "Speed and acceleration limits disabled; targets will be sent directly";
-  });
+    });
   connect(ui_timer_, &QTimer::timeout, this, &ServoJPanel::refreshUi);
   ui_timer_->start(50);
   refreshUi();
@@ -286,7 +287,8 @@ void ServoJPanel::onInitialize()
     return;
   }
   node_ = abstraction->get_raw_node();
-  callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive, false);
+  callback_group_ =
+    node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive, false);
   rclcpp::SubscriptionOptions options;
   options.callback_group = callback_group_;
   robot_state_sub_ = node_->create_subscription<RobotState>(
@@ -366,8 +368,8 @@ void ServoJPanel::onEnableClicked()
         try {
           const auto response = future.get();
           state_.detail = response->result ?
-            "EnableRobot accepted; waiting for ENABLE feedback" :
-            "EnableRobot failed, error_id=" + std::to_string(response->error_id);
+          "EnableRobot accepted; waiting for ENABLE feedback" :
+          "EnableRobot failed, error_id=" + std::to_string(response->error_id);
         } catch (const std::exception & error) {
           state_.detail = std::string("EnableRobot failed: ") + error.what();
         }
@@ -415,7 +417,7 @@ void ServoJPanel::onDisableClicked()
             state_.detail = "DisableRobot accepted; waiting for DISABLED feedback";
           } else {
             state_.detail = "DisableRobot failed, error_id=" +
-              std::to_string(response->error_id);
+            std::to_string(response->error_id);
             if (state_.session_id != 0) {
               state_.phase = Phase::STOPPING;
             }
@@ -472,7 +474,8 @@ void ServoJPanel::onStartClicked()
           const auto response = future.get();
           if (!response->success || response->session_id == 0) {
             if (state_.phase == Phase::STARTING ||
-              (state_.phase == Phase::STOPPING && state_.session_id == 0)) {
+            (state_.phase == Phase::STOPPING && state_.session_id == 0))
+            {
               state_.phase = Phase::IDLE;
             }
             state_.detail = "ServoJ start rejected: " + response->message;
@@ -481,7 +484,7 @@ void ServoJPanel::onStartClicked()
           state_.session_id = response->session_id;
           const auto now = Clock::now();
           if (state_.phase != Phase::STARTING || !robotReady(state_, now) ||
-            !feedbackReady(state_, now) || !targetInRange(state_.feedback))
+          !feedbackReady(state_, now) || !targetInRange(state_.feedback))
           {
             if (state_.phase != Phase::DISABLING) {
               state_.phase = Phase::STOPPING;
@@ -503,7 +506,8 @@ void ServoJPanel::onStartClicked()
           state_.detail = "ServoJ streaming from current joint feedback";
         } catch (const std::exception & error) {
           if (state_.phase == Phase::STARTING ||
-            (state_.phase == Phase::STOPPING && state_.session_id == 0)) {
+          (state_.phase == Phase::STOPPING && state_.session_id == 0))
+          {
             state_.phase = Phase::IDLE;
           }
           state_.detail = std::string("ServoJ start request failed: ") + error.what();
@@ -598,12 +602,12 @@ void ServoJPanel::requestStop()
         try {
           const auto response = future.get();
           if (response->success ||
-            response->message == "ServoJ session ID does not match")
+          response->message == "ServoJ session ID does not match")
           {
             state_.session_id = 0;
             state_.phase = Phase::IDLE;
             state_.detail = response->success ?
-              "ServoJ session stopped" : "ServoJ session no longer owned by this panel";
+            "ServoJ session stopped" : "ServoJ session no longer owned by this panel";
           } else {
             state_.detail = "ServoJ stop pending: " + response->message;
           }
@@ -637,13 +641,14 @@ void ServoJPanel::onStreamTimer()
         state_.detail = "Feedback or ServoJ publish deadline lost; publication stopped";
       } else if (now >= state_.next_publish) {
         const double dt = state_.last_publish == Clock::time_point{} ?
-          1.0 / state_.publish_hz :
-          std::chrono::duration<double>(now - state_.last_publish).count();
+        1.0 / state_.publish_hz :
+        std::chrono::duration<double>(now - state_.last_publish).count();
         JointArray next = state_.last_command;
         if (!state_.first_point_pending && targetInRange(state_.target)) {
           if (state_.limits_enabled) {
-            next = limiter_.step(state_.target, std::min(dt, 0.05),
-                kMaximumSpeed, kMaximumAcceleration);
+            next = limiter_.step(
+              state_.target, std::min(dt, 0.05),
+              kMaximumSpeed, kMaximumAcceleration);
           } else {
             next = state_.target;
           }
@@ -693,8 +698,9 @@ void ServoJPanel::updateSliders(const JointArray & joints)
 {
   for (size_t joint = 0; joint < 4; ++joint) {
     const QSignalBlocker blocker(sliders_[joint]);
-    sliders_[joint]->setValue(static_cast<int>(std::lround(
-      joints[joint] * kRadiansToDegrees * kSliderScale)));
+    sliders_[joint]->setValue(
+      static_cast<int>(std::lround(
+        joints[joint] * kRadiansToDegrees * kSliderScale)));
   }
 }
 
@@ -713,10 +719,12 @@ void ServoJPanel::refreshUi()
     displayed_anchor_version_ = snapshot.anchor_version;
   }
   for (size_t joint = 0; joint < 4; ++joint) {
-    feedback_labels_[joint]->setText(snapshot.feedback_seen ?
+    feedback_labels_[joint]->setText(
+      snapshot.feedback_seen ?
       QString::number(snapshot.feedback[joint] * kRadiansToDegrees, 'f', 2) : "--");
     const auto target = snapshot.phase == Phase::IDLE ? snapshot.feedback : snapshot.target;
-    target_labels_[joint]->setText(snapshot.feedback_seen ?
+    target_labels_[joint]->setText(
+      snapshot.feedback_seen ?
       QString::number(target[joint] * kRadiansToDegrees, 'f', 2) : "--");
     if (snapshot.phase != Phase::STREAMING) {
       sliders_[joint]->clearFocus();
