@@ -23,6 +23,9 @@
 #include <rclcpp/node_interfaces/node_base_interface.hpp>
 #include <rclcpp/node_interfaces/node_logging_interface.hpp>
 #include <rclcpp/node_interfaces/node_services_interface.hpp>
+#include <rclcpp/node_interfaces/node_parameters_interface.hpp>
+#include <rclcpp/node_interfaces/node_timers_interface.hpp>
+#include <rclcpp/node_interfaces/node_topics_interface.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_interface/mg400_interface.hpp>
 
@@ -102,6 +105,25 @@ class MotionApiPluginBase
   : public ApiPluginBase<mg400_interface::MotionCommander>
 {
 public:
+  using SharedPtr = std::shared_ptr<MotionApiPluginBase>;
+
+  /// Supply node interfaces needed by streaming plugins before configure().
+  void setNodeResources(
+    const rclcpp::node_interfaces::NodeParametersInterface::SharedPtr parameters,
+    const rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr topics,
+    const rclcpp::node_interfaces::NodeTimersInterface::SharedPtr timers)
+  {
+    node_parameters_if_ = parameters;
+    node_topics_if_ = topics;
+    node_timers_if_ = timers;
+  }
+
+  /// Called after the MG400 connection becomes active.
+  virtual void activate() {}
+
+  /// Called before the MG400 connection is closed.
+  virtual void deactivate() {}
+
   /// Select state rules for starting a motion command or stopping an active jog.
   enum class CommandPolicy
   {
@@ -129,6 +151,10 @@ public:
   }
 
 protected:
+  rclcpp::node_interfaces::NodeParametersInterface::SharedPtr node_parameters_if_;
+  rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr node_topics_if_;
+  rclcpp::node_interfaces::NodeTimersInterface::SharedPtr node_timers_if_;
+
   /// Validate connection and robot state, and log the rejection reason.
   bool isMotionCommandReady(
     const char * command_name,

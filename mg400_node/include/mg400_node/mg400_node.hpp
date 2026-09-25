@@ -28,7 +28,6 @@
 #include <mg400_plugin_base/api_loader_base.hpp>
 #include <mg400_plugin_base/api_plugin_base.hpp>
 #include <pluginlib/class_loader.hpp>
-#include "mg400_node/servo_j_controller.hpp"
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -64,6 +63,7 @@ private:
     "mg400_plugin::MovJIO",
     "mg400_plugin::MovL",
     "mg400_plugin::MovLIO",
+    "mg400_plugin::ServoJ",
   };
 
   std::string ip_address_;
@@ -71,7 +71,6 @@ private:
   mg400_plugin_base::DashboardApiLoader::SharedPtr dashboard_api_loader_;
   mg400_plugin_base::MotionApiLoader::SharedPtr motion_api_loader_;
 
-  std::unique_ptr<ServoJController> servo_j_controller_;
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;
   rclcpp::TimerBase::SharedPtr robot_mode_timer_;

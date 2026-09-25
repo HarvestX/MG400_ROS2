@@ -40,7 +40,7 @@ set_property(TARGET joint_command_publisher_gui PROPERTY AUTORCC ON)
 
 # ===================================================================
 set(TARGET mg400_node)
-ament_auto_add_library(${TARGET} SHARED ./src/${TARGET}.cpp ./src/servo_j_controller.cpp)
+ament_auto_add_library(${TARGET} SHARED ./src/${TARGET}.cpp)
 rclcpp_components_register_node(
   ${TARGET}
     PLUGIN "mg400_node::MG400Node"

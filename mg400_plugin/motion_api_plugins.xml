@@ -30,6 +30,11 @@
     <description>Execute JointMovJ</description>
   </class>
   <class
+      type="mg400_plugin::ServoJ"
+      base_class_type="mg400_plugin_base::MotionApiPluginBase">
+    <description>Stream ServoJ joint targets</description>
+  </class>
+  <class
       type="mg400_plugin::CommandQueue"
       base_class_type="mg400_plugin_base::MotionApiPluginBase">
     <description>Execute Commands with queue</description>

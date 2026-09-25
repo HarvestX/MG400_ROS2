@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MG400_NODE__SERVO_J_CONTROLLER_HPP_
-#define MG400_NODE__SERVO_J_CONTROLLER_HPP_
+#ifndef MG400_PLUGIN_MOTION_API_SERVO_J_HPP_
+#define MG400_PLUGIN_MOTION_API_SERVO_J_HPP_
 
 #include <array>
 #include <chrono>
@@ -26,47 +26,51 @@
 #include <mg400_interface/mg400_interface.hpp>
 #include <mg400_msgs/msg/servo_j.hpp>
 #include <mg400_msgs/srv/servo_j_session.hpp>
-#include <rclcpp_lifecycle/lifecycle_node.hpp>
+#include <mg400_plugin_base/api_plugin_base.hpp>
 
-namespace mg400_node
+namespace mg400_plugin
 {
 
-/** Manages one explicit ServoJ stream without changing the motion plugin API.
+/** Manages one explicit ServoJ stream as a Motion API plugin.
  *
  * The session overlays the feedback-derived state so existing motion plugins
  * reject new goals while the stream is active.
  */
-class ServoJController
+class ServoJ final : public mg400_plugin_base::MotionApiPluginBase
 {
 public:
-  ServoJController(
-    rclcpp_lifecycle::LifecycleNode & node,
-    mg400_interface::MG400Interface::SharedPtr interface,
-    const std::string & wire_format, double default_t, double aheadtime, double gain);
-  ~ServoJController();
+  ServoJ() = default;
+  ~ServoJ() override;
 
-  void activate();
-  void deactivate();
+  void configure(
+    const mg400_interface::MotionCommander::SharedPtr,
+    const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeClockInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeServicesInterface::SharedPtr,
+    const rclcpp::node_interfaces::NodeWaitablesInterface::SharedPtr,
+    const mg400_interface::MG400Interface::SharedPtr) override;
+
+  void activate() override;
+  void deactivate() override;
 
 private:
-  using ServoJ = mg400_msgs::msg::ServoJ;
+  using Setpoint = mg400_msgs::msg::ServoJ;
   using Session = mg400_msgs::srv::ServoJSession;
   using Clock = std::chrono::steady_clock;
 
   void onSession(const Session::Request::SharedPtr, Session::Response::SharedPtr);
-  void onSetpoint(const ServoJ::SharedPtr);
+  void onSetpoint(const Setpoint::SharedPtr);
   void onSendTimer();
   void clearSessionLocked();
 
-  rclcpp_lifecycle::LifecycleNode & node_;
-  mg400_interface::MG400Interface::SharedPtr interface_;
   mg400_common::MG400IKUtil ik_util_;
   mg400_interface::MotionCommander::ServoJFormat wire_format_;
   double default_t_;
   double aheadtime_;
   double gain_;
 
-  rclcpp::Subscription<ServoJ>::SharedPtr setpoint_sub_;
+  rclcpp::Subscription<Setpoint>::SharedPtr setpoint_sub_;
   rclcpp::Service<Session>::SharedPtr session_srv_;
   rclcpp::TimerBase::SharedPtr send_timer_;
 
@@ -83,6 +87,6 @@ private:
   Clock::time_point last_send_{};
 };
 
-}  // namespace mg400_node
+}  // namespace mg400_plugin
 
-#endif  // MG400_NODE__SERVO_J_CONTROLLER_HPP_
+#endif  // MG400_PLUGIN_MOTION_API_SERVO_J_HPP_

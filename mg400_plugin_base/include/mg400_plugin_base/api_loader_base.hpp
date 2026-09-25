@@ -107,10 +107,36 @@ class MotionApiLoader
   : public ApiLoaderBase<MotionApiPluginBase>
 {
 public:
+  using SharedPtr = std::shared_ptr<MotionApiLoader>;
+
   MotionApiLoader()
   : ApiLoaderBase<MotionApiPluginBase>(
       "MotionApiPluginBase")
   {}
+
+  void setNodeResources(
+    const rclcpp::node_interfaces::NodeParametersInterface::SharedPtr parameters,
+    const rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr topics,
+    const rclcpp::node_interfaces::NodeTimersInterface::SharedPtr timers)
+  {
+    for (const auto & plugin : plugin_map_) {
+      plugin.second->setNodeResources(parameters, topics, timers);
+    }
+  }
+
+  void activate()
+  {
+    for (const auto & plugin : plugin_map_) {
+      plugin.second->activate();
+    }
+  }
+
+  void deactivate()
+  {
+    for (const auto & plugin : plugin_map_) {
+      plugin.second->deactivate();
+    }
+  }
 };
 }  // namespace mg400_plugin_base
 #endif
