@@ -1,0 +1,8 @@
+# start=true acquires a new session (session_id must be zero).
+# start=false releases the matching session after the robot is idle.
+bool start
+uint64 session_id
+---
+bool success
+uint64 session_id
+string message

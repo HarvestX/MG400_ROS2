@@ -45,18 +45,22 @@ void MoveJog::configure(
 
 void MoveJog::onServiceCall(
   const ServiceT::Request::SharedPtr req,
-  ServiceT::Response::SharedPtr)
+  ServiceT::Response::SharedPtr res)
 {
-  if (this->mg400_interface_->ok()) {
-    try {
-      this->commander_->moveJog(req->jog.jog_mode);
-    } catch (const std::runtime_error & ex) {
-      RCLCPP_ERROR(this->node_logging_if_->get_logger(), ex.what());
-    } catch (...) {
-      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Interface Error");
-    }
-  } else {
-    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "MG400 is not connected");
+  res->error_id = -1;
+  const auto policy = req->jog.jog_mode.empty() ?
+    CommandPolicy::JOG_STOP : CommandPolicy::STANDARD;
+  if (!this->isMotionCommandReady("MoveJog", policy)) {
+    return;
+  }
+
+  try {
+    this->commander_->moveJog(req->jog.jog_mode);
+    res->error_id = 0;
+  } catch (const std::runtime_error & ex) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), ex.what());
+  } catch (...) {
+    RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Interface Error");
   }
 }
 }  // namespace mg400_plugin

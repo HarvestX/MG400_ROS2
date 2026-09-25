@@ -15,6 +15,7 @@
 #ifndef __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 #define __MG400_INTERFACE_COMMANDER_MOTION_COMMANDER_HPP__
 
+#include <array>
 #include <memory>
 #include <string>
 
@@ -49,6 +50,9 @@ private:
 public:
   MotionCommander() = delete;
   explicit MotionCommander(MotionTcpInterfaceBase *);
+
+  // Send the verified MG400 four-joint ServoJ command with point execution time.
+  void servoJ(const std::array<double, 4> & joints, double t);
 
   // DOBOT MG400 Official Command ---------------------------------------------
   void movJ(

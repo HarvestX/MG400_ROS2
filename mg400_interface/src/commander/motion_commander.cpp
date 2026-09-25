@@ -14,11 +14,39 @@
 
 #include "mg400_interface/commander/motion_commander.hpp"
 
+#include <cmath>
+#include <cstdio>
+#include <stdexcept>
+
 namespace mg400_interface
 {
+
 MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 : tcp_if_(tcp_if)
 {
+}
+
+void MotionCommander::servoJ(const std::array<double, 4> & joints, const double t)
+{
+  for (const auto joint : joints) {
+    if (!std::isfinite(joint) || std::abs(joint) > 6.283185307179586) {
+      throw std::invalid_argument("ServoJ joint target must be finite and within +/-2pi");
+    }
+  }
+  if (!std::isfinite(t) || t < 0.004 || t > 3600.0) {
+    throw std::invalid_argument("ServoJ t is outside [0.004, 3600]");
+  }
+
+  char buf[128];
+  const int length = std::snprintf(
+    buf, sizeof(buf), "ServoJ(%.6f,%.6f,%.6f,%.6f,t=%.4f)\n",
+    rad2degree(joints[0]), rad2degree(joints[1]),
+    rad2degree(joints[2]), rad2degree(joints[3]), t);
+  if (length < 0 || static_cast<size_t>(length) >= sizeof(buf)) {
+    throw std::runtime_error("ServoJ command formatting failed");
+  }
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
+  this->tcp_if_->sendCommand(buf);
 }
 
 // DOBOT MG400 Official Command ---------------------------------------------

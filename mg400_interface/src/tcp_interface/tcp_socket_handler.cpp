@@ -14,6 +14,8 @@
 
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
+#include <cstring>
+
 namespace mg400_interface
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
@@ -106,7 +108,11 @@ void TcpSocketHandler::send(const void * buf, uint32_t len)
     throw TcpSocketException("tcp is disconnected");
   }
 
-  RCLCPP_INFO(LOGGER, "send : %s", (const char *)buf);
+  if (len >= 6 && std::memcmp(buf, "ServoJ", 6) == 0) {
+    RCLCPP_DEBUG(LOGGER, "send : %s", static_cast<const char *>(buf));
+  } else {
+    RCLCPP_INFO(LOGGER, "send : %s", static_cast<const char *>(buf));
+  }
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {

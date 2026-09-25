@@ -14,6 +14,7 @@
   <depend>mg400_msgs</depend>
   <depend>mg400_plugin_base</depend>
   <depend>rclcpp_action</depend>
+  <depend>mg400_common</depend>
   <depend>rclcpp_components</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>rclcpp</depend>

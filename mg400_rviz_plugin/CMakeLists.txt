@@ -11,7 +11,8 @@ ament_auto_find_build_dependencies()
 set(CMAKE_AUTOMOC ON)
 
 set(include_files
-  include/mg400_rviz_plugin/panel_mg400_controller.hpp)
+  include/mg400_rviz_plugin/panel_mg400_controller.hpp
+  include/mg400_rviz_plugin/panel_servo_j.hpp)
 
 foreach(header "${include_files}")
   qt5_wrap_cpp(include_wrapped "${header}")
@@ -25,6 +26,14 @@ pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(
+    test_servo_j_panel_model
+    test/test_servo_j_panel_model.cpp
+    src/servo_j_panel_model.cpp)
+  target_include_directories(test_servo_j_panel_model PRIVATE include)
+  ament_target_dependencies(test_servo_j_panel_model sensor_msgs)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()

@@ -28,6 +28,7 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
   this->motion_tcp_if_ = std::make_unique<MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface = std::make_shared<RealtimeFeedbackTcpInterface>(
     this->IP, frame_id_prefix);
+  this->robot_state_machine = this->realtime_tcp_interface->getRobotStateMachine();
 
   this->controller_error_msg_generator =
     std::make_unique<ErrorMsgGenerator>("alarm_controller.json");
@@ -105,6 +106,16 @@ bool MG400Interface::ok()
   // We assume MG400Interface is ok when realtime tcp interface is active.
   return this->isConnected() &&
          this->realtime_tcp_interface->isActive();
+}
+
+bool MG400Interface::tryBeginServoSession()
+{
+  return this->realtime_tcp_interface->tryBeginServoSession();
+}
+
+void MG400Interface::endServoSession()
+{
+  this->realtime_tcp_interface->endServoSession();
 }
 
 const rclcpp::Logger MG400Interface::getLogger() noexcept

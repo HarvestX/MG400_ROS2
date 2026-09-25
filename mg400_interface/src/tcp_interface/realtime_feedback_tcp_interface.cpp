@@ -20,7 +20,8 @@ namespace mg400_interface
 RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
   const std::string & ip, const std::string & prefix)
 : frame_id_prefix(prefix),
-  current_joints_{}, rt_data_{}
+  current_joints_{}, rt_data_{},
+  robot_state_machine_(std::make_shared<RobotStateMachine>())
 {
   this->is_running_ = false;
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
@@ -36,6 +37,7 @@ RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
 void RealtimeFeedbackTcpInterface::init() noexcept
 {
   try {
+    this->robot_state_machine_->reset();
     this->is_running_ = true;
     this->thread_ = std::make_unique<std::thread>(&RealtimeFeedbackTcpInterface::recvData, this);
   } catch (const TcpSocketException & err) {
@@ -103,13 +105,31 @@ bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
   }
 }
 
+RobotStateMachine::ConstSharedPtr
+RealtimeFeedbackTcpInterface::getRobotStateMachine() const noexcept
+{
+  return this->robot_state_machine_;
+}
+
+bool RealtimeFeedbackTcpInterface::tryBeginServoSession()
+{
+  return this->robot_state_machine_->tryBeginServoSession();
+}
+
+void RealtimeFeedbackTcpInterface::endServoSession()
+{
+  this->robot_state_machine_->endServoSession();
+}
+
 void RealtimeFeedbackTcpInterface::disConnect()
 {
+  this->robot_state_machine_->reset();
   this->is_running_ = false;
   if (this->thread_->joinable()) {
     this->thread_->join();
   }
   this->tcp_socket_->disConnect();
+  this->robot_state_machine_->reset();
   RCLCPP_INFO(this->getLogger(), "Close connection.");
 }
 
@@ -130,6 +150,7 @@ void RealtimeFeedbackTcpInterface::recvData()
         RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
+        this->robot_state_machine_->reset();
         continue;
       }
 
@@ -137,6 +158,7 @@ void RealtimeFeedbackTcpInterface::recvData()
         // Error: Invalid size
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = nullptr;
+        this->robot_state_machine_->reset();
         continue;
       } else {
         // Success
@@ -149,8 +171,10 @@ void RealtimeFeedbackTcpInterface::recvData()
       for (uint64_t i = 0; i < this->current_joints_.size(); ++i) {
         this->current_joints_[i] = this->rt_data_->q_actual[i] * TO_RADIAN;
       }
+      this->robot_state_machine_->update(this->rt_data_->robot_mode);
     } catch (const TcpSocketException & err) {
       this->tcp_socket_->disConnect();
+      this->robot_state_machine_->reset();
       RCLCPP_ERROR(this->getLogger(), "Tcp recv error: %s", err.what());
       return;
     }

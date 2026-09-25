@@ -31,6 +31,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
+  this->declare_parameter<double>("servo_j_default_t", 0.1);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(
@@ -51,6 +52,9 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 MG400Node::~MG400Node()
 {
   this->cancelTimer();
+  if (this->motion_api_loader_) {
+    this->motion_api_loader_->deactivate();
+  }
   if (this->interface_) {
     this->interface_->deactivate();
   }
@@ -103,7 +107,6 @@ CallbackReturn MG400Node::on_configure(const State &)
     RCLCPP_ERROR(this->get_logger(), "Failed to configure MG400Interface.");
     return CallbackReturn::FAILURE;
   }
-
   this->dashboard_api_loader_ =
     std::make_shared<mg400_plugin_base::DashboardApiLoader>();
   this->dashboard_api_loader_->loadPlugins(
@@ -123,6 +126,10 @@ CallbackReturn MG400Node::on_configure(const State &)
     std::make_shared<mg400_plugin_base::MotionApiLoader>();
   this->motion_api_loader_->loadPlugins(
     this->get_parameter("motion_api_plugins").as_string_array());
+  this->motion_api_loader_->setNodeResources(
+    this->get_node_parameters_interface(),
+    this->get_node_topics_interface(),
+    this->get_node_timers_interface());
   this->motion_api_loader_->configure(
     this->interface_->motion_commander,
     this->get_node_base_interface(),
@@ -138,8 +145,11 @@ CallbackReturn MG400Node::on_configure(const State &)
     "joint_states", rclcpp::SystemDefaultsQoS());
   this->robot_mode_pub_ = this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
+  this->robot_state_pub_ = this->create_publisher<mg400_msgs::msg::RobotState>(
+    "robot_state", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
+  this->publishRobotState();
 
   this->connection_interrupted_ = false;
 
@@ -163,8 +173,10 @@ CallbackReturn MG400Node::on_activate(const State &)
     }
     return CallbackReturn::FAILURE;
   }
+  this->motion_api_loader_->activate();
 
   this->runTimer();
+  this->publishRobotState();
   this->connection_interrupted_ = false;
 
   RCLCPP_INFO(this->get_logger(), "Connected to MG400 at %s", this->ip_address_.c_str());
@@ -176,9 +188,11 @@ CallbackReturn MG400Node::on_deactivate(const State &)
 {
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
+  this->motion_api_loader_->deactivate();
 
   this->cancelTimer();
   this->interface_->deactivate();
+  this->publishRobotState();
 
   if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
@@ -191,10 +205,14 @@ CallbackReturn MG400Node::on_deactivate(const State &)
 CallbackReturn MG400Node::on_cleanup(const State &)
 {
   this->mg400_connected_pub_.reset();
+  if (this->motion_api_loader_) {
+    this->motion_api_loader_->deactivate();
+  }
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
   this->robot_mode_pub_.reset();
+  this->robot_state_pub_.reset();
   this->error_id_pub_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
@@ -204,10 +222,14 @@ CallbackReturn MG400Node::on_cleanup(const State &)
 CallbackReturn MG400Node::on_shutdown(const State &)
 {
   this->cancelTimer();
+  if (this->motion_api_loader_) {
+    this->motion_api_loader_->deactivate();
+  }
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
   this->robot_mode_pub_.reset();
+  this->robot_state_pub_.reset();
   this->error_id_pub_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
@@ -218,10 +240,14 @@ CallbackReturn MG400Node::on_shutdown(const State &)
 CallbackReturn MG400Node::on_error(const State &)
 {
   this->cancelTimer();
+  if (this->motion_api_loader_) {
+    this->motion_api_loader_->deactivate();
+  }
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
   this->robot_mode_pub_.reset();
+  this->robot_state_pub_.reset();
   this->error_id_pub_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
@@ -246,16 +272,25 @@ void MG400Node::onJointStateTimer()
 
 void MG400Node::onRobotModeTimer()
 {
-  if (!this->interface_->ok()) {
+  const auto snapshot = this->publishRobotState();
+  if (!snapshot.feedback_fresh) {
     return;
   }
 
   auto msg = std::make_unique<mg400_msgs::msg::RobotMode>();
-  uint64_t mode;
-  if (this->interface_->realtime_tcp_interface->getRobotMode(mode)) {
-    msg->robot_mode = mode;
-    this->robot_mode_pub_->publish(std::move(msg));
-  }
+  msg->robot_mode = snapshot.raw_robot_mode;
+  this->robot_mode_pub_->publish(std::move(msg));
+}
+
+mg400_interface::RobotStateMachine::Snapshot MG400Node::publishRobotState()
+{
+  const auto snapshot = this->interface_->robot_state_machine->getSnapshot();
+  auto msg = std::make_unique<mg400_msgs::msg::RobotState>();
+  msg->state = static_cast<uint8_t>(snapshot.state);
+  msg->raw_robot_mode = snapshot.raw_robot_mode;
+  msg->feedback_fresh = snapshot.feedback_fresh;
+  this->robot_state_pub_->publish(std::move(msg));
+  return snapshot;
 }
 
 void MG400Node::onErrorTimer()
