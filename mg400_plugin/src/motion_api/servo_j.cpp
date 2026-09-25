@@ -47,29 +47,9 @@ void ServoJ::configure(
     throw std::runtime_error("ServoJ plugin node resources are not configured");
   }
 
-  const auto wire_format = node_parameters_if_->get_parameter("servo_j_wire_format").as_string();
   default_t_ = node_parameters_if_->get_parameter("servo_j_default_t").as_double();
-  aheadtime_ = node_parameters_if_->get_parameter("servo_j_aheadtime").as_double();
-  gain_ = node_parameters_if_->get_parameter("servo_j_gain").as_double();
-
-  using Format = mg400_interface::MotionCommander::ServoJFormat;
-  if (wire_format == "four_axes_with_t") {
-    wire_format_ = Format::FOUR_AXES_WITH_T;
-  } else if (wire_format == "six_axes") {
-    wire_format_ = Format::SIX_AXES;
-  } else if (wire_format == "with_t") {
-    wire_format_ = Format::WITH_T;
-  } else if (wire_format == "full") {
-    wire_format_ = Format::FULL;
-  } else {
-    throw std::invalid_argument(
-            "servo_j_wire_format must be four_axes_with_t, six_axes, with_t, or full");
-  }
-  if (!std::isfinite(default_t_) || default_t_ < 0.004 || default_t_ > 3600.0 ||
-    !std::isfinite(aheadtime_) || aheadtime_ < 20.0 || aheadtime_ > 100.0 ||
-    !std::isfinite(gain_) || gain_ < 200.0 || gain_ > 1000.0)
-  {
-    throw std::invalid_argument("ServoJ t, aheadtime, or gain parameter is out of range");
+  if (!std::isfinite(default_t_) || default_t_ < 0.004 || default_t_ > 3600.0) {
+    throw std::invalid_argument("servo_j_default_t must be within [0.004, 3600]");
   }
 
   next_session_id_ = static_cast<uint64_t>(Clock::now().time_since_epoch().count());
@@ -254,8 +234,7 @@ void ServoJ::onSendTimer()
     return;
   }
   try {
-    commander_->servoJ(
-      target_, target_t_, wire_format_, aheadtime_, gain_);
+    commander_->servoJ(target_, target_t_);
     last_send_ = Clock::now();
     have_new_target_ = false;
   } catch (const std::exception & e) {

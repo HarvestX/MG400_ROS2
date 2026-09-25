@@ -65,10 +65,7 @@ private:
   void clearSessionLocked();
 
   mg400_common::MG400IKUtil ik_util_;
-  mg400_interface::MotionCommander::ServoJFormat wire_format_;
   double default_t_;
-  double aheadtime_;
-  double gain_;
 
   rclcpp::Subscription<Setpoint>::SharedPtr setpoint_sub_;
   rclcpp::Service<Session>::SharedPtr session_srv_;

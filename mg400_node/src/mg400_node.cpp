@@ -31,10 +31,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
-  this->declare_parameter<std::string>("servo_j_wire_format", "four_axes_with_t");
   this->declare_parameter<double>("servo_j_default_t", 0.1);
-  this->declare_parameter<double>("servo_j_aheadtime", 50.0);
-  this->declare_parameter<double>("servo_j_gain", 500.0);
 
   if (this->get_parameter("auto_configure").as_bool()) {
     RCLCPP_INFO(

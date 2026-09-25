@@ -26,56 +26,28 @@ MotionCommander::MotionCommander(MotionTcpInterfaceBase * tcp_if)
 {
 }
 
-void MotionCommander::servoJ(
-  const std::array<double, 4> & joints, const double t, const ServoJFormat format,
-  const double aheadtime, const double gain)
+void MotionCommander::servoJ(const std::array<double, 4> & joints, const double t)
 {
   for (const auto joint : joints) {
     if (!std::isfinite(joint) || std::abs(joint) > 6.283185307179586) {
       throw std::invalid_argument("ServoJ joint target must be finite and within +/-2pi");
     }
   }
-  if (format != ServoJFormat::SIX_AXES && (!std::isfinite(t) || t < 0.004 || t > 3600.0)) {
+  if (!std::isfinite(t) || t < 0.004 || t > 3600.0) {
     throw std::invalid_argument("ServoJ t is outside [0.004, 3600]");
   }
-  if (format == ServoJFormat::FULL &&
-    (!std::isfinite(aheadtime) || aheadtime < 20.0 || aheadtime > 100.0 ||
-    !std::isfinite(gain) || gain < 200.0 || gain > 1000.0))
-  {
-    throw std::invalid_argument("ServoJ aheadtime or gain is outside its supported range");
-  }
 
-  if (format == ServoJFormat::FOUR_AXES_WITH_T) {
-    char buf[128];
-    const int length = std::snprintf(
-      buf, sizeof(buf), "ServoJ(%.6f,%.6f,%.6f,%.6f,t=%.4f)\n",
-      rad2degree(joints[0]), rad2degree(joints[1]),
-      rad2degree(joints[2]), rad2degree(joints[3]), t);
-    if (length < 0 || static_cast<size_t>(length) >= sizeof(buf)) {
-      throw std::runtime_error("ServoJ command formatting failed");
-    }
-    std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
-    this->tcp_if_->sendCommand(buf);
-    return;
-  }
-
-  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
-  char buf[256];
-  int length = std::snprintf(
-    buf, sizeof(buf), "ServoJ(%.6f,%.6f,%.6f,%.6f,0.000000,0.000000",
+  char buf[128];
+  const int length = std::snprintf(
+    buf, sizeof(buf), "ServoJ(%.6f,%.6f,%.6f,%.6f,t=%.4f)\n",
     rad2degree(joints[0]), rad2degree(joints[1]),
-    rad2degree(joints[2]), rad2degree(joints[3]));
-  if (format == ServoJFormat::WITH_T) {
-    length += std::snprintf(buf + length, sizeof(buf) - length, ",t=%.4f", t);
-  } else if (format == ServoJFormat::FULL) {
-    length += std::snprintf(
-      buf + length, sizeof(buf) - length,
-      ",t=%.4f,aheadtime=%.3f,gain=%.3f", t, aheadtime, gain);
+    rad2degree(joints[2]), rad2degree(joints[3]), t);
+  if (length < 0 || static_cast<size_t>(length) >= sizeof(buf)) {
+    throw std::runtime_error("ServoJ command formatting failed");
   }
-  std::snprintf(buf + length, sizeof(buf) - length, ")");
+  std::lock_guard<std::mutex> lock_tcp_if_(this->mutex_tcp_if_);
   this->tcp_if_->sendCommand(buf);
 }
-
 
 // DOBOT MG400 Official Command ---------------------------------------------
 void MotionCommander::movJ(

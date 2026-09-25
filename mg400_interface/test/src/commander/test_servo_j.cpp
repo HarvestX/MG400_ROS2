@@ -35,39 +35,7 @@ TEST(ServoJCommander, FourAxisFormatMatchesMG400Example)
   mg400_interface::MotionCommander commander(&tcp);
   EXPECT_CALL(tcp, sendCommand(testing::StrEq(
     "ServoJ(90.000000,-45.000000,0.000000,180.000000,t=0.0500)\n")));
-  commander.servoJ(
-    {M_PI_2, -M_PI_4, 0.0, M_PI}, 0.05,
-    mg400_interface::MotionCommander::ServoJFormat::FOUR_AXES_WITH_T);
-}
-
-TEST(ServoJCommander, SixAxisFormatPadsMG400Joints)
-{
-  MockMotionTcp tcp;
-  mg400_interface::MotionCommander commander(&tcp);
-  EXPECT_CALL(
-    tcp, sendCommand(testing::StrEq(
-      "ServoJ(90.000000,-45.000000,0.000000,180.000000,0.000000,0.000000)")));
-  commander.servoJ(
-    {M_PI_2, -M_PI_4, 0.0, M_PI}, 0.1,
-    mg400_interface::MotionCommander::ServoJFormat::SIX_AXES);
-}
-
-TEST(ServoJCommander, OptionalFormats)
-{
-  MockMotionTcp tcp;
-  mg400_interface::MotionCommander commander(&tcp);
-  EXPECT_CALL(tcp, sendCommand(testing::StrEq(
-    "ServoJ(0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,t=0.1000)")));
-  commander.servoJ(
-    {0.0, 0.0, 0.0, 0.0}, 0.1,
-    mg400_interface::MotionCommander::ServoJFormat::WITH_T);
-
-  EXPECT_CALL(tcp, sendCommand(testing::StrEq(
-    "ServoJ(0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,"
-    "t=0.1000,aheadtime=50.000,gain=500.000)")));
-  commander.servoJ(
-    {0.0, 0.0, 0.0, 0.0}, 0.1,
-    mg400_interface::MotionCommander::ServoJFormat::FULL);
+  commander.servoJ({M_PI_2, -M_PI_4, 0.0, M_PI}, 0.05);
 }
 
 TEST(ServoJCommander, RejectsInvalidTarget)
@@ -76,14 +44,10 @@ TEST(ServoJCommander, RejectsInvalidTarget)
   mg400_interface::MotionCommander commander(&tcp);
   EXPECT_CALL(tcp, sendCommand(testing::_)).Times(0);
   EXPECT_THROW(
-    commander.servoJ(
-      {std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0, 0.0}, 0.1,
-      mg400_interface::MotionCommander::ServoJFormat::SIX_AXES),
+    commander.servoJ({std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0, 0.0}, 0.1),
     std::invalid_argument);
   EXPECT_THROW(
-    commander.servoJ(
-      {0.0, 0.0, 0.0, 0.0}, 0.001,
-      mg400_interface::MotionCommander::ServoJFormat::FOUR_AXES_WITH_T),
+    commander.servoJ({0.0, 0.0, 0.0, 0.0}, 0.001),
     std::invalid_argument);
 }
 
