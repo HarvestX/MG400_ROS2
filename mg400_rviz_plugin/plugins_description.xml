@@ -7,4 +7,12 @@
       Make a MG400 control panel
     </description>
   </class>
+  <class
+      name="mg400_rviz_plugin/ServoJController"
+      type="mg400_rviz_plugin::ServoJPanel"
+      base_class_type="rviz_common::Panel">
+    <description>
+      ServoJ streaming test panel for the MG400
+    </description>
+  </class>
 </library>
