@@ -50,7 +50,7 @@ public:
 
   /// Per-joint current-to-torque conversion gains [Nm/A].
   static constexpr std::array<double, kJointDim> kDefaultTorqueConstants = {
-    1.0, 1.0, 1.0, 1.0};
+    3.491595, 3.824113, 3.6198590, 0.822991};
 
   /// Per-joint sign for q / qd conversion from robot degree units to rad / rad/s.
   static constexpr std::array<double, kJointDim> kDefaultJointSigns = {
@@ -143,7 +143,7 @@ public:
   static constexpr double kDefaultOutputForceDeadband = 1.0;
 
   /// Torque-z output deadband magnitude [Nm].
-  static constexpr double kDefaultOutputTorqueDeadband = 1.0;
+  static constexpr double kDefaultOutputTorqueDeadband = 0.1;
 
   /// Nominal update rate used to scale rate-of-change limits [Hz].
   static constexpr double kDefaultUpdateRateHz = 125.0;
