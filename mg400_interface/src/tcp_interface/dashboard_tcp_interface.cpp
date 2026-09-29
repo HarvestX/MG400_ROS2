@@ -87,52 +87,12 @@ void DashboardTcpInterface::disConnect()
 std::string DashboardTcpInterface::recvResponse()
 {
   std::string response;
-  constexpr int kChunkSize = 128;  // Larger chunk for better efficiency
-  constexpr int kMaxResponseSize = 4096;  // Maximum response size limit
-
-  response.reserve(256);  // Pre-allocate memory to reduce reallocations
-
-  while (response.size() < kMaxResponseSize) {
-    try {
-      // Use stack buffer for temporary storage
-      std::array<char, kChunkSize> buffer{};
-
-      uint32_t bytes_received = 0;
-      this->tcp_socket_->recv(buffer.data(), kChunkSize, bytes_received, 500ms);
-
-      if (bytes_received == 0) {
-        // No data received, break the loop
-        break;
-      }
-
-      // Find semicolon using efficient search
-      auto * semicolon_pos = std::find(buffer.begin(), buffer.end(), ';');
-
-      if (bytes_received > 0) {
-        if (semicolon_pos != buffer.end()) {
-          // Found terminator - append up to and including semicolon
-          size_t bytes_to_copy = std::distance(buffer.begin(), semicolon_pos) + 1;
-          response.append(buffer.data(), bytes_to_copy);
-
-          RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
-          return response;
-        } else {
-          // No terminator found - append entire buffer
-          response.append(buffer.data(), bytes_received);
-        }
-      }
-
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->getLogger(), "Error receiving data: %s", e.what());
-      break;
-    }
+  constexpr uint32_t max_response_size = 4096;
+  if (this->tcp_socket_->recvUntil(response, ';', max_response_size, 500ms)) {
+    RCLCPP_DEBUG(this->getLogger(), "recv: %s", response.c_str());
+  } else {
+    RCLCPP_DEBUG(this->getLogger(), "Waiting for complete dashboard response");
   }
-
-  if (response.size() >= kMaxResponseSize) {
-    RCLCPP_ERROR(this->getLogger(), "Response size exceeded maximum limit");
-  }
-
-  RCLCPP_DEBUG(this->getLogger(), "recv (incomplete): %s", response.c_str());
   return response;
 }
 
