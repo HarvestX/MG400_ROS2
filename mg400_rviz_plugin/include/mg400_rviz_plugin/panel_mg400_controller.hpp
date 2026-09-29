@@ -26,6 +26,7 @@
 #include <mg400_msgs/srv/enable_robot.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/clear_error.hpp>
+#include <mg400_msgs/srv/set_collision_level.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rviz_common/panel.hpp>
@@ -57,11 +58,13 @@ private:
   void tick();
   void sendGoal();
   void sendMovJ();
+  void sendCollisionLevel();
   void copyCurrentAngles();
   void copyCurrentPose();
   void updateControls();
   bool readGoal(ActionT::Goal & goal) const;
   bool readMovJGoal(MovJAction::Goal & goal) const;
+  bool readEnableRequest(mg400_msgs::srv::EnableRobot::Request & request) const;
   void onJointState(const JointState::ConstSharedPtr msg);
   void showCurrentAngles(const std::array<double, 4> & angles);
   void showCurrentPose(const geometry_msgs::msg::Pose & pose);
@@ -72,7 +75,8 @@ private:
 
   template<typename ServiceT>
   void sendRobotRequest(
-    const typename rclcpp::Client<ServiceT>::SharedPtr & client, const QString & name);
+    const typename rclcpp::Client<ServiceT>::SharedPtr & client, const QString & name,
+    const typename ServiceT::Request & request = typename ServiceT::Request());
 
   QLabel * label_mode_;
   QLabel * label_status_;
@@ -80,6 +84,7 @@ private:
   QPushButton * button_enable_;
   QPushButton * button_disable_;
   QPushButton * button_clear_error_;
+  std::array<QLineEdit *, 4> payload_inputs_;
   std::array<QLabel *, 4> current_labels_;
   std::array<QLineEdit *, 4> goal_inputs_;
   QPushButton * button_send_;
@@ -88,6 +93,8 @@ private:
   std::array<QLineEdit *, 4> pose_inputs_;
   QPushButton * button_send_movj_;
   QPushButton * button_copy_pose_;
+  QComboBox * collision_level_;
+  QPushButton * button_set_collision_;
 
   RobotMode::_robot_mode_type current_robot_mode_ = RobotMode::INIT;
   std::array<double, 4> current_angles_{};
@@ -109,6 +116,7 @@ private:
   rclcpp::Client<mg400_msgs::srv::EnableRobot>::SharedPtr enable_client_;
   rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedPtr disable_client_;
   rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr clear_error_client_;
+  rclcpp::Client<mg400_msgs::srv::SetCollisionLevel>::SharedPtr collision_client_;
 };
 }  // namespace mg400_rviz_plugin
 
