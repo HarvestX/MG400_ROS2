@@ -67,6 +67,12 @@ const std::array<double, 6> & ExternalForceEstimator::getEstimatedExternalForce(
 
 bool ExternalForceEstimator::update(const RealTimeData & data)
 {
+  // EnableStatus is independent of RobotMode/alarms: an enabled robot may be
+  // reporting an error while still producing holding torque.
+  if (data.enable_status == 0) {
+    return false;
+  }
+
   this->updateAutoBias(data);
 
   if (!this->isReady()) {
