@@ -7,4 +7,12 @@
       Control MG400 with Enable, Disable, Clear Error and MovJ/JointMovJ tabs
     </description>
   </class>
+  <class
+      name="mg400_rviz_plugin/Identify"
+      type="mg400_rviz_plugin::IdentifyPanel"
+      base_class_type="rviz_common::Panel">
+    <description>
+      Identify MG400 parameters with Enable payload, pose sequences and MCAP recording
+    </description>
+  </class>
 </library>

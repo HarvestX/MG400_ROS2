@@ -72,6 +72,7 @@ def generate_launch_description():
             ('/mg400/robot_description', PathJoinSubstitution(['/', ns, 'robot_description'])),
             ('/mg400/robot_mode', PathJoinSubstitution(['/', ns, 'robot_mode'])),
             ('/mg400/joint_states', PathJoinSubstitution(['/', ns, 'joint_states'])),
+            ('/mg400/joint_currents', PathJoinSubstitution(['/', ns, 'joint_currents'])),
             ('/mg400/enable_robot', PathJoinSubstitution(['/', ns, 'enable_robot'])),
             ('/mg400/disable_robot', PathJoinSubstitution(['/', ns, 'disable_robot'])),
             ('/mg400/clear_error', PathJoinSubstitution(['/', ns, 'clear_error'])),

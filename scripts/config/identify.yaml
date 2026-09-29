@@ -1,0 +1,83 @@
+# Reusable measurement and identification settings. No motion is started by loading this file.
+schema_version: 1
+payload:
+  load_kg: 0.1
+  center_x_m: 0.045
+  center_y_m: 0.012
+  center_z_m: 0.01
+motion:
+  speed_percent: 5
+  acceleration_percent: 5
+measurement:
+  settle_sec: 1.0
+  record_sec: 3.0
+  repeats: 1
+identify:
+  torque_constants_nm_per_a: [3.407905, 3.304349, 5.653824, 0.747993]
+  torque_signs: [-1, 1, 1, 1]
+  joint_signs: [1, 1, 1, 1]
+  reference_deg: [0, 45, 45, 0]
+  min_duration_sec: 1.0
+  max_span_deg: 0.5
+# base: bias reference, train: fitting, check: validation, move: motion only.
+# Review poses and connecting paths for your environment before Run.
+poses:
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: train, joints_deg: [-24.072, 47.533, 68.864, -14.203]}
+  - {kind: train, joints_deg: [-13.274, 27.053, 41.376, -16.731]}
+  - {kind: train, joints_deg: [27.155, 46.359, 38.477, -54.139]}
+  - {kind: train, joints_deg: [-37.698, 20.938, 24.831, -20.166]}
+  - {kind: train, joints_deg: [38.726, 25.596, 21.223, 53.343]}
+  - {kind: train, joints_deg: [-32.319, 62.275, 31.905, -43.043]}
+  - {kind: train, joints_deg: [-6.328, 55.779, 52.643, 20.368]}
+  - {kind: train, joints_deg: [13.944, 49.208, 49.970, 51.820]}
+  - {kind: train, joints_deg: [25.647, 61.098, 56.613, 5.440]}
+  - {kind: train, joints_deg: [17.485, 55.739, 45.419, -32.956]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: train, joints_deg: [0.021, 30.388, 24.639, 28.191]}
+  - {kind: train, joints_deg: [-29.693, 38.315, 63.336, -56.518]}
+  - {kind: train, joints_deg: [7.449, 54.518, 65.819, -5.480]}
+  - {kind: train, joints_deg: [-28.386, 52.391, 29.259, -47.639]}
+  - {kind: train, joints_deg: [-20.201, 23.520, 60.468, -55.697]}
+  - {kind: train, joints_deg: [34.602, 49.219, 20.630, -52.755]}
+  - {kind: train, joints_deg: [-9.267, 22.427, 40.887, 11.473]}
+  - {kind: train, joints_deg: [-23.633, 42.427, 52.543, 17.745]}
+  - {kind: train, joints_deg: [34.868, 55.820, 45.693, 13.981]}
+  - {kind: train, joints_deg: [-11.047, 26.216, 49.003, -20.900]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: train, joints_deg: [-39.618, 45.655, 24.076, 0.254]}
+  - {kind: train, joints_deg: [-17.382, 23.208, 28.528, 4.525]}
+  - {kind: train, joints_deg: [17.708, 25.075, 61.581, 44.270]}
+  - {kind: train, joints_deg: [-36.708, 56.095, 35.343, 14.677]}
+  - {kind: train, joints_deg: [24.189, 32.879, 66.172, -15.254]}
+  - {kind: train, joints_deg: [30.847, 49.207, 66.190, -0.243]}
+  - {kind: train, joints_deg: [-3.868, 32.500, 26.193, -12.980]}
+  - {kind: train, joints_deg: [19.491, 38.064, 23.618, 9.229]}
+  - {kind: train, joints_deg: [35.676, 60.096, 38.890, -3.433]}
+  - {kind: train, joints_deg: [35.484, 56.853, 37.428, -50.068]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: train, joints_deg: [7.440, 59.664, 24.524, 5.787]}
+  - {kind: train, joints_deg: [38.158, 36.306, 25.084, 19.860]}
+  - {kind: train, joints_deg: [29.566, 42.154, 39.213, -20.719]}
+  - {kind: train, joints_deg: [-21.139, 30.812, 62.143, 44.035]}
+  - {kind: train, joints_deg: [-11.828, 24.012, 56.904, -3.682]}
+  - {kind: train, joints_deg: [33.069, 61.578, 52.830, 43.415]}
+  - {kind: train, joints_deg: [11.766, 32.241, 36.103, -3.307]}
+  - {kind: train, joints_deg: [-29.942, 61.753, 30.297, 36.833]}
+  - {kind: train, joints_deg: [31.455, 20.307, 47.917, -59.705]}
+  - {kind: train, joints_deg: [-28.525, 53.942, 54.081, 8.991]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: check, joints_deg: [-37.440, 48.718, 45.014, -36.654]}
+  - {kind: check, joints_deg: [12.941, 63.198, 68.167, -7.857]}
+  - {kind: check, joints_deg: [-27.789, 61.464, 55.682, -2.159]}
+  - {kind: check, joints_deg: [-11.665, 55.419, 37.102, -39.851]}
+  - {kind: check, joints_deg: [-29.066, 37.350, 49.878, -57.417]}
+  - {kind: check, joints_deg: [4.832, 32.433, 25.518, -19.566]}
+  - {kind: check, joints_deg: [-26.001, 41.382, 60.983, -20.551]}
+  - {kind: check, joints_deg: [-4.075, 47.488, 41.765, 1.834]}
+  - {kind: check, joints_deg: [-18.953, 27.142, 36.925, -35.693]}
+  - {kind: check, joints_deg: [-25.361, 43.817, 41.709, -40.996]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
+  - {kind: check, joints_deg: [-38.363, 41.022, 30.896, 28.532]}
+  - {kind: check, joints_deg: [-4.431, 64.825, 21.570, -16.556]}
+  - {kind:  base, joints_deg: [0, 45, 45, 0]}
