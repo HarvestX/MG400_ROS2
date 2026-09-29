@@ -15,14 +15,17 @@
 #ifndef __MG400_NODE_MG400_NODE_HPP__
 #define __MG400_NODE_MG400_NODE_HPP__
 
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <memory>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
+#include <mg400_msgs/msg/joint_currents.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <mg400_msgs/srv/get_external_force.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -74,6 +77,8 @@ private:
 
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;
+  rclcpp::TimerBase::SharedPtr end_pose_timer_;
+  rclcpp::TimerBase::SharedPtr joint_currents_timer_;
   rclcpp::TimerBase::SharedPtr robot_mode_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
   rclcpp::TimerBase::SharedPtr interface_check_timer_;
@@ -81,6 +86,8 @@ private:
   rclcpp::TimerBase::SharedPtr external_force_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr end_pose_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::JointCurrents>::SharedPtr joint_currents_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
   rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
@@ -102,6 +109,8 @@ public:
 
   void onInit();
   void onJointStateTimer();
+  void onEndPoseTimer();
+  void onJointCurrentsTimer();
   void onRobotModeTimer();
   void onErrorTimer();
   void onInterfaceCheckTimer();
