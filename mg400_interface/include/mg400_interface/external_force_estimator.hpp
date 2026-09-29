@@ -67,7 +67,7 @@ public:
   /// Startup auto-bias sample count.  0 disables the calibration phase.
   static constexpr int kDefaultAutoBiasSampleCount = 0;
 
-  /// Flip the sign of the estimated Fy component in the output frame.
+  /// Flip estimated origin-axis Fy before rotating into the flange frame.
   static constexpr bool kDefaultInvertForceYAxis = false;
 
   /// EMA smoothing factor for the estimated wrench (0 = heavily smoothed, 1 = raw).
@@ -202,8 +202,9 @@ public:
   bool update(const RealTimeData & data);
 
   /// Most recently computed estimated external force / torque as a six-element array
-  /// [Fx, Fy, Fz, 0, 0, Tz] in N / Nm.  Output-frame conversion, EMA filtering, and
-  /// output deadband are already applied.
+  /// [Fx, Fy, Fz, 0, 0, Tz] in N / Nm, expressed in mg400_end_effector_flange
+  /// with torque about the flange origin. Tx and Ty are unestimated, stored as zero.
+  /// Origin-axis EMA filtering, flange-frame rotation, and output deadband are applied.
   const std::array<double, 6> & getEstimatedExternalForce() const;
 
   /// Returns true once the auto-bias calibration phase has completed.
@@ -239,7 +240,8 @@ private:
     const Eigen::Vector4d & wrench,
     double min_singular_value);
 
-  Eigen::Vector4d toOutputFrameWrench(const Eigen::Vector4d & wrench) const;
+  Eigen::Vector4d toOutputFrameWrench(
+    const Eigen::Vector4d & wrench, double flange_yaw) const;
   Eigen::Vector4d applyOutputDeadband(const Eigen::Vector4d & wrench) const;
 
   Config config_;
@@ -253,7 +255,7 @@ private:
   std::array<double, kJointDim> auto_bias_accumulator_;
   int auto_bias_samples_collected_;
 
-  // Wrench estimation state.
+  // Wrench estimation state in the fixed robot-origin axes, at the flange point.
   Eigen::Vector4d prev_wrench_;
   bool has_prev_wrench_;
   Eigen::Vector4d filtered_wrench_;

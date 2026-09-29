@@ -201,3 +201,28 @@ Output deadbands are applied afterward, preserving force direction and moment
 sign. For example, a force magnitude of 3 N immediately before the output
 deadband becomes 2 N. Thus the published value can be smaller and respond
 more slowly than the estimate obtained from the Jacobian.
+
+## 6. Express the output in the flange frame
+
+The solve, singularity guard, rate limits, and EMA operate on a wrench at the
+flange point, with components along the fixed robot-origin axes. Before returning
+the result, rotate the force and moment into `mg400_end_effector_flange` axes.
+For MG400, the flange has yaw $\psi=q_1+q_4$ and no roll or pitch:
+
+$$
+F_{\mathrm{flange}}=R_z(\psi)^T F_{\mathrm{origin\ axes}},
+\qquad
+\tau_{\mathrm{flange}}=R_z(\psi)^T\tau_{\mathrm{origin\ axes}}.
+$$
+
+Thus $F'_x=\cos\psi F_x+\sin\psi F_y$ and
+$F'_y=-\sin\psi F_x+\cos\psi F_y$; $F_z$ and $T_z$ are unchanged.
+The yaw comes from the same realtime sample used for the estimate. Optional
+`invert_force_y_axis` calibration is applied to origin-axis $F_y$ before this
+rotation. The magnitude-based output deadbands are applied after rotation.
+
+There is no $r\times F$ term: the moment reference point remains the flange.
+The returned array, ROS topic, and service response all use this flange-frame
+convention. Both ROS messages set `header.frame_id` to
+`<prefix>mg400_end_effector_flange`. $T_x$ and $T_y$ are unestimated and stored as
+zero; this is not a full six-axis measurement.

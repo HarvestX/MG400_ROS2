@@ -193,7 +193,7 @@ int main(int argc, char ** argv)
       std::array<double, 6> ext_force;
       if (rt_tcp_if->getExternalForce(ext_force)) {
         printf(
-          "external_force:\t\t\t"
+          "external_force (flange frame, N/Nm):\t"
           "[%.3lf, %.3lf, %.3lf, %.3lf, %.3lf, %.3lf]\n",
           ext_force[0], ext_force[1], ext_force[2],
           ext_force[3], ext_force[4], ext_force[5]);
