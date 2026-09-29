@@ -36,6 +36,7 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::string>("prefix", "");
   this->declare_parameter<bool>("publish_end_pose", false);
   this->declare_parameter<bool>("publish_joint_currents", false);
+  this->declare_parameter<bool>("publish_error_id", false);
   this->declare_parameter<bool>("enable_external_force_estimator", false);
   external_force_estimator_enabled_ = false;
 
@@ -389,6 +390,10 @@ void MG400Node::onGetExternalForce(
 
 void MG400Node::onErrorTimer()
 {
+  // Read each cycle so automatic error polling can be toggled at runtime.
+  if (!this->get_parameter("publish_error_id").as_bool()) {
+    return;
+  }
   if (!this->interface_->ok()) {
     return;
   }
