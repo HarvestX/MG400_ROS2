@@ -11,7 +11,8 @@
   },
   "[cpp]": {
     "editor.tabSize": 2,
-    "editor.defaultFormatter": "zachflower.uncrustify"
+    "editor.defaultFormatter": "zachflower.uncrustify",
+    "editor.formatOnSave": true
   },
   "[xml]": {
     "editor.tabSize": 2,
