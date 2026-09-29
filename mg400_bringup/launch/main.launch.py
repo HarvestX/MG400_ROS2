@@ -110,6 +110,7 @@ def generate_launch_description():
             ('package_name', 'mg400_bringup'),
             ('config_dir', 'rviz'),
             ('rviz_config', 'mg400.rviz'),
+            ('namespace', ns),
         ],
     )
 
