@@ -105,7 +105,7 @@ private:
 public:
   MG400Node() = delete;
   explicit MG400Node(const rclcpp::NodeOptions &);
-  ~MG400Node();
+  ~MG400Node() override;
 
   void onInit();
   void onJointStateTimer();
@@ -122,12 +122,12 @@ private:
     mg400_msgs::srv::GetExternalForce::Response::SharedPtr response);
 
 private:
-  CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_activate(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_error(const rclcpp_lifecycle::State &) override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_error(const rclcpp_lifecycle::State & /*previous_state*/) override;
 
   void runTimer();
   void cancelTimer();
@@ -137,6 +137,4 @@ private:
 }  // namespace mg400_node
 
 
-#include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)
 #endif

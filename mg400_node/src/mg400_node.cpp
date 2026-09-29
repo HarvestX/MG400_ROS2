@@ -96,7 +96,7 @@ void MG400Node::handleAutoConfigure()
   }
 }
 
-CallbackReturn MG400Node::on_configure(const State &)
+CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 {
   this->mg400_connected_pub_ =
     this->create_publisher<std_msgs::msg::Bool>(
@@ -185,7 +185,7 @@ CallbackReturn MG400Node::on_configure(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_activate(const State &)
+CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 {
   this->connect_timer_.reset();
 
@@ -206,7 +206,7 @@ CallbackReturn MG400Node::on_activate(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_deactivate(const State &)
+CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 {
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
@@ -222,7 +222,7 @@ CallbackReturn MG400Node::on_deactivate(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_cleanup(const State &)
+CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
 {
   this->mg400_connected_pub_.reset();
   this->dashboard_api_loader_.reset();
@@ -240,7 +240,7 @@ CallbackReturn MG400Node::on_cleanup(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_shutdown(const State &)
+CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
 {
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
@@ -259,7 +259,7 @@ CallbackReturn MG400Node::on_shutdown(const State &)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_error(const State &)
+CallbackReturn MG400Node::on_error(const State & /*previous_state*/)
 {
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
@@ -362,7 +362,7 @@ void MG400Node::onExternalForceTimer()
   msg.wrench.force.y = force[1];
   msg.wrench.force.z = force[2];
   msg.wrench.torque.z = force[5];
-  this->external_force_pub_->publish(std::move(msg));
+  this->external_force_pub_->publish(msg);
 }
 
 void MG400Node::onGetExternalForce(
@@ -425,10 +425,10 @@ void MG400Node::onErrorTimer()
         ss << "\t" << message << std::endl;
       }
     }
-    RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
+    RCLCPP_ERROR(this->get_logger(), "%s", ss.str().c_str());
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->get_logger(), ex.what());
+    RCLCPP_ERROR(this->get_logger(), "%s", ex.what());
     msg->controller.ids.emplace_back(-1);
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::out_of_range & ex) {
@@ -487,3 +487,6 @@ void MG400Node::cancelTimer()
 }
 
 }  // namespace mg400_node
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)
