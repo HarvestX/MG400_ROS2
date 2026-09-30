@@ -53,7 +53,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'namespace': namespace,
-            'rviz_config': 'identify.rviz',
+            'rviz_config': 'param_identify.rviz',
         }.items(),
     )
     return LaunchDescription([

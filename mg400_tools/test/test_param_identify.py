@@ -15,19 +15,15 @@
 """Exercise MCAP input, source timestamps and coefficient recovery without hardware."""
 
 from copy import deepcopy
-from pathlib import Path
-import sys
 
 from mg400_msgs.msg import JointCurrents, RobotMode
+from mg400_tools import param_identify as identifier
 import numpy as np
 import pytest
 from rclpy.serialization import serialize_message
 import rosbag2_py
 from sensor_msgs.msg import JointState
 import yaml
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
-import parameter_identifier as identifier  # noqa: E402
 
 
 @pytest.fixture

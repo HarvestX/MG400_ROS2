@@ -30,7 +30,7 @@
 #include <rosbag2_cpp/reader.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "mg400_rviz_plugin/panel_identify.hpp"
+#include "mg400_rviz_plugin/param_identify.hpp"
 #include "mg400_rviz_plugin/panel_mg400_controller.hpp"
 
 using namespace std::chrono_literals;  // NOLINT
@@ -444,11 +444,10 @@ TEST_F(IdentifyPanelTest, RunsPosesWithSettlingSamplingTransitAndRepeats)
   QProcess reader;
   reader.start(
     "python3", {"-c",
-      "import sys; sys.path.insert(0, sys.argv[1]); "
-      "from parameter_identifier import read_recording; "
-      "samples, skipped = read_recording(sys.argv[2], [1]*4); "
+      "import sys; from mg400_tools.param_identify import read_recording; "
+      "samples, skipped = read_recording(sys.argv[1], [1]*4); "
       "assert len(samples) == 4 and not skipped, (samples, skipped)",
-      IDENTIFIER_PATH, path});
+      path});
   ASSERT_TRUE(reader.waitForFinished(10000));
   EXPECT_EQ(0, reader.exitCode()) << reader.readAllStandardError().toStdString();
 }
@@ -621,7 +620,7 @@ TEST_F(IdentifyPanelTest, FinalizationFailureRetainsRecordingForRecovery)
   const auto status = panel_->findChild<QLabel *>("recording_status")->text();
   EXPECT_TRUE(status.startsWith("MCAP save failed:"));
   const auto staged = QDir(directory_.path()).entryList(
-    {".identify-*"}, QDir::Dirs | QDir::Hidden | QDir::NoDotAndDotDot);
+    {".param_identify-*"}, QDir::Dirs | QDir::Hidden | QDir::NoDotAndDotDot);
   ASSERT_EQ(1, staged.size());
   const QDir bag(directory_.filePath(staged[0]));
   const auto files = bag.entryList({"*.mcap"}, QDir::Files);

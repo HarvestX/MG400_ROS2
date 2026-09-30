@@ -77,15 +77,22 @@ Reordered joint names and a joint-name prefix are supported.
 experiment YAML and performs the complete move → settle → record sequence.
 
 ```bash
-ros2 launch mg400_bringup identify.launch.py ip_address:=192.168.1.6
+ros2 launch mg400_bringup param_identify.launch.py ip_address:=192.168.1.6
 ```
 
 The driver publishes raw joint currents and end poses with force estimation
 disabled during collection. `namespace` defaults to `mg400`; services, actions,
 and telemetry are remapped together. The panel starts with no experiment loaded.
-An example YAML is available at [`scripts/config/identify.yaml`](../scripts/config/identify.yaml).
+An example YAML is available at [`mg400_tools/config/param_identify.yaml`](../mg400_tools/config/param_identify.yaml)
+and is installed under `share/mg400_tools/config`. Copy it to a writable location
+before editing:
+
+```bash
+cp "$(ros2 pkg prefix --share mg400_tools)/config/param_identify.yaml" ./experiment.yaml
+```
+
 For an already running driver publishing currents, use
-`ros2 launch mg400_bringup rviz.launch.py rviz_config:=identify.rviz`.
+`ros2 launch mg400_bringup rviz.launch.py rviz_config:=param_identify.rviz`.
 
 1. Use **Load YAML...** while disabled to select the experiment. Review its path,
    payload, motion/measurement settings, and pose table.
@@ -135,7 +142,8 @@ only motion/Enable client during collection.
 
 ### Recording and offline fitting
 
-The panel writes `run.mcap` using `rosbag2_cpp` and the MCAP storage plugin,
+The default recording basename is `param_identify_<timestamp>`. For example,
+choosing `run.mcap` writes that file using `rosbag2_cpp` and the MCAP storage plugin,
 plus `run.yaml` in the same directory. The files are paired by basename only;
 there is no hash comparison. The YAML preserves the loaded experiment settings
 (including torque constants) and adds a `recording` section. The previous output
@@ -159,13 +167,14 @@ interrupted windows are excluded. Enable payload describes this panel's successf
 request, not controller readback. Saved YAML can also be loaded for another Run;
 the old `recording` section is replaced.
 
-Run the offline script from the `MG400_ROS2` repository root after sourcing the
-ROS workspace (including `mg400_msgs`). It requires `rosbag2_py`,
-`rosbag2_storage_mcap`, NumPy, and PyYAML. No robot or running ROS nodes are needed.
-Use the path to your recording if it is stored elsewhere.
+After building `mg400_tools` and sourcing the ROS workspace, run the offline
+analysis from any working directory. The tools package declares its dependencies
+on `rosbag2_py`, `rosbag2_storage_mcap`, NumPy, and PyYAML.
+No robot or running ROS nodes are needed. Use the path to your recording if it is
+stored elsewhere.
 
 ```bash
-python3 scripts/parameter_identifier.py run.mcap \
+ros2 run mg400_tools param_identify run.mcap \
   --output identified.yaml
 ```
 
@@ -189,7 +198,7 @@ accepted. Input MCAPs and their YAML cannot be overwritten; other existing outpu
 require `--force`.
 
 MCAP files are finalized on completion, Stop, or normal panel close. Active data
-is staged in a `.identify-*` directory beside the chosen output. On a finalization
+is staged in a `.param_identify-*` directory beside the chosen output. On a finalization
 error, the panel reports and retains that directory for recovery; an abrupt crash
 can leave an unfinished bag. The script checks overlapping stream duration, gaps,
 mode, stationarity, payload consistency, and fit rank before writing coefficients.
@@ -203,3 +212,5 @@ colcon test-result --verbose
 
 Tests use Qt's offscreen backend and local mock action/service servers in ROS
 domains 187 (controller) and 188 (identify). They do not connect to the robot.
+The recording-to-analysis integration test imports `mg400_tools`, which is a test
+dependency. The Python analysis tests belong to `mg400_tools/test`.

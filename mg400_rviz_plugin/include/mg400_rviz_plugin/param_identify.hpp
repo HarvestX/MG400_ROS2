@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MG400_RVIZ_PLUGIN__PANEL_IDENTIFY_HPP_
-#define MG400_RVIZ_PLUGIN__PANEL_IDENTIFY_HPP_
+#ifndef MG400_RVIZ_PLUGIN__PARAM_IDENTIFY_HPP_
+#define MG400_RVIZ_PLUGIN__PARAM_IDENTIFY_HPP_
 
 #include <array>
 #include <chrono>
@@ -178,4 +178,4 @@ private:
 };
 }  // namespace mg400_rviz_plugin
 
-#endif  // MG400_RVIZ_PLUGIN__PANEL_IDENTIFY_HPP_
+#endif  // MG400_RVIZ_PLUGIN__PARAM_IDENTIFY_HPP_

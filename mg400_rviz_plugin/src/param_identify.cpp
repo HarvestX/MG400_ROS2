@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mg400_rviz_plugin/panel_identify.hpp"
+#include "mg400_rviz_plugin/param_identify.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -290,7 +290,7 @@ IdentifyPanel::IdentifyPanel(QWidget * parent)
     });
   connect(
     run_, &QPushButton::clicked, this, [this]() {
-      const auto filename = QString("identify_%1.mcap").arg(
+      const auto filename = QString("param_identify_%1.mcap").arg(
         QDateTime::currentDateTimeUtc().toString("yyyyMMdd_HHmmss_zzz"));
       const auto path = QFileDialog::getSaveFileName(
         this, "Run and record", filename, "MCAP (*.mcap)", nullptr,
@@ -863,7 +863,7 @@ bool IdentifyPanel::startRecording(const QString & path, bool overwrite)
   }
   // Prepare both files before moving; keep any previous pair until the run ends.
   recording_directory_ = std::make_unique<QTemporaryDir>(
-    output.absoluteDir().filePath(".identify-XXXXXX"));
+    output.absoluteDir().filePath(".param_identify-XXXXXX"));
   if (!recording_directory_->isValid()) {
     recording_status_->setText("Cannot create MCAP output: " + path);
     recording_directory_.reset();

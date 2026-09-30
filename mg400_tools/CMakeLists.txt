@@ -9,14 +9,8 @@ endif()
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
+find_package(ament_cmake_python REQUIRED)
 find_package(yaml-cpp REQUIRED)
-
-set(MG400_COMMON_SOURCE_INCLUDE_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/../mg400_common/include)
-set(MG400_MSGS_GENERATED_INCLUDE_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/../install/mg400_msgs/include/mg400_msgs)
-set(MG400_MSGS_LOCAL_TYPESUPPORT_CPP_LIBRARY
-  ${CMAKE_CURRENT_SOURCE_DIR}/../install/mg400_msgs/lib/libmg400_msgs__rosidl_typesupport_cpp.so)
 
 # command_queue_client ============================
 set(TARGET command_queue_client)
@@ -27,37 +21,35 @@ unset(TARGET)
 # validate_kinematics_with_solutions =============
 set(TARGET validate_kinematics_with_solutions)
 ament_auto_add_executable(${TARGET} src/${TARGET}.cpp)
-ament_target_dependencies(${TARGET} mg400_common mg400_msgs)
-target_include_directories(
-  ${TARGET} PRIVATE
-  ${MG400_COMMON_SOURCE_INCLUDE_DIR}
-  ${MG400_MSGS_GENERATED_INCLUDE_DIR})
-if(TARGET mg400_msgs::mg400_msgs__rosidl_typesupport_cpp)
-  target_link_libraries(${TARGET} mg400_msgs::mg400_msgs__rosidl_typesupport_cpp)
-elseif(TARGET mg400_msgs__rosidl_typesupport_cpp)
-  target_link_libraries(${TARGET} mg400_msgs__rosidl_typesupport_cpp)
-endif()
-if(EXISTS ${MG400_MSGS_LOCAL_TYPESUPPORT_CPP_LIBRARY})
-  target_link_libraries(${TARGET} ${MG400_MSGS_LOCAL_TYPESUPPORT_CPP_LIBRARY})
-endif()
 unset(TARGET)
 
 # mg400_kinematics_cli ============================
 set(TARGET mg400_kinematics_cli)
 ament_auto_add_executable(${TARGET} src/${TARGET}.cpp)
-ament_target_dependencies(${TARGET} mg400_common)
-target_include_directories(${TARGET} PRIVATE ${MG400_COMMON_SOURCE_INCLUDE_DIR})
 unset(TARGET)
 
-# install config files ============================
+# Python modules and commands =====================
+ament_python_install_package(${PROJECT_NAME})
 install(
-  DIRECTORY config
+  PROGRAMS
+    scripts/param_identify
+    scripts/command_sender
+    scripts/compare_positive_inverse_solution
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Configuration and examples ======================
+install(
+  DIRECTORY config examples
   DESTINATION share/${PROJECT_NAME}
 )
+install(FILES README.md DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_param_identify test/test_param_identify.py)
 endif()
 
 ament_auto_package()
