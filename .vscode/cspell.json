@@ -4,6 +4,7 @@
   "words": [
     "allclose",
     "backdrive",
+    "basenames",
     "bringup",
     "colcon",
     "coveragepy",
