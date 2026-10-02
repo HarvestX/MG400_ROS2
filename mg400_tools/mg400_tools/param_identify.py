@@ -98,9 +98,10 @@ def parse_experiment(raw):
     if any(abs(v * 1000 - round(v * 1000)) > 1e-7 for v in payload_kg_mm):
         raise ValueError('Enable payload supports at most three decimals in kg/mm')
     motion = root['motion']
-    keys(motion, 'speed_percent acceleration_percent', 'motion')
-    for key in motion:
+    keys(motion, 'speed_percent acceleration_percent collision_level', 'motion')
+    for key in ('speed_percent', 'acceleration_percent'):
         number(motion[key], 1, 100, key, integer=True)
+    number(motion['collision_level'], 0, 5, 'motion.collision_level', integer=True)
     measurement = root['measurement']
     keys(measurement, 'settle_sec record_sec repeats', 'measurement')
     number(measurement['settle_sec'], 0.1, 30, 'settle_sec')
@@ -110,9 +111,11 @@ def parse_experiment(raw):
     keys(
         settings,
         'torque_constants_nm_per_a torque_signs joint_signs reference_deg '
-        'min_duration_sec max_span_deg',
+        'min_duration_sec max_span_deg assume_flat_mounting',
         'identify',
     )
+    if not isinstance(settings['assume_flat_mounting'], bool):
+        raise ValueError('identify.assume_flat_mounting must be a boolean')
     if any(
         v <= 0 for v in vector(settings['torque_constants_nm_per_a'], 'torque_constants_nm_per_a')
     ):
@@ -401,8 +404,11 @@ def error_metrics(error):
     }
 
 
-def identify(measurements, torque_constants, torque_signs, joint_signs, reference_deg):
+def identify(measurements, torque_constants, torque_signs, joint_signs, reference_deg,
+             assume_flat_mounting=False):
     """Fit a reference-anchored posture model using equal weight per interval."""
+    if not isinstance(assume_flat_mounting, bool):
+        raise ValueError('assume_flat_mounting must be a boolean')
     constants = np.asarray(torque_constants, dtype=float)
     signs = np.asarray(torque_signs, dtype=float)
     qsigns = np.asarray(joint_signs, dtype=float)
@@ -432,32 +438,57 @@ def identify(measurements, torque_constants, torque_signs, joint_signs, referenc
         raise ValueError(
             'base measurements differ from YAML reference_deg by more than 0.5 degrees'
         )
-    if len(train) < 10:
-        raise ValueError('need at least ten independent train poses for the ten-feature model')
+    # Indices refer to features(), which omits the constant term. Keep the two
+    # groups independent while retaining J2/J3 coupling within the arm group.
+    groups = (
+        [('J1/J4', [0, 3], [0, 1, 6, 7]), ('J2/J3', [1, 2], [2, 3, 4, 5, 8, 9])]
+        if assume_flat_mounting else [('all joints', list(range(4)), list(range(10)))]
+    )
+    minimum_poses = max(len(columns) for _, _, columns in groups)
+    if len(train) < minimum_poses:
+        raise ValueError(f'need at least {minimum_poses} independent train poses for this model')
     bias = np.mean([m.current for m in baseline], axis=0)
     anchor = features(reference)
     x = np.array([m.features - anchor for m in train])
     y = (np.array([m.current for m in train]) - bias) * constants * signs
-    theta, _, rank, singular = np.linalg.lstsq(x, y, rcond=None)
-    if rank < 10:
-        raise ValueError(
-            f'pose feature matrix rank is {rank}/10; add varied poses (including J3-J2)'
-        )
-    condition = float(singular[0] / singular[-1])
-    if condition > 1e6:
-        raise ValueError(f'pose matrix is ill-conditioned ({condition:.3g}); widen pose coverage')
+    theta = np.zeros((10, 4))
+    group_diagnostics = {}
+    for name, joints, columns in groups:
+        weights, _, rank, singular = np.linalg.lstsq(x[:, columns], y[:, joints], rcond=None)
+        if rank < len(columns):
+            raise ValueError(
+                f'{name}: pose feature matrix rank is {rank}/{len(columns)}; '
+                'add varied poses for the active features'
+            )
+        condition = float(singular[0] / singular[-1])
+        if condition > 1e6:
+            raise ValueError(
+                f'{name}: pose matrix is ill-conditioned ({condition:.3g}); widen pose coverage'
+            )
+        # Forbidden entries remain exactly zero; fitting only the active columns
+        # also prevents those entries from influencing the retained coefficients.
+        theta[np.ix_(columns, joints)] = weights
+        group_diagnostics[name] = {
+            'feature_indices': columns,
+            'feature_rank': int(rank),
+            'condition_number': condition,
+            'singular_values': singular.tolist(),
+        }
+    condition = max(group['condition_number'] for group in group_diagnostics.values())
     coefficients = np.column_stack((-anchor @ theta, theta.T))
     report = {
         'base_intervals': len(baseline),
         'train_intervals': len(train),
         'check_intervals': len(validation),
-        'feature_rank': int(rank),
         'condition_number': condition,
-        'singular_values': singular.tolist(),
+        'joint_groups': group_diagnostics,
         'base_bias_std_a': np.std([m.current for m in baseline], axis=0).tolist(),
         'train_before': error_metrics(y),
         'train_after': error_metrics(y - x @ theta),
     }
+    if not assume_flat_mounting:
+        report['feature_rank'] = group_diagnostics['all joints']['feature_rank']
+        report['singular_values'] = group_diagnostics['all joints']['singular_values']
     if validation:
         vx = np.array([m.features - anchor for m in validation])
         vy = (np.array([m.current for m in validation]) - bias) * constants * signs
@@ -487,6 +518,7 @@ def identify(measurements, torque_constants, torque_signs, joint_signs, referenc
     return {
         'schema_version': 1,
         'model': 'static_reference_anchored_posture',
+        'assume_flat_mounting': assume_flat_mounting,
         'reference_deg': list(map(float, reference_deg)),
         'payload_kg_mm': measurements[0].payload.tolist(),
         'config': config,
@@ -551,9 +583,11 @@ def main(argv=None):
             # Files are paired solely by name. Only model inputs must agree when
             # combining runs; pose lists, comments and motion settings may differ.
             current_model = {key: settings[key] for key in (
-                'torque_constants_nm_per_a', 'torque_signs', 'joint_signs', 'reference_deg')}
+                'torque_constants_nm_per_a', 'torque_signs', 'joint_signs', 'reference_deg',
+                'assume_flat_mounting')}
             if model_settings is not None and current_model != model_settings:
-                raise ValueError('cannot combine runs with different torque or reference settings')
+                raise ValueError(
+                    'cannot combine runs with different torque, reference, or mounting settings')
             model_settings = current_model
             rows = read_mcap(path, experiment.get('recording'))
             samples, _ = summarize_recording(
@@ -569,6 +603,7 @@ def main(argv=None):
             settings['torque_signs'],
             settings['joint_signs'],
             settings['reference_deg'],
+            assume_flat_mounting=settings['assume_flat_mounting'],
         )
         output = {
             'joint_current_bias_a': result['config']['joint_current_bias'],

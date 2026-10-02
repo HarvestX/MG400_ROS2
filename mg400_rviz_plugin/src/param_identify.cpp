@@ -350,6 +350,8 @@ void IdentifyPanel::initializeRos(const rclcpp::Node::SharedPtr & node)
   motion_ = rclcpp_action::create_client<Action>(node, "/mg400/joint_mov_j", group_);
   enable_client_ = node->create_client<Enable>(
     "/mg400/enable_robot", rmw_qos_profile_services_default, group_);
+  collision_client_ = node->create_client<SetCollisionLevel>(
+    "/mg400/set_collision_level", rmw_qos_profile_services_default, group_);
   disable_client_ = node->create_client<mg400_msgs::srv::DisableRobot>(
     "/mg400/disable_robot", rmw_qos_profile_services_default, group_);
   clear_client_ = node->create_client<mg400_msgs::srv::ClearError>(
@@ -419,11 +421,12 @@ bool IdentifyPanel::loadConfig(const QString & path)
     settings.payload.center_y = values[2];
     settings.payload.center_z = values[3];
     const auto motion = root["motion"];
-    yamlKeys(motion, {"speed_percent", "acceleration_percent"}, "motion");
+    yamlKeys(motion, {"speed_percent", "acceleration_percent", "collision_level"}, "motion");
     settings.speed_percent = yamlInteger(motion["speed_percent"], "motion.speed_percent", 1, 100);
     settings.acceleration_percent = yamlInteger(
       motion["acceleration_percent"],
       "motion.acceleration_percent", 1, 100);
+    settings.collision_level = yamlInteger(motion["collision_level"], "motion.collision_level", 0, 5);
     const auto measurement = root["measurement"];
     yamlKeys(measurement, {"settle_sec", "record_sec", "repeats"}, "measurement");
     settings.settle_sec = yamlNumber(measurement["settle_sec"], "measurement.settle_sec", 0.1, 30);
@@ -432,7 +435,8 @@ bool IdentifyPanel::loadConfig(const QString & path)
     const auto identify = root["identify"];
     yamlKeys(
       identify, {"torque_constants_nm_per_a", "torque_signs", "joint_signs", "reference_deg",
-        "min_duration_sec", "max_span_deg"}, "identify");
+        "min_duration_sec", "max_span_deg", "assume_flat_mounting"}, "identify");
+    identify["assume_flat_mounting"].as<bool>();
     for (const auto gain :
       yamlVector<4>(
         identify["torque_constants_nm_per_a"],
@@ -489,9 +493,11 @@ bool IdentifyPanel::loadConfig(const QString & path)
       payload_values_[i]->setText(QString::number(values[i], 'g', 10));
     }
     settings_summary_->setText(
-      QString("Speed: %1%   Acceleration: %2%   CP: 0\nSettle: %3 s   Record: %4 s   Repeats: %5")
+      QString(
+        "Speed: %1%   Acceleration: %2%   CP: 0\n"
+        "Settle: %3 s   Record: %4 s   Repeats: %5\nCollision level: %6")
       .arg(settings.speed_percent).arg(settings.acceleration_percent).arg(settings.settle_sec)
-      .arg(settings.record_sec).arg(settings.repeats));
+      .arg(settings.record_sec).arg(settings.repeats).arg(settings.collision_level));
     poses_->setRowCount(0);
     for (const auto & pose : settings.poses) {
       appendPoseRow(pose);
@@ -512,6 +518,7 @@ bool IdentifyPanel::robotReady() const
   return Clock::now() - mode_received_ < std::chrono::seconds(1) &&
          mode_ == RobotMode::ENABLE && payload_confirmed_ && !service_pending_ &&
          motion_ && motion_->action_server_is_ready() &&
+         collision_client_ && collision_client_->service_is_ready() &&
          disable_client_ && disable_client_->service_is_ready();
 }
 
@@ -537,7 +544,8 @@ bool IdentifyPanel::startSequence(const QString & path)
     !robotReady() || !telemetryReady())
   {
     run_status_->setText(
-      "Run requires experiment YAML, fresh telemetry, and Enable with its payload.");
+      "Run requires experiment YAML, fresh telemetry, Enable with its payload, "
+      "and the collision-level service.");
     return false;
   }
   if (!path.endsWith(".mcap", Qt::CaseInsensitive)) {
@@ -576,7 +584,25 @@ bool IdentifyPanel::startSequence(const QString & path)
     plan_.insert(plan_.end(), settings_.poses.begin(), settings_.poses.end());
   }
   segment_ = 0;
-  sendPose(plan_[segment_]);
+  phase_ = Phase::Configuring;
+  const auto generation = ++generation_;
+  auto request = std::make_shared<SetCollisionLevel::Request>();
+  request->level.level = settings_.collision_level;
+  run_status_->setText(QString("Applying collision level %1...").arg(settings_.collision_level));
+  requestService<SetCollisionLevel>(
+    collision_client_, request, QString("Collision level %1").arg(settings_.collision_level),
+    [this, generation](bool ok) {
+      if (generation != generation_ || phase_ != Phase::Configuring) {
+        return;
+      }
+      if (!ok) {
+        endRun("Collision level setup failed; run aborted before motion.", false);
+      } else if (!robotReady() || !telemetryReady()) {
+        endRun("Robot state or telemetry changed during collision level setup; run aborted.", false);
+      } else {
+        sendPose(plan_[segment_]);
+      }
+    });
   return true;
 }
 
@@ -675,6 +701,9 @@ void IdentifyPanel::requestService(
   }
   if (!client || !client->service_is_ready()) {
     service_status_->setText(name + " unavailable.");
+    if (completed) {
+      completed(false);
+    }
     return;
   }
   service_pending_ = true;
@@ -725,6 +754,9 @@ void IdentifyPanel::tick()
     service_pending_ = false;
     payload_confirmed_ = false;
     service_status_->setText("Robot service timed out; robot state is unconfirmed.");
+    if (phase_ == Phase::Configuring) {
+      endRun("Collision level setup timed out; run aborted before motion.", false);
+    }
   }
   if (phase_ != Phase::Idle) {
     if (node_->now().nanoseconds() < last_record_ns_) {
@@ -733,7 +765,7 @@ void IdentifyPanel::tick()
       (mode_ != RobotMode::ENABLE && mode_ != RobotMode::RUNNING))
     {
       endRun("Robot state lost or not enabled; run aborted.", true);
-    } else if (now >= motion_deadline_) {
+    } else if (phase_ != Phase::Configuring && now >= motion_deadline_) {
       endRun("Motion or settling timed out; run aborted.", true);
     } else if (!telemetryReady()) {
       endRun("Telemetry lost; run aborted.", true);
@@ -1043,7 +1075,9 @@ void IdentifyPanel::refreshControls()
   load_config_->setEnabled(
     idle && (mode_ == RobotMode::INIT || mode_ == RobotMode::DISABLED));
   run_->setEnabled(idle && settings_loaded_ && robotReady() && telemetryReady());
-  run_->setToolTip("Load experiment YAML, Enable with its payload, then run the reviewed poses.");
+  run_->setToolTip(
+    "Load experiment YAML and Enable with its payload. "
+    "Run applies its collision level before moving through the reviewed poses.");
   if (recording_) {
     recording_status_->setText(
       QString("Recording: %1 joint messages, %2 current messages.")

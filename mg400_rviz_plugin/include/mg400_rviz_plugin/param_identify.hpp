@@ -28,6 +28,7 @@
 #include <mg400_msgs/srv/clear_error.hpp>
 #include <mg400_msgs/srv/disable_robot.hpp>
 #include <mg400_msgs/srv/enable_robot.hpp>
+#include <mg400_msgs/srv/set_collision_level.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rosbag2_cpp/writer.hpp>
@@ -59,8 +60,9 @@ private:
   using Action = mg400_msgs::action::JointMovJ;
   using GoalHandle = rclcpp_action::ClientGoalHandle<Action>;
   using Enable = mg400_msgs::srv::EnableRobot;
+  using SetCollisionLevel = mg400_msgs::srv::SetCollisionLevel;
   using Clock = std::chrono::steady_clock;
-  enum class Phase {Idle, Moving, Settling, Sampling};
+  enum class Phase {Idle, Configuring, Moving, Settling, Sampling};
   struct Pose
   {
     QString kind;
@@ -81,6 +83,7 @@ private:
     Enable::Request payload;
     int speed_percent = 0;
     int acceleration_percent = 0;
+    int collision_level = 0;
     int repeats = 0;
     double settle_sec = 0.0;
     double record_sec = 0.0;
@@ -138,6 +141,7 @@ private:
   rclcpp::Subscription<RobotMode>::SharedPtr mode_sub_;
   rclcpp_action::Client<Action>::SharedPtr motion_;
   rclcpp::Client<Enable>::SharedPtr enable_client_;
+  rclcpp::Client<SetCollisionLevel>::SharedPtr collision_client_;
   rclcpp::Client<mg400_msgs::srv::DisableRobot>::SharedPtr disable_client_;
   rclcpp::Client<mg400_msgs::srv::ClearError>::SharedPtr clear_client_;
   bool service_pending_ = false;
