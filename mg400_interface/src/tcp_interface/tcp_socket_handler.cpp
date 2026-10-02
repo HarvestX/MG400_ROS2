@@ -14,9 +14,13 @@
 
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+
 namespace mg400_interface
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
+static const rclcpp::Logger kLogger = rclcpp::get_logger("TcpClient");
 
 TcpSocketHandler::TcpSocketHandler(std::string ip, uint16_t port)
 : fd_(-1),
@@ -33,6 +37,7 @@ TcpSocketHandler::~TcpSocketHandler()
 
 void TcpSocketHandler::close()
 {
+  this->pending_response_.clear();
   if (this->fd_ < 0) {
     // TcpClient not connected
     // Do nothing
@@ -46,6 +51,7 @@ void TcpSocketHandler::close()
 
 void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
 {
+  this->pending_response_.clear();
   if (this->fd_ < 0) {
     this->fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (this->fd_ < 0) {
@@ -83,11 +89,12 @@ void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
 
   this->is_connected_.store(true);
 
-  RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
+  RCLCPP_INFO(kLogger, "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpSocketHandler::disConnect()
 {
+  this->pending_response_.clear();
   if (this->is_connected_.load()) {
     ::close(this->fd_);
     this->is_connected_.store(false);
@@ -106,7 +113,7 @@ void TcpSocketHandler::send(const void * buf, uint32_t len)
     throw TcpSocketException("tcp is disconnected");
   }
 
-  RCLCPP_INFO(LOGGER, "send : %s", (const char *)buf);
+  RCLCPP_INFO(kLogger, "send : %s", (const char *)buf);
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {
@@ -188,6 +195,96 @@ bool TcpSocketHandler::recv(
     received_data_len += err;
   }
   return true;
+}
+
+bool TcpSocketHandler::recvSome(
+  void * buf, uint32_t len, uint32_t & received_data_len,
+  const std::chrono::nanoseconds & timeout)
+{
+  received_data_len = 0;
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  while (true) {
+    if (!this->isConnected() || this->fd_ < 0) {
+      throw TcpSocketException("tcp is disconnected");
+    }
+    const auto remaining = deadline - std::chrono::steady_clock::now();
+    if (remaining <= std::chrono::steady_clock::duration::zero()) {
+      return false;
+    }
+
+    const auto usec = std::chrono::duration_cast<std::chrono::microseconds>(remaining).count();
+    timeval tv = {usec / 1000000, usec % 1000000};
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(this->fd_, &read_fds);
+    const int ready = ::select(this->fd_ + 1, &read_fds, nullptr, nullptr, &tv);
+    if (ready < 0) {
+      const int error = errno;
+      if (error == EINTR) {
+        continue;
+      }
+      this->disConnect();
+      throw TcpSocketException(this->toString() + " select() : " + strerror(error));
+    }
+    if (ready == 0) {
+      return false;
+    }
+
+    // Return after one read; a short response must not wait for len bytes.
+    const auto received = ::recv(this->fd_, buf, len, MSG_DONTWAIT);
+    if (received < 0) {
+      const int error = errno;
+      if (error == EINTR || error == EAGAIN || error == EWOULDBLOCK) {
+        continue;
+      }
+      this->disConnect();
+      throw TcpSocketException(this->toString() + " ::recv() : " + strerror(error));
+    }
+    if (received == 0) {
+      this->disConnect();
+      throw TcpSocketException(this->toString() + " tcp server has disconnected.");
+    }
+    received_data_len = static_cast<uint32_t>(received);
+    return true;
+  }
+}
+
+bool TcpSocketHandler::recvUntil(
+  std::string & response, char terminator, uint32_t max_len,
+  const std::chrono::nanoseconds & timeout)
+{
+  response.clear();
+  if (max_len == 0) {
+    throw std::invalid_argument("Response size limit must be positive");
+  }
+
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  std::array<char, 128> buffer;
+  while (true) {
+    const auto end = this->pending_response_.find(terminator);
+    if (end != std::string::npos && end < max_len) {
+      response = this->pending_response_.substr(0, end + 1);
+      this->pending_response_.erase(0, end + 1);
+      return true;
+    }
+    if (this->pending_response_.size() >= max_len) {
+      // The stream cannot be safely reused after an oversized, incomplete frame.
+      this->disConnect();
+      throw TcpSocketException("Response size exceeded maximum limit");
+    }
+
+    const auto remaining = deadline - std::chrono::steady_clock::now();
+    if (remaining <= std::chrono::steady_clock::duration::zero()) {
+      return false;
+    }
+    const auto capacity = static_cast<uint32_t>(
+      std::min(buffer.size(), max_len - this->pending_response_.size()));
+    uint32_t received = 0;
+    if (!this->recvSome(buffer.data(), capacity, received, remaining)) {
+      return false;
+    }
+    this->pending_response_.append(buffer.data(), received);
+  }
 }
 
 std::string TcpSocketHandler::toString()

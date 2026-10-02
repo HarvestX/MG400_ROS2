@@ -49,6 +49,8 @@ private:
   uint16_t port_;
   std::string ip_;
   std::atomic<bool> is_connected_;
+  std::string pending_response_;
+  bool recvSome(void *, uint32_t, uint32_t &, const std::chrono::nanoseconds &);
 
 public:
   TcpSocketHandler(std::string, uint16_t);
@@ -62,6 +64,9 @@ public:
   void send(const void *, uint32_t);
   bool recv(void *, uint32_t, const std::chrono::nanoseconds &);
   bool recv(void *, uint32_t, uint32_t &, const std::chrono::nanoseconds &);
+  bool recvUntil(
+    std::string & response, char terminator, uint32_t max_len,
+    const std::chrono::nanoseconds & timeout);
   std::string toString();
 };
 }  // namespace mg400_interface

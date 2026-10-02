@@ -3,12 +3,14 @@
 <package format="3">
   <name>mg400_tools</name>
   <version>1.1.0</version>
-  <description>A ROS 2 C++ package</description>
+  <description>MG400 command-line tools, kinematics checks and offline parameter identification.</description>
   <maintainer email="yuki.yamamoto@harvestx.jp">Yuki Yamamoto</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
   <depend>mg400_common</depend>
   <depend>mg400_msgs</depend>
   <depend>rclcpp_action</depend>
@@ -17,6 +19,14 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>yaml-cpp</depend>
 
+  <exec_depend>rosbag2_py</exec_depend>
+  <exec_depend>rosbag2_storage_mcap</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rosidl_runtime_py</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
   <test_depend>ament_clang_format</test_depend>
   <test_depend>ament_clang_tidy</test_depend>
   <test_depend>ament_cmake_cppcheck</test_depend>
@@ -24,6 +34,7 @@
   <test_depend>ament_cmake_lint_cmake</test_depend>
   <test_depend>ament_cmake_xmllint</test_depend>
   <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

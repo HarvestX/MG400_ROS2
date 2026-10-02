@@ -16,6 +16,7 @@
 #define __MG400_INTERFACE_TCP_INTERFACE_REALTIME_DATA_HPP__
 
 #include <inttypes.h>
+#include <cstddef>
 
 namespace mg400_interface
 {
@@ -27,20 +28,20 @@ struct RealTimeData
   uint64_t digital_inputs;
   uint64_t digital_outputs;
   uint64_t robot_mode;
+  uint64_t time_stamp;
   uint64_t not_used_02;
-  uint64_t not_used_03;
   uint64_t test_value;
-  double not_used_04;
+  double not_used_03;
   double speed_scaling;
+  double not_used_04;
   double not_used_05;
   double not_used_06;
   double not_used_07;
   double not_used_08;
   double not_used_09;
-  double not_used_10;
+  double not_used_10[3];
   double not_used_11[3];
   double not_used_12[3];
-  double not_used_13[3];
   double q_target[6];
   double qd_target[6];
   double qdd_target[6];
@@ -55,10 +56,16 @@ struct RealTimeData
   double TCP_force[6];
   double tool_vector_target[6];
   double TCP_speed_target[6];
+  double not_used_13[6];
   double not_used_14[6];
   double not_used_15[6];
-  double not_used_16[6];
-  uint64_t not_used_17[14];
+  uint8_t not_used_16[17];
+  uint8_t brake_status;
+  uint8_t enable_status;
+  uint8_t drag_status;
+  uint8_t running_status;
+  uint8_t error_status;
+  uint8_t not_used_17[90];
   double not_used_18[6];
   double load;
   double center_x;
@@ -73,6 +80,15 @@ struct RealTimeData
   uint8_t not_used_25[24];
 };
 #pragma pack(pop)
+
+static_assert(sizeof(RealTimeData) == 1440, "Unexpected feedback packet size");
+static_assert(offsetof(RealTimeData, time_stamp) == 32, "Unexpected timestamp offset");
+static_assert(offsetof(RealTimeData, brake_status) == 1025, "Unexpected brake status offset");
+static_assert(offsetof(RealTimeData, enable_status) == 1026, "Unexpected enable status offset");
+static_assert(offsetof(RealTimeData, drag_status) == 1027, "Unexpected drag status offset");
+static_assert(offsetof(RealTimeData, running_status) == 1028, "Unexpected running status offset");
+static_assert(offsetof(RealTimeData, error_status) == 1029, "Unexpected error status offset");
+static_assert(offsetof(RealTimeData, load) == 1168, "Unexpected load offset");
 
 }  // namespace mg400_interface
 #endif
