@@ -426,7 +426,8 @@ bool IdentifyPanel::loadConfig(const QString & path)
     settings.acceleration_percent = yamlInteger(
       motion["acceleration_percent"],
       "motion.acceleration_percent", 1, 100);
-    settings.collision_level = yamlInteger(motion["collision_level"], "motion.collision_level", 0, 5);
+    settings.collision_level =
+      yamlInteger(motion["collision_level"], "motion.collision_level", 0, 5);
     const auto measurement = root["measurement"];
     yamlKeys(measurement, {"settle_sec", "record_sec", "repeats"}, "measurement");
     settings.settle_sec = yamlNumber(measurement["settle_sec"], "measurement.settle_sec", 0.1, 30);
@@ -598,7 +599,9 @@ bool IdentifyPanel::startSequence(const QString & path)
       if (!ok) {
         endRun("Collision level setup failed; run aborted before motion.", false);
       } else if (!robotReady() || !telemetryReady()) {
-        endRun("Robot state or telemetry changed during collision level setup; run aborted.", false);
+        endRun(
+          "Robot state or telemetry changed during collision level setup; run aborted.",
+          false);
       } else {
         sendPose(plan_[segment_]);
       }
