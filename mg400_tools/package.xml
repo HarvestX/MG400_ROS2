@@ -3,12 +3,14 @@
 <package format="3">
   <name>mg400_tools</name>
   <version>1.1.0</version>
-  <description>A ROS 2 C++ package</description>
+  <description>MG400 command-line tools and kinematics checks.</description>
   <maintainer email="yuki.yamamoto@harvestx.jp">Yuki Yamamoto</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
   <depend>mg400_common</depend>
   <depend>mg400_msgs</depend>
   <depend>rclcpp_action</depend>
