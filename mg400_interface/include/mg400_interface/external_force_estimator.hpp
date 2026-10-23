@@ -50,7 +50,7 @@ public:
 
   /// Per-joint current-to-torque conversion gains [Nm/A].
   static constexpr std::array<double, kJointDim> kDefaultTorqueConstants = {
-    1.0, 1.0, 1.0, 1.0};
+    3.407905, 3.304349, 5.653824, 0.747993};
 
   /// Per-joint sign for q / qd conversion from robot degree units to rad / rad/s.
   static constexpr std::array<double, kJointDim> kDefaultJointSigns = {
@@ -62,7 +62,8 @@ public:
 
   /// Static per-joint current offset subtracted from i_actual [A].
   static constexpr std::array<double, kJointDim> kDefaultJointCurrentBias = {
-    0.035785, 0.064701, -0.040688, -0.025512};
+    -0.038162764064240094, 0.05517732294455945,
+    0.04211339357456625, -0.03244625722547021};
 
   /// Startup auto-bias sample count.  0 disables the calibration phase.
   static constexpr int kDefaultAutoBiasSampleCount = 0;
@@ -93,21 +94,25 @@ public:
   // clang-format off
   static constexpr std::array<double, kJointDim * kFeatureDim> kDefaultPostureCoefficients = {
     // Joint 1
-    -0.00177118, -0.03055392, -0.05147916, 0.03295858, -0.00950696,
-    -0.01361421, 0.01845201, 0.00043852, -0.00004011, 0.02381633,
-    -0.00112744,
+    -0.13621971715390446, -0.13699252300863446, 0.11647352636185346,
+    0.0, 0.0, 0.0,
+    0.0, -0.003533879605737908, 0.019746190792051,
+    0.0, 0.0,
     // Joint 2
-    0.03217049, -0.00120355, 0.00477807, 0.01917455, -0.24099683,
-    -0.16097497, 0.15647920, -0.00188470, 0.00640266, 0.25338718,
-    0.02351758,
+    -0.688589174498216, 0.0, 0.0,
+    -0.005501451416638855, 0.9790444818112224, 0.46290489599769413,
+    -0.4619143537855399, 0.0, 0.0,
+    -0.5051237070203506, -0.0005101231859610117,
     // Joint 3
-    0.62341870, 0.00064969, -0.00378606, -0.62641725, 0.30664057,
-    0.37829260, -0.72035412, 0.00221119, 0.00150889, -0.78542900,
-    -0.24460779,
+    1.0493029701715333, 0.0, 0.0,
+    -0.1934020797248519, -0.9900015933286939, 0.08465793419075424,
+    0.4988848232868026, 0.0, 0.0,
+    -0.009467122040547171, -0.6251372489989805,
     // Joint 4
-    0.01531557, 0.00001486, 0.00137532, -0.00322231, -0.00077226,
-    0.00342861, -0.00076390, -0.01076991, -0.02530941, -0.00246424,
-    0.00017748};
+    0.01840954868208388, 0.0006495092692477874, 0.003008610710428355,
+    0.0, 0.0, 0.0,
+    0.0, -0.0064129740976858335, -0.021418159392512237,
+    0.0, 0.0};
   // clang-format on
 
   /// Enable viscous + Coulomb friction torque compensation.
@@ -143,7 +148,7 @@ public:
   static constexpr double kDefaultOutputForceDeadband = 1.0;
 
   /// Torque-z output deadband magnitude [Nm].
-  static constexpr double kDefaultOutputTorqueDeadband = 1.0;
+  static constexpr double kDefaultOutputTorqueDeadband = 0.1;
 
   /// Nominal update rate used to scale rate-of-change limits [Hz].
   static constexpr double kDefaultUpdateRateHz = 125.0;
