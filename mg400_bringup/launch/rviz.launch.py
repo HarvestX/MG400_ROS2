@@ -24,6 +24,9 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     """Launch RViz with configurable config file."""
     # Declare launch arguments
+    namespace_arg = DeclareLaunchArgument(
+        'namespace', default_value='mg400', description='Robot topic namespace'
+    )
     rviz_config_arg = DeclareLaunchArgument(
         'rviz_config',
         default_value='mg400.rviz',
@@ -58,11 +61,16 @@ def generate_launch_description():
     )
 
     # Create nodes
+    ns = LaunchConfiguration('namespace')
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='log',
+        remappings=[
+            ('/mg400/external_force', PathJoinSubstitution(['/', ns, 'external_force'])),
+            ('/mg400/robot_description', PathJoinSubstitution(['/', ns, 'robot_description'])),
+        ],
         arguments=[
             '-d',
             rviz_config_path,
@@ -74,6 +82,7 @@ def generate_launch_description():
 
     # Create launch description
     ld = LaunchDescription()
+    ld.add_action(namespace_arg)
     ld.add_action(rviz_config_arg)
     ld.add_action(package_name_arg)
     ld.add_action(config_dir_arg)
