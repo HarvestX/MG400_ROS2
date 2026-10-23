@@ -20,7 +20,7 @@
 
 namespace mg400_interface
 {
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("TcpClient");
+static const rclcpp::Logger kLogger = rclcpp::get_logger("TcpClient");
 
 TcpSocketHandler::TcpSocketHandler(std::string ip, uint16_t port)
 : fd_(-1),
@@ -89,7 +89,7 @@ void TcpSocketHandler::connect(const std::chrono::nanoseconds & timeout)
 
   this->is_connected_.store(true);
 
-  RCLCPP_INFO(LOGGER, "%s : connected successfully", this->toString().c_str());
+  RCLCPP_INFO(kLogger, "%s : connected successfully", this->toString().c_str());
 }
 
 void TcpSocketHandler::disConnect()
@@ -113,7 +113,7 @@ void TcpSocketHandler::send(const void * buf, uint32_t len)
     throw TcpSocketException("tcp is disconnected");
   }
 
-  RCLCPP_INFO(LOGGER, "send : %s", (const char *)buf);
+  RCLCPP_INFO(kLogger, "send : %s", (const char *)buf);
 
   const auto * tmp = (const uint8_t *)buf;
   while (len) {
