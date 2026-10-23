@@ -32,6 +32,7 @@ unset(TARGET)
 ament_python_install_package(${PROJECT_NAME})
 install(
   PROGRAMS
+    scripts/param_identify
     scripts/command_sender
     scripts/compare_positive_inverse_solution
   DESTINATION lib/${PROJECT_NAME}
@@ -47,6 +48,8 @@ install(FILES README.md DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_param_identify test/test_param_identify.py)
 endif()
 
 ament_auto_package()
