@@ -11,6 +11,7 @@
   <exec_depend>mg400_description</exec_depend>
   <exec_depend>mg400_joy</exec_depend>
   <exec_depend>mg400_node</exec_depend>
+  <exec_depend>mg400_rviz_plugin</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>xacro</exec_depend>
