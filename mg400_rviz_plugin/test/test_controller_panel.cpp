@@ -35,6 +35,7 @@ using JointState = sensor_msgs::msg::JointState;
 using Enable = mg400_msgs::srv::EnableRobot;
 using Disable = mg400_msgs::srv::DisableRobot;
 using ClearError = mg400_msgs::srv::ClearError;
+using SetCollision = mg400_msgs::srv::SetCollisionLevel;
 
 class TestPanel : public mg400_rviz_plugin::Mg400ControllerPanel
 {
@@ -90,7 +91,7 @@ protected:
       "/mg400/enable_robot",
       [this](Enable::Request::SharedPtr request, Enable::Response::SharedPtr response) {
         ++enable_count_;
-        EXPECT_EQ(Enable::Request::NO_PARAM, request->num_of_params);
+        last_enable_request_ = *request;
         response->result = true;
       });
     disable_server_ = node_->create_service<Disable>(
@@ -105,6 +106,14 @@ protected:
         ++clear_count_;
         response->result = clear_success_;
         response->error_id = clear_success_ ? 0 : 42;
+      });
+    collision_server_ = node_->create_service<SetCollision>(
+      "/mg400/set_collision_level",
+      [this](SetCollision::Request::SharedPtr request, SetCollision::Response::SharedPtr response) {
+        ++collision_count_;
+        last_collision_request_ = *request;
+        response->result = collision_success_;
+        response->error_id = collision_success_ ? 0 : 42;
       });
     ASSERT_TRUE(
       waitFor(
@@ -170,10 +179,15 @@ protected:
   rclcpp::Service<Enable>::SharedPtr enable_server_;
   rclcpp::Service<Disable>::SharedPtr disable_server_;
   rclcpp::Service<ClearError>::SharedPtr clear_server_;
+  rclcpp::Service<SetCollision>::SharedPtr collision_server_;
+  Enable::Request last_enable_request_;
+  SetCollision::Request last_collision_request_;
   size_t enable_count_ = 0;
   size_t disable_count_ = 0;
   size_t clear_count_ = 0;
+  size_t collision_count_ = 0;
   bool clear_success_ = true;
+  bool collision_success_ = true;
   bool reject_ = false;
   size_t goal_count_ = 0;
   QPushButton * send_;
@@ -277,13 +291,16 @@ TEST_F(ControllerPanelTest, SendsRadiansAndProcessesFeedbackAndSuccess)
   EXPECT_TRUE(send_->isEnabled());
 }
 
-TEST_F(ControllerPanelTest, SharedRobotButtonsStayAboveBothTabs)
+TEST_F(ControllerPanelTest, SharedRobotButtonsStayAboveAllTabs)
 {
   auto * tabs = panel_->findChild<QTabWidget *>("motion_tabs");
   ASSERT_NE(nullptr, tabs);
-  ASSERT_EQ(2, tabs->count());
+  ASSERT_EQ(3, tabs->count());
   EXPECT_EQ("MovJ", tabs->tabText(0));
   EXPECT_EQ("JointMovJ", tabs->tabText(1));
+  EXPECT_EQ("Collision", tabs->tabText(2));
+  EXPECT_TRUE(tabs->widget(2)->isAncestorOf(panel_->findChild<QComboBox *>("collision_level")));
+  EXPECT_TRUE(tabs->widget(2)->isAncestorOf(panel_->findChild<QPushButton *>("set_collision_level")));
   EXPECT_TRUE(tabs->widget(0)->isAncestorOf(panel_->findChild<QPushButton *>("send_mov_j")));
   EXPECT_TRUE(tabs->widget(1)->isAncestorOf(send_));
   EXPECT_TRUE(tabs->widget(0)->isAncestorOf(panel_->findChild<QPushButton *>("use_current_pose")));
@@ -296,8 +313,19 @@ TEST_F(ControllerPanelTest, SharedRobotButtonsStayAboveBothTabs)
     ASSERT_NE(nullptr, button);
     EXPECT_FALSE(tabs->isAncestorOf(button));
     EXPECT_LT(button->mapTo(panel_.get(), QPoint()).y(), tabs->y());
-    tabs->setCurrentIndex(1);
-    EXPECT_TRUE(button->isVisible());
+    for (int i = 0; i < tabs->count(); ++i) {
+      tabs->setCurrentIndex(i);
+      EXPECT_TRUE(button->isVisible());
+    }
+  }
+  for (const auto * name :
+    {"enable_load", "enable_center_x", "enable_center_y", "enable_center_z"})
+  {
+    auto * input = panel_->findChild<QWidget *>(name);
+    ASSERT_NE(nullptr, input);
+    EXPECT_FALSE(tabs->isAncestorOf(input));
+    EXPECT_LT(input->mapTo(panel_.get(), QPoint()).y(), tabs->y());
+    EXPECT_TRUE(input->isVisible());
   }
 }
 
@@ -385,6 +413,11 @@ TEST_F(ControllerPanelTest, RobotServicesAreAsynchronousAndReportErrors)
   enable->click();
   ASSERT_TRUE(waitFor([&]() {return status->text() == "Enable succeeded.";}));
   EXPECT_EQ(1u, enable_count_);
+  EXPECT_EQ(Enable::Request::FOUR_PARAM, last_enable_request_.num_of_params);
+  EXPECT_DOUBLE_EQ(0.0, last_enable_request_.load);
+  EXPECT_DOUBLE_EQ(0.0, last_enable_request_.center_x);
+  EXPECT_DOUBLE_EQ(0.0, last_enable_request_.center_y);
+  EXPECT_DOUBLE_EQ(0.0, last_enable_request_.center_z);
   setMode(RobotMode::RUNNING, "RUNNING");
   EXPECT_TRUE(disable->isEnabled());
   EXPECT_FALSE(clear->isEnabled());
@@ -404,6 +437,208 @@ TEST_F(ControllerPanelTest, RobotServicesAreAsynchronousAndReportErrors)
   EXPECT_EQ(2u, clear_count_);
   clear_server_.reset();
   ASSERT_TRUE(waitFor([&]() {return !clear->isEnabled();}));
+}
+
+TEST_F(ControllerPanelTest, EnablesWithPayloadAndLocksInputsUntilDisabled)
+{
+  auto * enable = panel_->findChild<QPushButton *>("enable_robot");
+  auto * status = panel_->findChild<QLabel *>("service_status");
+  const QStringList names =
+  {"enable_load", "enable_center_x", "enable_center_y", "enable_center_z"};
+  const std::array<double, 4> values = {0.123, 45.678, -12.345, 10.001};
+  EXPECT_EQ(nullptr, panel_->findChild<QCheckBox *>("set_enable_payload"));
+  for (const auto & name : names) {
+    auto * input = panel_->findChild<QLineEdit *>(name);
+    ASSERT_NE(nullptr, input);
+    EXPECT_TRUE(input->isEnabled());
+  }
+  setMode(RobotMode::DISABLED, "DISABLED");
+  for (size_t i = 0; i < values.size(); ++i) {
+    auto * input = panel_->findChild<QLineEdit *>(names[i]);
+    EXPECT_TRUE(input->isEnabled());
+    input->setText(QString::number(values[i], 'f', 3));
+  }
+  ASSERT_TRUE(waitFor([&]() {return enable->isEnabled();}));
+  enable->click();
+  for (const auto & name : names) {
+    EXPECT_FALSE(panel_->findChild<QLineEdit *>(name)->isEnabled());
+  }
+  ASSERT_TRUE(waitFor([&]() {return status->text() == "Enable succeeded.";}));
+  ASSERT_EQ(1u, enable_count_);
+  EXPECT_EQ(Enable::Request::FOUR_PARAM, last_enable_request_.num_of_params);
+  EXPECT_DOUBLE_EQ(values[0], last_enable_request_.load);
+  EXPECT_DOUBLE_EQ(values[1], last_enable_request_.center_x);
+  EXPECT_DOUBLE_EQ(values[2], last_enable_request_.center_y);
+  EXPECT_DOUBLE_EQ(values[3], last_enable_request_.center_z);
+  for (const auto mode : {RobotMode::ENABLE, RobotMode::RUNNING}) {
+    setMode(mode, mode == RobotMode::ENABLE ? "ENABLE" : "RUNNING");
+    for (const auto & name : names) {
+      EXPECT_FALSE(panel_->findChild<QLineEdit *>(name)->isEnabled());
+    }
+  }
+  setMode(RobotMode::DISABLED, "DISABLED");
+  for (size_t i = 0; i < values.size(); ++i) {
+    auto * input = panel_->findChild<QLineEdit *>(names[i]);
+    EXPECT_TRUE(input->isEnabled());
+    EXPECT_DOUBLE_EQ(values[i], input->text().toDouble());
+  }
+  panel_->findChild<QLineEdit *>("enable_load")->setText("0.25");
+  enable->click();
+  ASSERT_TRUE(waitFor([&]() {return status->text() == "Enable succeeded.";}));
+  EXPECT_EQ(2u, enable_count_);
+  EXPECT_EQ(Enable::Request::FOUR_PARAM, last_enable_request_.num_of_params);
+  EXPECT_DOUBLE_EQ(0.25, last_enable_request_.load);
+  EXPECT_DOUBLE_EQ(values[1], last_enable_request_.center_x);
+  EXPECT_DOUBLE_EQ(values[2], last_enable_request_.center_y);
+  EXPECT_DOUBLE_EQ(values[3], last_enable_request_.center_z);
+}
+
+TEST_F(ControllerPanelTest, RejectsInvalidPayloadBeforeEnabling)
+{
+  auto * enable = panel_->findChild<QPushButton *>("enable_robot");
+  setMode(RobotMode::DISABLED, "DISABLED");
+  ASSERT_TRUE(waitFor([&]() {return enable->isEnabled();}));
+  const QStringList names =
+  {"enable_load", "enable_center_x", "enable_center_y", "enable_center_z"};
+  for (const auto & name : names) {
+    auto * input = panel_->findChild<QLineEdit *>(name);
+    for (const auto * invalid : {"", "abc", "nan", "inf", "1e309", "0.0001", "500.001",
+        "-500.001"})
+    {
+      input->setText(invalid);
+      EXPECT_FALSE(enable->isEnabled()) << name.toStdString() << ": " << invalid;
+      enable->click();
+    }
+    if (name == "enable_load") {
+      for (const auto * invalid : {"-0.001", "0.751"}) {
+        input->setText(invalid);
+        EXPECT_FALSE(enable->isEnabled());
+        enable->click();
+      }
+      input->setText("0.75");
+      EXPECT_TRUE(enable->isEnabled());
+    } else {
+      for (const auto * boundary : {"-500", "500"}) {
+        input->setText(boundary);
+        EXPECT_TRUE(enable->isEnabled());
+      }
+    }
+    input->setText("0");
+    EXPECT_TRUE(enable->isEnabled());
+  }
+  EXPECT_EQ(0u, enable_count_);
+  panel_->findChild<QLineEdit *>("enable_load")->clear();
+  EXPECT_FALSE(enable->isEnabled());
+  enable->click();
+  EXPECT_EQ(0u, enable_count_);
+  panel_->findChild<QLineEdit *>("enable_load")->setText("0.25");
+  EXPECT_TRUE(enable->isEnabled());
+  enable->click();
+  auto * status = panel_->findChild<QLabel *>("service_status");
+  ASSERT_TRUE(waitFor([&]() {return status->text() == "Enable succeeded.";}));
+  EXPECT_EQ(1u, enable_count_);
+  EXPECT_EQ(Enable::Request::FOUR_PARAM, last_enable_request_.num_of_params);
+  EXPECT_DOUBLE_EQ(0.25, last_enable_request_.load);
+}
+
+TEST_F(ControllerPanelTest, CollisionLevelRequiresApplyAndReportsServiceResults)
+{
+  auto * level = panel_->findChild<QComboBox *>("collision_level");
+  auto * apply = panel_->findChild<QPushButton *>("set_collision_level");
+  auto * status = panel_->findChild<QLabel *>("service_status");
+  auto * tabs = panel_->findChild<QTabWidget *>("motion_tabs");
+  ASSERT_NE(nullptr, level);
+  ASSERT_NE(nullptr, apply);
+  EXPECT_EQ(6, level->count());
+  EXPECT_FALSE(level->isEditable());
+  EXPECT_EQ(-1, level->currentIndex());
+  EXPECT_FALSE(apply->isEnabled());
+  setGoals({"10", "20", "30", "-40"});
+  setPoseGoals({"100", "-50", "200", "90"});
+  setMode(RobotMode::ENABLE, "ENABLE");
+  EXPECT_FALSE(apply->isEnabled());
+  for (int value = 0; value <= 5; ++value) {
+    const int index = level->findData(value);
+    ASSERT_GE(index, 0);
+    level->setCurrentIndex(index);
+    tabs->setCurrentIndex(2);
+    tabs->setCurrentIndex(0);
+    tabs->setCurrentIndex(2);
+    ASSERT_TRUE(waitFor([&]() {return apply->isEnabled();}));
+    EXPECT_EQ(static_cast<size_t>(value), collision_count_);
+    apply->click();
+    EXPECT_EQ(static_cast<size_t>(value), collision_count_);
+    EXPECT_FALSE(apply->isEnabled());
+    EXPECT_FALSE(level->isEnabled());
+    EXPECT_FALSE(send_->isEnabled());
+    EXPECT_FALSE(panel_->findChild<QPushButton *>("send_mov_j")->isEnabled());
+    EXPECT_FALSE(panel_->findChild<QPushButton *>("clear_error")->isEnabled());
+    apply->click();
+    ASSERT_TRUE(
+      waitFor(
+        [&]() {
+          return status->text() == QString("Collision level %1 succeeded.").arg(value);
+        }));
+    EXPECT_EQ(static_cast<size_t>(value + 1), collision_count_);
+    EXPECT_EQ(value, last_collision_request_.level.level);
+    EXPECT_TRUE(apply->isEnabled());
+    EXPECT_TRUE(level->isEnabled());
+    EXPECT_TRUE(send_->isEnabled());
+  }
+  collision_success_ = false;
+  level->setCurrentIndex(level->findData(3));
+  apply->click();
+  ASSERT_TRUE(
+    waitFor(
+      [&]() {
+        return status->text() == "Collision level 3 failed (error ID: 42).";
+      }));
+  EXPECT_EQ(7u, collision_count_);
+  EXPECT_TRUE(apply->isEnabled());
+  EXPECT_TRUE(level->isEnabled());
+  EXPECT_EQ(0u, goal_count_);
+  EXPECT_EQ(0u, movj_count_);
+}
+
+TEST_F(ControllerPanelTest, CollisionLevelWaitsForIdleRobotAndAvailableService)
+{
+  auto * level = panel_->findChild<QComboBox *>("collision_level");
+  auto * apply = panel_->findChild<QPushButton *>("set_collision_level");
+  level->setCurrentIndex(level->findData(2));
+  EXPECT_FALSE(apply->isEnabled());
+  setMode(RobotMode::RUNNING, "RUNNING");
+  EXPECT_FALSE(apply->isEnabled());
+  EXPECT_FALSE(level->isEnabled());
+  setMode(RobotMode::ERROR, "ERROR");
+  EXPECT_FALSE(apply->isEnabled());
+  setMode(RobotMode::PAUSE, "PAUSE");
+  EXPECT_FALSE(apply->isEnabled());
+  setMode(RobotMode::DISABLED, "DISABLED");
+  ASSERT_TRUE(waitFor([&]() {return apply->isEnabled();}));
+  auto * enable = panel_->findChild<QPushButton *>("enable_robot");
+  enable->click();
+  EXPECT_FALSE(apply->isEnabled());
+  EXPECT_FALSE(level->isEnabled());
+  apply->click();
+  ASSERT_TRUE(waitFor([&]() {return apply->isEnabled();}));
+  setMode(RobotMode::ENABLE, "ENABLE");
+  setGoals({"10", "20", "30", "-40"});
+  ASSERT_TRUE(waitFor([this]() {return send_->isEnabled();}));
+  send_->click();
+  EXPECT_FALSE(apply->isEnabled());
+  EXPECT_FALSE(level->isEnabled());
+  apply->click();
+  ASSERT_TRUE(waitFor([this]() {return handle_ && status_->text().contains("accepted");}));
+  EXPECT_FALSE(apply->isEnabled());
+  EXPECT_TRUE(panel_->findChild<QPushButton *>("disable_robot")->isEnabled());
+  auto result = std::make_shared<Action::Result>();
+  result->result = true;
+  handle_->succeed(result);
+  ASSERT_TRUE(waitFor([&]() {return apply->isEnabled();}));
+  EXPECT_TRUE(level->isEnabled());
+  collision_server_.reset();
+  ASSERT_TRUE(waitFor([&]() {return !apply->isEnabled();}));
+  EXPECT_EQ(0u, collision_count_);
 }
 
 TEST_F(ControllerPanelTest, RecoversAfterRejectionAndDisplaysErrors)

@@ -51,6 +51,24 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   label_service_status_->setWordWrap(true);
   layout->addWidget(label_service_status_);
 
+  auto * payload = new QGroupBox("Enable payload");
+  auto * payload_layout = new QGridLayout(payload);
+  const QStringList fields = {"load", "center_x", "center_y", "center_z"};
+  const QStringList labels = {"Load [kg]", "Center X [mm]", "Center Y [mm]", "Center Z [mm]"};
+  for (size_t i = 0; i < payload_inputs_.size(); ++i) {
+    auto * input = new QLineEdit("0");
+    payload_inputs_[i] = input;
+    input->setObjectName("enable_" + fields[i]);
+    auto * validator = new QDoubleValidator(i == 0 ? 0.0 : -500.0, i == 0 ? 0.75 : 500.0, 3, input);
+    validator->setLocale(QLocale::c());
+    validator->setNotation(QDoubleValidator::StandardNotation);
+    input->setValidator(validator);
+    payload_layout->addWidget(new QLabel(labels[i]), i, 0);
+    payload_layout->addWidget(input, i, 1);
+    connect(input, &QLineEdit::textChanged, this, [this]() {updateControls();});
+  }
+  layout->addWidget(payload);
+
   auto * tabs = new QTabWidget;
   tabs->setObjectName("motion_tabs");
   auto * movj_tab = new QWidget;
@@ -125,6 +143,29 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   buttons->addWidget(button_send_);
   joint_layout->addLayout(buttons);
   tabs->addTab(joint_tab, "JointMovJ");
+
+  auto * collision_tab = new QWidget;
+  auto * collision_layout = new QVBoxLayout(collision_tab);
+  auto * collision_form = new QFormLayout;
+  collision_level_ = new QComboBox;
+  collision_level_->setObjectName("collision_level");
+  using CollisionLevel = mg400_msgs::msg::CollisionLevel;
+  for (int level = CollisionLevel::OFF; level <= CollisionLevel::LEVEL5; ++level) {
+    const QString label = level == CollisionLevel::OFF ? "0 (Off)" : QString::number(level);
+    collision_level_->addItem(label, level);
+  }
+  collision_level_->setPlaceholderText("Select a level...");
+  collision_level_->setCurrentIndex(-1);
+  collision_form->addRow("Target level", collision_level_);
+  collision_layout->addLayout(collision_form);
+  button_set_collision_ = new QPushButton("Apply Collision Level");
+  button_set_collision_->setObjectName("set_collision_level");
+  collision_layout->addWidget(button_set_collision_);
+  auto * collision_help = new QLabel("Level 0 turns collision detection off. Click Apply to send.");
+  collision_help->setWordWrap(true);
+  collision_layout->addWidget(collision_help);
+  collision_layout->addStretch();
+  tabs->addTab(collision_tab, "Collision");
   layout->addWidget(tabs);
   label_status_ = new QLabel("Enter a target or use the current values.");
   label_status_->setObjectName("status");
@@ -137,8 +178,18 @@ Mg400ControllerPanel::Mg400ControllerPanel(QWidget * parent)
   connect(button_copy_pose_, &QPushButton::clicked, this, &Mg400ControllerPanel::copyCurrentPose);
   connect(button_send_movj_, &QPushButton::clicked, this, &Mg400ControllerPanel::sendMovJ);
   connect(
+    collision_level_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+    [this]() {updateControls();});
+  connect(
+    button_set_collision_, &QPushButton::clicked, this, &Mg400ControllerPanel::sendCollisionLevel);
+  connect(
     button_enable_, &QPushButton::clicked, this, [this]() {
-      sendRobotRequest<mg400_msgs::srv::EnableRobot>(enable_client_, "Enable");
+      mg400_msgs::srv::EnableRobot::Request request;
+      if (!goal_pending_ && !service_pending_ && current_robot_mode_ == RobotMode::DISABLED &&
+      readEnableRequest(request))
+      {
+        sendRobotRequest<mg400_msgs::srv::EnableRobot>(enable_client_, "Enable", request);
+      }
     });
   connect(
     button_disable_, &QPushButton::clicked, this, [this]() {
@@ -184,6 +235,8 @@ void Mg400ControllerPanel::initializeRos(const rclcpp::Node::SharedPtr & node)
     "/mg400/disable_robot", rmw_qos_profile_services_default, callback_group_);
   clear_error_client_ = nh_->create_client<mg400_msgs::srv::ClearError>(
     "/mg400/clear_error", rmw_qos_profile_services_default, callback_group_);
+  collision_client_ = nh_->create_client<mg400_msgs::srv::SetCollisionLevel>(
+    "/mg400/set_collision_level", rmw_qos_profile_services_default, callback_group_);
 }
 
 void Mg400ControllerPanel::tick()
@@ -215,6 +268,26 @@ bool Mg400ControllerPanel::readGoal(ActionT::Goal & goal) const
     std::vector<double>(goal.joint_angles.begin(), goal.joint_angles.end()));
 }
 
+bool Mg400ControllerPanel::readEnableRequest(mg400_msgs::srv::EnableRobot::Request & request) const
+{
+  using Request = mg400_msgs::srv::EnableRobot::Request;
+  request = Request();
+  std::array<double, 4> values;
+  for (size_t i = 0; i < payload_inputs_.size(); ++i) {
+    bool ok = false;
+    values[i] = payload_inputs_[i]->text().toDouble(&ok);
+    if (!ok || !payload_inputs_[i]->hasAcceptableInput() || !std::isfinite(values[i])) {
+      return false;
+    }
+  }
+  request.num_of_params = Request::FOUR_PARAM;
+  request.load = values[0];
+  request.center_x = values[1];
+  request.center_y = values[2];
+  request.center_z = values[3];
+  return true;
+}
+
 void Mg400ControllerPanel::updateControls()
 {
   QString mode;
@@ -236,6 +309,17 @@ void Mg400ControllerPanel::updateControls()
   const bool valid_goal = readGoal(goal);
   const bool ready = joint_movj_client_ && joint_movj_client_->action_server_is_ready();
   const bool idle = !goal_pending_ && !service_pending_;
+  const bool collision_mode = current_robot_mode_ == RobotMode::DISABLED ||
+    current_robot_mode_ == RobotMode::ENABLE;
+  collision_level_->setEnabled(idle && (collision_mode || current_robot_mode_ == RobotMode::INIT));
+  button_set_collision_->setEnabled(
+    idle && collision_mode && collision_level_->currentIndex() >= 0 &&
+    collision_client_ && collision_client_->service_is_ready());
+  button_set_collision_->setToolTip(
+    collision_level_->currentIndex() < 0 ? "Select a collision level (0-5)." :
+    !collision_client_ || !collision_client_->service_is_ready() ?
+    "Waiting for /mg400/set_collision_level." :
+    !collision_mode || !idle ? "Wait until the robot is idle (DISABLED or ENABLE)." : "");
   button_send_->setEnabled(
     current_robot_mode_ == RobotMode::ENABLE && ready && valid_goal && idle);
   button_send_->setToolTip(
@@ -246,9 +330,18 @@ void Mg400ControllerPanel::updateControls()
   button_send_movj_->setEnabled(
     current_robot_mode_ == RobotMode::ENABLE && movj_client_ &&
     movj_client_->action_server_is_ready() && readMovJGoal(pose_goal) && idle);
+  mg400_msgs::srv::EnableRobot::Request enable_request;
+  const bool valid_payload = readEnableRequest(enable_request);
   button_enable_->setEnabled(
     current_robot_mode_ == RobotMode::DISABLED && idle && enable_client_ &&
-    enable_client_->service_is_ready());
+    enable_client_->service_is_ready() && valid_payload);
+  button_enable_->setToolTip(
+    valid_payload ? "" : "Enter load (0-0.75 kg) and center XYZ (-500 to 500 mm), up to 3 decimals.");
+  const bool edit_payload = idle &&
+    (current_robot_mode_ == RobotMode::INIT || current_robot_mode_ == RobotMode::DISABLED);
+  for (auto * input : payload_inputs_) {
+    input->setEnabled(edit_payload);
+  }
   button_disable_->setEnabled(
     (current_robot_mode_ == RobotMode::ENABLE || current_robot_mode_ == RobotMode::RUNNING) &&
     !service_pending_ && disable_client_ && disable_client_->service_is_ready());
@@ -431,9 +524,27 @@ void Mg400ControllerPanel::sendMovJ()
   }
 }
 
+void Mg400ControllerPanel::sendCollisionLevel()
+{
+  using CollisionLevel = mg400_msgs::msg::CollisionLevel;
+  bool valid = false;
+  const int level = collision_level_->currentData().toInt(&valid);
+  if (goal_pending_ || service_pending_ ||
+    (current_robot_mode_ != RobotMode::DISABLED && current_robot_mode_ != RobotMode::ENABLE) ||
+    !valid || level < CollisionLevel::OFF || level > CollisionLevel::LEVEL5)
+  {
+    return;
+  }
+  mg400_msgs::srv::SetCollisionLevel::Request request;
+  request.level.level = level;
+  sendRobotRequest<mg400_msgs::srv::SetCollisionLevel>(
+    collision_client_, QString("Collision level %1").arg(level), request);
+}
+
 template<typename ServiceT>
 void Mg400ControllerPanel::sendRobotRequest(
-  const typename rclcpp::Client<ServiceT>::SharedPtr & client, const QString & name)
+  const typename rclcpp::Client<ServiceT>::SharedPtr & client, const QString & name,
+  const typename ServiceT::Request & request)
 {
   if (service_pending_ || !client || !client->service_is_ready()) {
     return;
@@ -444,7 +555,7 @@ void Mg400ControllerPanel::sendRobotRequest(
   updateControls();
   try {
     auto future = client->async_send_request(
-      std::make_shared<typename ServiceT::Request>(),
+      std::make_shared<typename ServiceT::Request>(request),
       [this, name](typename rclcpp::Client<ServiceT>::SharedFuture response) {
         service_pending_ = false;
         remove_service_request_ = {};

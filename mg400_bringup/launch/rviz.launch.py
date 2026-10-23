@@ -70,6 +70,14 @@ def generate_launch_description():
         remappings=[
             ('/mg400/external_force', PathJoinSubstitution(['/', ns, 'external_force'])),
             ('/mg400/robot_description', PathJoinSubstitution(['/', ns, 'robot_description'])),
+            ('/mg400/robot_mode', PathJoinSubstitution(['/', ns, 'robot_mode'])),
+            ('/mg400/joint_states', PathJoinSubstitution(['/', ns, 'joint_states'])),
+            ('/mg400/enable_robot', PathJoinSubstitution(['/', ns, 'enable_robot'])),
+            ('/mg400/disable_robot', PathJoinSubstitution(['/', ns, 'disable_robot'])),
+            ('/mg400/clear_error', PathJoinSubstitution(['/', ns, 'clear_error'])),
+            ('/mg400/set_collision_level', PathJoinSubstitution(['/', ns, 'set_collision_level'])),
+            ('/mg400/mov_j', PathJoinSubstitution(['/', ns, 'mov_j'])),
+            ('/mg400/joint_mov_j', PathJoinSubstitution(['/', ns, 'joint_mov_j'])),
         ],
         arguments=[
             '-d',
