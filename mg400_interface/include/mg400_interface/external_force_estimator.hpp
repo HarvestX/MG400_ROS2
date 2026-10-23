@@ -197,8 +197,10 @@ public:
 
   /// Process one realtime data sample and update the estimated wrench.
   ///
-  /// Returns false while the auto-bias calibration phase is still ongoing;
-  /// getEstimatedExternalForce() is not meaningful until this method returns true.
+  /// Only samples with nonzero EnableStatus are used, including for auto-bias.
+  /// RobotMode and alarm status do not gate estimation.
+  /// Returns false when disabled or while auto-bias calibration is ongoing;
+  /// getEstimatedExternalForce() is a current estimate only when this returns true.
   bool update(const RealTimeData & data);
 
   /// Most recently computed estimated external force / torque as a six-element array

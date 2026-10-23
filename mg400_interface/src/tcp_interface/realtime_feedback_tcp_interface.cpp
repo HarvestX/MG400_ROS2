@@ -162,12 +162,10 @@ void RealtimeFeedbackTcpInterface::recvData()
         std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
         this->rt_data_ = std::move(recvd_data);
 
-        // If an external force estimator is registered and enabled, run it
-        // and store the result in the separate external_force_ member.
-        // When the robot is disabled, zero out external_force_ to avoid spurious
-        // estimates from un-powered actuators.
+        // Estimate only while EnableStatus is ON. Keep publishing zero while
+        // OFF, preserving the existing topic and service behavior.
         if (this->use_estimated_external_force_ && this->estimator_) {
-          if (this->rt_data_->robot_mode == kRobotModeDisabled) {
+          if (this->rt_data_->enable_status == 0) {
             this->external_force_.fill(0.0);
             this->has_external_force_ = true;
           } else if (this->estimator_->update(*this->rt_data_)) {

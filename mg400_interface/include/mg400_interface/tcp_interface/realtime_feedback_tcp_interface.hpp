@@ -37,8 +37,6 @@ public:
   RCLCPP_SHARED_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
   RCLCPP_UNIQUE_PTR_DEFINITIONS(RealtimeFeedbackTcpInterface)
 
-  static constexpr uint64_t kRobotModeDisabled = 4u;
-
   const std::string frame_id_prefix;
 
 private:
