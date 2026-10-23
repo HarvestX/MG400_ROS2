@@ -347,7 +347,7 @@ void MG400Node::onExternalForceTimer()
   auto msg = geometry_msgs::msg::WrenchStamped();
   msg.header.stamp = this->now();
   msg.header.frame_id =
-    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
+    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_end_effector_flange";
   msg.wrench.force.x = force[0];
   msg.wrench.force.y = force[1];
   msg.wrench.force.z = force[2];

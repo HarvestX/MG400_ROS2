@@ -89,7 +89,7 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
   const Eigen::Vector4d guarded_wrench =
     this->applyDeterministicWrenchGuards(estimated_wrench, min_sv);
 
-  // Apply EMA filter.
+  // Filter in the fixed origin axes so changing flange yaw does not mix frames.
   if (!this->has_filtered_wrench_) {
     this->filtered_wrench_ = guarded_wrench;
     this->has_filtered_wrench_ = true;
@@ -99,10 +99,13 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
       (1.0 - this->config_.wrench_filter_alpha) * this->filtered_wrench_;
   }
 
-  Eigen::Vector4d output_wrench = this->toOutputFrameWrench(this->filtered_wrench_);
+  // Use the same joint sample as the estimate; the flange yaw is J1 + J4.
+  Eigen::Vector4d output_wrench =
+    this->toOutputFrameWrench(this->filtered_wrench_, joints(0) + joints(3));
   output_wrench = this->applyOutputDeadband(output_wrench);
 
-  // Store as TCP_Force-compatible array: [Fx, Fy, Fz, 0, 0, Tz].
+  // Flange-frame wrench at the flange origin: [Fx, Fy, Fz, 0, 0, Tz].
+  // Tx and Ty are unestimated and remain zero.
   this->last_external_force_ = {
     output_wrench(0), output_wrench(1), output_wrench(2),
     0.0, 0.0, output_wrench(3)};
@@ -380,12 +383,22 @@ Eigen::Vector4d ExternalForceEstimator::applyDeterministicWrenchGuards(
 }
 
 Eigen::Vector4d ExternalForceEstimator::toOutputFrameWrench(
-  const Eigen::Vector4d & wrench) const
+  const Eigen::Vector4d & wrench, const double flange_yaw) const
 {
   Eigen::Vector4d output = wrench;
   if (this->config_.invert_force_y_axis) {
     output(1) = -output(1);
   }
+
+  // Rotate the origin-axis components into the flange axes with Rz(yaw)^T.
+  // The estimated moment is already about the flange, so do not add r x F.
+  // MG400 has yaw-only flange rotation: Fz and Tz are unchanged.
+  const double fx = output(0);
+  const double fy = output(1);
+  const double c = std::cos(flange_yaw);
+  const double s = std::sin(flange_yaw);
+  output(0) = c * fx + s * fy;
+  output(1) = -s * fx + c * fy;
   return output;
 }
 
