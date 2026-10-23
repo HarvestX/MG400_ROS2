@@ -75,6 +75,11 @@ int main(int argc, char ** argv)
       "robot mode:\t\t\t%" PRIu64 "\n",
       data.robot_mode);
     printf(
+      "feedback status (raw):\t\tenable=%u brake=0x%02x drag=%u running=%u error=%u\n",
+      static_cast<unsigned>(data.enable_status), static_cast<unsigned>(data.brake_status),
+      static_cast<unsigned>(data.drag_status), static_cast<unsigned>(data.running_status),
+      static_cast<unsigned>(data.error_status));
+    printf(
       "test value:\t\t\t%" PRIu64 "\n",
       data.test_value);
     printf(
