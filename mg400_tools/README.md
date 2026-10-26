@@ -32,14 +32,6 @@ Evaluate local forward kinematics, with joint angles in degrees:
 ros2 run mg400_tools mg400_kinematics_cli fk 0 10 20 30
 ```
 
-URDF generation is provided by the robot description package:
-
-```bash
-ros2 run mg400_description generate_urdf mg400
-```
-
-This writes `mg400.urdf` in the current directory.
-
 ## Source layout
 
 - `src/` and `include/mg400_tools/`: C++ tools.
