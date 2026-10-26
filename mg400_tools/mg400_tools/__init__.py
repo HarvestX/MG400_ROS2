@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MG400 command-line tools."""
+"""MG400 command-line tools and offline parameter identification."""
