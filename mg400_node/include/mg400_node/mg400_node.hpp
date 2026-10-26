@@ -15,13 +15,16 @@
 #ifndef __MG400_NODE_MG400_NODE_HPP__
 #define __MG400_NODE_MG400_NODE_HPP__
 
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <memory>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <lifecycle_msgs/msg/state.hpp>
 #include <mg400_msgs/msg/error_id.hpp>
+#include <mg400_msgs/msg/joint_currents.hpp>
 #include <mg400_msgs/msg/robot_mode.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <mg400_plugin_base/api_loader_base.hpp>
@@ -71,12 +74,16 @@ private:
 
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;
+  rclcpp::TimerBase::SharedPtr end_pose_timer_;
+  rclcpp::TimerBase::SharedPtr joint_currents_timer_;
   rclcpp::TimerBase::SharedPtr robot_mode_timer_;
   rclcpp::TimerBase::SharedPtr error_timer_;
   rclcpp::TimerBase::SharedPtr interface_check_timer_;
   rclcpp::TimerBase::SharedPtr connect_timer_;
 
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr end_pose_pub_;
+  rclcpp::Publisher<mg400_msgs::msg::JointCurrents>::SharedPtr joint_currents_pub_;
   rclcpp::Publisher<mg400_msgs::msg::RobotMode>::SharedPtr robot_mode_pub_;
   rclcpp::Publisher<mg400_msgs::msg::ErrorID>::SharedPtr error_id_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr mg400_connected_pub_;
@@ -89,21 +96,23 @@ private:
 public:
   MG400Node() = delete;
   explicit MG400Node(const rclcpp::NodeOptions &);
-  ~MG400Node();
+  ~MG400Node() override;
 
   void onInit();
   void onJointStateTimer();
+  void onEndPoseTimer();
+  void onJointCurrentsTimer();
   void onRobotModeTimer();
   void onErrorTimer();
   void onInterfaceCheckTimer();
 
 private:
-  CallbackReturn on_configure(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_activate(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_deactivate(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_cleanup(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_shutdown(const rclcpp_lifecycle::State &) override;
-  CallbackReturn on_error(const rclcpp_lifecycle::State &) override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State & /*previous_state*/) override;
+  CallbackReturn on_error(const rclcpp_lifecycle::State & /*previous_state*/) override;
 
   void runTimer();
   void cancelTimer();
@@ -113,6 +122,4 @@ private:
 }  // namespace mg400_node
 
 
-#include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)
 #endif

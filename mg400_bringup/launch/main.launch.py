@@ -46,6 +46,19 @@ def generate_launch_description():
         description='Set the ip address to connect',
     )
 
+    publish_end_pose_arg = DeclareLaunchArgument(
+        'publish_end_pose', default_value='false', description='Publish the end-effector pose.'
+    )
+
+    publish_joint_currents_arg = DeclareLaunchArgument(
+        'publish_joint_currents', default_value='false', description='Publish raw joint currents.'
+    )
+
+    publish_error_id_arg = DeclareLaunchArgument(
+        'publish_error_id', default_value='false',
+        description='Automatically query and publish error IDs in ERROR mode.'
+    )
+
     workspace_visible_arg = DeclareLaunchArgument(
         'workspace_visible',
         default_value=TextSubstitution(text='False'),
@@ -56,6 +69,9 @@ def generate_launch_description():
     ns = LaunchConfiguration('namespace')
     joy = LaunchConfiguration('joy')
     ip_address = LaunchConfiguration('ip_address')
+    publish_end_pose = LaunchConfiguration('publish_end_pose')
+    publish_joint_currents = LaunchConfiguration('publish_joint_currents')
+    publish_error_id = LaunchConfiguration('publish_error_id')
     workspace_visible = LaunchConfiguration('workspace_visible')
 
     # Create nodes
@@ -66,6 +82,9 @@ def generate_launch_description():
         launch_arguments=[
             ('namespace', ns),
             ('ip_address', ip_address),
+            ('publish_end_pose', publish_end_pose),
+            ('publish_joint_currents', publish_joint_currents),
+            ('publish_error_id', publish_error_id),
         ],
     )
 
@@ -102,6 +121,9 @@ def generate_launch_description():
     ld.add_action(ns_arg)
     ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
+    ld.add_action(publish_end_pose_arg)
+    ld.add_action(publish_joint_currents_arg)
+    ld.add_action(publish_error_id_arg)
     ld.add_action(workspace_visible_arg)
     # Add nodes
     ld.add_action(mg400_node)
