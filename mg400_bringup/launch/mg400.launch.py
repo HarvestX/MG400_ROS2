@@ -31,9 +31,14 @@ def generate_launch_description():
         'ip_address', default_value=TextSubstitution(text='192.168.1.6')
     )
 
+    enable_external_force_estimator_arg = DeclareLaunchArgument(
+        'enable_external_force_estimator', default_value=TextSubstitution(text='false')
+    )
+
     # Set launch configurations
     ns = LaunchConfiguration('namespace')
     ip_address = LaunchConfiguration('ip_address')
+    enable_external_force_estimator = LaunchConfiguration('enable_external_force_estimator')
 
     # Create nodes
     mg400_node = Node(
@@ -44,6 +49,7 @@ def generate_launch_description():
         parameters=[
             {
                 'ip_address': ip_address,
+                'enable_external_force_estimator': enable_external_force_estimator,
             }
         ],
         on_exit=Shutdown(),
@@ -54,6 +60,7 @@ def generate_launch_description():
     # Add arguments
     ld.add_action(ns_arg)
     ld.add_action(ip_address_arg)
+    ld.add_action(enable_external_force_estimator_arg)
     # Add nodes
     ld.add_action(mg400_node)
 

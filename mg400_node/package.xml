@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>geometry_msgs</depend>
   <depend>lifecycle_msgs</depend>
   <depend>mg400_interface</depend>
   <depend>mg400_msgs</depend>
