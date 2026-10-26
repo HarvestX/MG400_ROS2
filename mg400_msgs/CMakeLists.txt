@@ -9,7 +9,28 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-file(GLOB msg_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} msg/*.msg)
+set(msg_files
+  msg/Arch.msg
+  msg/CollisionLevel.msg
+  msg/Command.msg
+  msg/DIIndex.msg
+  msg/DOIndex.msg
+  msg/DOStatus.msg
+  msg/DistanceMode.msg
+  msg/ErrorID.msg
+  msg/IDArray.msg
+  msg/JointCurrents.msg
+  msg/JointMovJ.msg
+  msg/MovJ.msg
+  msg/MovJIO.msg
+  msg/MovL.msg
+  msg/MovLIO.msg
+  msg/MoveJog.msg
+  msg/RobotMode.msg
+  msg/Tool.msg
+  msg/ToolDIIndex.msg
+  msg/ToolDOIndex.msg
+  msg/User.msg)
 file(GLOB srv_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} srv/*.srv)
 file(GLOB action_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} action/*.action)
 
