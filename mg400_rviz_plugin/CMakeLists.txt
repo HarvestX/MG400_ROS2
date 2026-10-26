@@ -13,9 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(include_files
   include/mg400_rviz_plugin/panel_mg400_controller.hpp)
 
-foreach(header "${include_files}")
-  qt5_wrap_cpp(include_wrapped "${header}")
-endforeach()
+qt5_wrap_cpp(include_wrapped ${include_files})
 
 file(GLOB src_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/*.cpp)
 set(MY_LIB_NAME ${PROJECT_NAME})
@@ -28,6 +26,15 @@ if(BUILD_TESTING)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_controller_panel test/test_controller_panel.cpp
+    SKIP_LINKING_MAIN_LIBRARIES
+    ENV QT_QPA_PLATFORM=offscreen ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=187)
+  if(TARGET test_controller_panel)
+    target_link_libraries(test_controller_panel ${MY_LIB_NAME})
+  endif()
 endif()
 
+install(FILES README.md DESTINATION share/${PROJECT_NAME})
 ament_auto_package()

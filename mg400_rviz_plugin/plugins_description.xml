@@ -4,7 +4,7 @@
       type="mg400_rviz_plugin::Mg400ControllerPanel"
       base_class_type="rviz_common::Panel">
     <description>
-      Make a MG400 control panel
+      Control MG400 with Enable, Disable, Clear Error and MovJ/JointMovJ tabs
     </description>
   </class>
 </library>
