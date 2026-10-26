@@ -48,6 +48,7 @@ def generate_launch_description():
 
     enable_external_force_estimator_arg = DeclareLaunchArgument(
         'enable_external_force_estimator', default_value=TextSubstitution(text='false')
+    )
     publish_end_pose_arg = DeclareLaunchArgument(
         'publish_end_pose', default_value='false', description='Publish the end-effector pose.'
     )
