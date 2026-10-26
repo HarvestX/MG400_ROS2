@@ -3,9 +3,10 @@ Panels:
     Help Height: 85
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /External Force1
       Splitter Ratio: 0.5
-    Tree Height: 490
+    Tree Height: 500
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -131,6 +132,25 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Accept NaN Values: false
+      Alpha: 1
+      Arrow Width: 0.05000000074505806
+      Class: rviz_default_plugins/Wrench
+      Enabled: true
+      Force Arrow Scale: 0.004999999888241291
+      Force Color: 204; 51; 51
+      History Length: 1
+      Name: External Force
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /mg400/external_force
+      Torque Arrow Scale: 0.5
+      Torque Color: 204; 204; 51
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 220; 220; 220
