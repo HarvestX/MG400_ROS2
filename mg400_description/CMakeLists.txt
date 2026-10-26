@@ -11,6 +11,12 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
+install(
+  PROGRAMS scripts/generate_urdf.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME generate_urdf
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
