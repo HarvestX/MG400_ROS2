@@ -32,7 +32,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         'name',
         type=str,
-        help='Xacro file basename, e.g. mg400')
+        help='Xacro file basename ex. lab_nano')
     return parser
 
 
