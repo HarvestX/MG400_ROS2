@@ -14,6 +14,8 @@
 
 #include "mg400_node/mg400_node.hpp"
 
+#include <geometry_msgs/msg/wrench_stamped.hpp>
+
 
 namespace mg400_node
 {
@@ -31,6 +33,8 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
+  this->declare_parameter<bool>("enable_external_force_estimator", false);
+  external_force_estimator_enabled_ = false;
   this->declare_parameter<bool>("publish_end_pose", false);
   this->declare_parameter<bool>("publish_joint_currents", false);
   this->declare_parameter<bool>("publish_error_id", false);
@@ -152,6 +156,19 @@ CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
     "error_id", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile());
 
+  this->external_force_estimator_enabled_ =
+    this->get_parameter("enable_external_force_estimator").as_bool();
+  if (this->external_force_estimator_enabled_) {
+    this->external_force_pub_ =
+      this->create_publisher<geometry_msgs::msg::WrenchStamped>(
+      "external_force", rclcpp::SensorDataQoS());
+    this->external_force_estimator_ =
+      std::make_shared<mg400_interface::ExternalForceEstimator>();
+    this->interface_->realtime_tcp_interface->setExternalForceEstimator(
+      this->external_force_estimator_);
+    RCLCPP_INFO(this->get_logger(), "External force estimator is enabled.");
+  }
+
   this->connection_interrupted_ = false;
 
   if (this->get_parameter("auto_connect").as_bool()) {
@@ -209,6 +226,8 @@ CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
   this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
+  this->external_force_pub_.reset();
+  this->external_force_estimator_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
   return CallbackReturn::SUCCESS;
@@ -224,6 +243,8 @@ CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
   this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
+  this->external_force_pub_.reset();
+  this->external_force_estimator_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
@@ -240,6 +261,8 @@ CallbackReturn MG400Node::on_error(const State & /*previous_state*/)
   this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
+  this->external_force_pub_.reset();
+  this->external_force_estimator_.reset();
   this->mg400_connected_pub_.reset();
   this->interface_.reset();
   this->connect_timer_.reset();
@@ -309,6 +332,28 @@ void MG400Node::onRobotModeTimer()
     msg->robot_mode = mode;
     this->robot_mode_pub_->publish(std::move(msg));
   }
+}
+
+void MG400Node::onExternalForceTimer()
+{
+  if (!this->interface_->ok()) {
+    return;
+  }
+
+  std::array<double, 6> force;
+  if (!this->interface_->realtime_tcp_interface->getExternalForce(force)) {
+    return;
+  }
+
+  auto msg = geometry_msgs::msg::WrenchStamped();
+  msg.header.stamp = this->now();
+  msg.header.frame_id =
+    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_end_effector_flange";
+  msg.wrench.force.x = force[0];
+  msg.wrench.force.y = force[1];
+  msg.wrench.force.z = force[2];
+  msg.wrench.torque.z = force[5];
+  this->external_force_pub_->publish(std::move(msg));
 }
 
 void MG400Node::onErrorTimer()
@@ -397,6 +442,10 @@ void MG400Node::runTimer()
     500ms, std::bind(&MG400Node::onErrorTimer, this));
   this->interface_check_timer_ = this->create_wall_timer(
     100ms, std::bind(&MG400Node::onInterfaceCheckTimer, this));
+  if (this->external_force_estimator_enabled_) {
+    this->external_force_timer_ = this->create_wall_timer(
+      20ms, std::bind(&MG400Node::onExternalForceTimer, this));
+  }
 }
 
 void MG400Node::cancelTimer()
@@ -407,6 +456,7 @@ void MG400Node::cancelTimer()
   this->robot_mode_timer_.reset();
   this->error_timer_.reset();
   this->interface_check_timer_.reset();
+  this->external_force_timer_.reset();
 }
 
 }  // namespace mg400_node

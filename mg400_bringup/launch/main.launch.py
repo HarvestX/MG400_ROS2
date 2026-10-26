@@ -46,6 +46,9 @@ def generate_launch_description():
         description='Set the ip address to connect',
     )
 
+    enable_external_force_estimator_arg = DeclareLaunchArgument(
+        'enable_external_force_estimator', default_value=TextSubstitution(text='false')
+    )
     publish_end_pose_arg = DeclareLaunchArgument(
         'publish_end_pose', default_value='false', description='Publish the end-effector pose.'
     )
@@ -69,6 +72,7 @@ def generate_launch_description():
     ns = LaunchConfiguration('namespace')
     joy = LaunchConfiguration('joy')
     ip_address = LaunchConfiguration('ip_address')
+    enable_external_force_estimator = LaunchConfiguration('enable_external_force_estimator')
     publish_end_pose = LaunchConfiguration('publish_end_pose')
     publish_joint_currents = LaunchConfiguration('publish_joint_currents')
     publish_error_id = LaunchConfiguration('publish_error_id')
@@ -82,6 +86,7 @@ def generate_launch_description():
         launch_arguments=[
             ('namespace', ns),
             ('ip_address', ip_address),
+            ('enable_external_force_estimator', enable_external_force_estimator),
             ('publish_end_pose', publish_end_pose),
             ('publish_joint_currents', publish_joint_currents),
             ('publish_error_id', publish_error_id),
@@ -120,6 +125,7 @@ def generate_launch_description():
     ld.add_action(ns_arg)
     ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
+    ld.add_action(enable_external_force_estimator_arg)
     ld.add_action(publish_end_pose_arg)
     ld.add_action(publish_joint_currents_arg)
     ld.add_action(publish_error_id_arg)
