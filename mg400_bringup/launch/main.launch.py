@@ -50,19 +50,6 @@ def generate_launch_description():
         'enable_external_force_estimator', default_value=TextSubstitution(text='false')
     )
 
-    publish_end_pose_arg = DeclareLaunchArgument(
-        'publish_end_pose', default_value='false', description='Publish the end-effector pose.'
-    )
-
-    publish_joint_currents_arg = DeclareLaunchArgument(
-        'publish_joint_currents', default_value='false', description='Publish raw joint currents.'
-    )
-
-    publish_error_id_arg = DeclareLaunchArgument(
-        'publish_error_id', default_value='false',
-        description='Automatically query and publish error IDs in ERROR mode.'
-    )
-
     workspace_visible_arg = DeclareLaunchArgument(
         'workspace_visible',
         default_value=TextSubstitution(text='False'),
@@ -74,9 +61,6 @@ def generate_launch_description():
     joy = LaunchConfiguration('joy')
     ip_address = LaunchConfiguration('ip_address')
     enable_external_force_estimator = LaunchConfiguration('enable_external_force_estimator')
-    publish_end_pose = LaunchConfiguration('publish_end_pose')
-    publish_joint_currents = LaunchConfiguration('publish_joint_currents')
-    publish_error_id = LaunchConfiguration('publish_error_id')
     workspace_visible = LaunchConfiguration('workspace_visible')
 
     # Create nodes
@@ -88,9 +72,6 @@ def generate_launch_description():
             ('namespace', ns),
             ('ip_address', ip_address),
             ('enable_external_force_estimator', enable_external_force_estimator),
-            ('publish_end_pose', publish_end_pose),
-            ('publish_joint_currents', publish_joint_currents),
-            ('publish_error_id', publish_error_id),
         ],
     )
 
@@ -117,7 +98,6 @@ def generate_launch_description():
             ('package_name', 'mg400_bringup'),
             ('config_dir', 'rviz'),
             ('rviz_config', 'mg400.rviz'),
-            ('namespace', ns),
         ],
     )
 
@@ -128,9 +108,6 @@ def generate_launch_description():
     ld.add_action(joy_arg)
     ld.add_action(ip_address_arg)
     ld.add_action(enable_external_force_estimator_arg)
-    ld.add_action(publish_end_pose_arg)
-    ld.add_action(publish_joint_currents_arg)
-    ld.add_action(publish_error_id_arg)
     ld.add_action(workspace_visible_arg)
     # Add nodes
     ld.add_action(mg400_node)

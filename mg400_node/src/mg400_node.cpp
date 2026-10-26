@@ -33,9 +33,6 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::vector<std::string>>(
     "motion_api_plugins", this->default_motion_api_plugins_);
   this->declare_parameter<std::string>("prefix", "");
-  this->declare_parameter<bool>("publish_end_pose", false);
-  this->declare_parameter<bool>("publish_joint_currents", false);
-  this->declare_parameter<bool>("publish_error_id", false);
   this->declare_parameter<bool>("enable_external_force_estimator", false);
   external_force_estimator_enabled_ = false;
 
@@ -96,7 +93,7 @@ void MG400Node::handleAutoConfigure()
   }
 }
 
-CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_configure(const State &)
 {
   this->mg400_connected_pub_ =
     this->create_publisher<std_msgs::msg::Bool>(
@@ -143,14 +140,6 @@ CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 
   this->joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
     "joint_states", rclcpp::SystemDefaultsQoS());
-  if (this->get_parameter("publish_end_pose").as_bool()) {
-    this->end_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-      "end_pose", rclcpp::SensorDataQoS());
-  }
-  if (this->get_parameter("publish_joint_currents").as_bool()) {
-    this->joint_currents_pub_ = this->create_publisher<mg400_msgs::msg::JointCurrents>(
-      "joint_currents", rclcpp::SensorDataQoS());
-  }
   this->robot_mode_pub_ = this->create_publisher<mg400_msgs::msg::RobotMode>(
     "robot_mode", rclcpp::SensorDataQoS());
   this->error_id_pub_ = this->create_publisher<mg400_msgs::msg::ErrorID>(
@@ -179,7 +168,7 @@ CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_activate(const State &)
 {
   this->connect_timer_.reset();
 
@@ -200,7 +189,7 @@ CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_deactivate(const State &)
 {
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
@@ -216,14 +205,12 @@ CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_cleanup(const State &)
 {
   this->mg400_connected_pub_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
-  this->end_pose_pub_.reset();
-  this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
@@ -233,14 +220,12 @@ CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_shutdown(const State &)
 {
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
-  this->end_pose_pub_.reset();
-  this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
@@ -251,14 +236,12 @@ CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn MG400Node::on_error(const State & /*previous_state*/)
+CallbackReturn MG400Node::on_error(const State &)
 {
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
   this->joint_state_pub_.reset();
-  this->end_pose_pub_.reset();
-  this->joint_currents_pub_.reset();
   this->robot_mode_pub_.reset();
   this->error_id_pub_.reset();
   this->external_force_pub_.reset();
@@ -275,49 +258,13 @@ void MG400Node::onJointStateTimer()
     return;
   }
 
-  std::array<double, 4> joint_states;
+  static std::array<double, 4> joint_states;
   this->interface_->realtime_tcp_interface->getCurrentJointStates(joint_states);
-  auto joint_state = mg400_interface::JointHandler::getJointState(
-    joint_states, this->interface_->realtime_tcp_interface->frame_id_prefix);
-  joint_state->header.stamp = this->now();
-  this->joint_state_pub_->publish(std::move(joint_state));
-}
 
-void MG400Node::onEndPoseTimer()
-{
-  if (!this->end_pose_pub_ || !this->interface_->ok()) {
-    return;
-  }
-
-  auto pose = geometry_msgs::msg::PoseStamped();
-  this->interface_->realtime_tcp_interface->getCurrentEndPose(pose.pose);
-  pose.header.stamp = this->now();
-  pose.header.frame_id =
-    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
-  this->end_pose_pub_->publish(pose);
-}
-
-void MG400Node::onJointCurrentsTimer()
-{
-  if (!this->joint_currents_pub_ || !this->interface_->ok()) {
-    return;
-  }
-
-  // Keep actual and target currents from the same feedback sample.
-  mg400_interface::RealTimeData data;
-  if (!this->interface_->realtime_tcp_interface->getRealtimeData(data)) {
-    return;
-  }
-  auto currents = mg400_msgs::msg::JointCurrents();
-  currents.header.stamp = this->now();
-  currents.header.frame_id =
-    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_origin_link";
-  for (std::size_t i = 0; i < currents.actual.size(); ++i) {
-    currents.actual[i] = data.i_actual[i];
-    currents.target[i] = data.i_target[i];
-  }
-
-  this->joint_currents_pub_->publish(currents);
+  this->joint_state_pub_->publish(
+    mg400_interface::JointHandler::getJointState(
+      joint_states,
+      this->interface_->realtime_tcp_interface->frame_id_prefix));
 }
 
 void MG400Node::onRobotModeTimer()
@@ -353,15 +300,11 @@ void MG400Node::onExternalForceTimer()
   msg.wrench.force.y = force[1];
   msg.wrench.force.z = force[2];
   msg.wrench.torque.z = force[5];
-  this->external_force_pub_->publish(msg);
+  this->external_force_pub_->publish(std::move(msg));
 }
 
 void MG400Node::onErrorTimer()
 {
-  // Read each cycle so automatic error polling can be toggled at runtime.
-  if (!this->get_parameter("publish_error_id").as_bool()) {
-    return;
-  }
   if (!this->interface_->ok()) {
     return;
   }
@@ -398,10 +341,10 @@ void MG400Node::onErrorTimer()
         ss << "\t" << message << std::endl;
       }
     }
-    RCLCPP_ERROR(this->get_logger(), "%s", ss.str().c_str());
+    RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::runtime_error & ex) {
-    RCLCPP_ERROR(this->get_logger(), "%s", ex.what());
+    RCLCPP_ERROR(this->get_logger(), ex.what());
     msg->controller.ids.emplace_back(-1);
     this->error_id_pub_->publish(std::move(msg));
   } catch (const std::out_of_range & ex) {
@@ -428,14 +371,6 @@ void MG400Node::runTimer()
 {
   this->joint_state_timer_ = this->create_wall_timer(
     10ms, std::bind(&MG400Node::onJointStateTimer, this));
-  if (this->end_pose_pub_) {
-    this->end_pose_timer_ = this->create_wall_timer(
-      10ms, std::bind(&MG400Node::onEndPoseTimer, this));
-  }
-  if (this->joint_currents_pub_) {
-    this->joint_currents_timer_ = this->create_wall_timer(
-      10ms, std::bind(&MG400Node::onJointCurrentsTimer, this));
-  }
   this->robot_mode_timer_ = this->create_wall_timer(
     100ms, std::bind(&MG400Node::onRobotModeTimer, this));
   this->error_timer_ = this->create_wall_timer(
@@ -451,8 +386,6 @@ void MG400Node::runTimer()
 void MG400Node::cancelTimer()
 {
   this->joint_state_timer_.reset();
-  this->end_pose_timer_.reset();
-  this->joint_currents_timer_.reset();
   this->robot_mode_timer_.reset();
   this->error_timer_.reset();
   this->interface_check_timer_.reset();
@@ -460,6 +393,3 @@ void MG400Node::cancelTimer()
 }
 
 }  // namespace mg400_node
-
-#include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(mg400_node::MG400Node)
