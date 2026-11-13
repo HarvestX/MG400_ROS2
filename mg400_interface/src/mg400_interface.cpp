@@ -27,7 +27,7 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
   this->dashboard_tcp_if_ = std::make_unique<DashboardTcpInterface>(this->IP);
   this->motion_tcp_if_ = std::make_unique<MotionTcpInterface>(this->IP);
   this->realtime_tcp_interface = std::make_shared<RealtimeFeedbackTcpInterface>(
-    this->IP, frame_id_prefix);
+    this->IP, frame_id_prefix, this->software_fault_);
 
   this->controller_error_msg_generator =
     std::make_unique<ErrorMsgGenerator>("alarm_controller.json");
@@ -44,6 +44,10 @@ bool MG400Interface::configure(const std::string & frame_id_prefix)
 
 bool MG400Interface::activate()
 {
+  // Reconnecting must not clear a software fault; explicit reconstruction is required.
+  if (this->software_fault_->failed()) {
+    return false;
+  }
   using namespace std::chrono_literals;  // NOLINT
   this->dashboard_tcp_if_->init();
   this->realtime_tcp_interface->init();
@@ -98,12 +102,35 @@ bool MG400Interface::deactivate()
   return true;
 }
 
+bool MG400Interface::stopAfterSoftwareFault() noexcept
+{
+  if (!this->software_fault_->failed()) {
+    return false;
+  }
+  // Do not use ok(): normal commands are blocked, but the stop request must
+  // still be attempted before closing the dashboard connection.
+  try {
+    if (!this->dashboard_commander) {
+      std::fprintf(stderr, "MG400 software fault: emergency stop unavailable (not configured)\n");
+      return false;
+    }
+    this->dashboard_commander->emergencyStop();
+    std::fprintf(stderr, "MG400 software fault: emergency stop acknowledged\n");
+    return true;
+  } catch (const std::exception & error) {
+    std::fprintf(stderr, "MG400 software fault: emergency stop failed: %s\n", error.what());
+  } catch (...) {
+    std::fprintf(stderr, "MG400 software fault: emergency stop failed: unknown exception\n");
+  }
+  return false;
+}
+
 bool MG400Interface::ok()
 {
   // When MG400 is being initialized when booting up, realtime tcp interface
   // will be connected but not active yet.
   // We assume MG400Interface is ok when realtime tcp interface is active.
-  return this->isConnected() &&
+  return !this->software_fault_->failed() && this->isConnected() &&
          this->realtime_tcp_interface->isActive();
 }
 
