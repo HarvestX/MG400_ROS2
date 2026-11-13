@@ -67,6 +67,12 @@ private:
     const std::shared_ptr<GoalHandle>);
   void handle_accepted(const std::shared_ptr<GoalHandle>);
   void execute(const std::shared_ptr<GoalHandle>);
+  void executeCommands(
+    const std::shared_ptr<GoalHandle>, const std::shared_ptr<ActionT::Result> &);
+  void finish(
+    const std::shared_ptr<GoalHandle>, std::shared_ptr<ActionT::Result>) noexcept;
+
+  friend class CommandQueueTestAccess;
 
   // functions to handle each command
   void sendMovJ(const mg400_msgs::msg::MovJ &);

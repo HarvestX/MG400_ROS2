@@ -15,6 +15,7 @@
 #include "mg400_plugin/motion_api/command_queue.hpp"
 
 #include <algorithm>
+#include <mg400_interface/exception_context.hpp>
 
 namespace mg400_plugin
 {
@@ -96,19 +97,92 @@ rclcpp_action::CancelResponse CommandQueue::handle_cancel(
 void CommandQueue::handle_accepted(
   const std::shared_ptr<GoalHandle> goal_handle)
 {
-  using namespace std::placeholders;  // NOLINT
-  std::thread{std::bind(&CommandQueue::execute, this, _1), goal_handle}.detach();
+  const auto fault = this->mg400_interface_->getSoftwareFault();
+  // Thread creation is a separate exception boundary from the worker body.
+  bool started = false;
+  fault->run(
+    "CommandQueue::handle_accepted", [&]() {
+      std::thread worker(&CommandQueue::execute, this, goal_handle);
+      try {
+        worker.detach();
+        started = true;
+      } catch (...) {
+        // A joinable thread must not be destroyed while unwinding.
+        worker.join();
+        throw;
+      }
+    });
+  if (!started) {
+    this->finish(goal_handle, nullptr);
+  }
 }
 
-
 void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
+{
+  std::shared_ptr<ActionT::Result> result;
+  const auto fault = this->mg400_interface_->getSoftwareFault();
+  fault->run(
+    "CommandQueue::execute", [&]() {
+      result = std::make_shared<ActionT::Result>();
+      try {
+        mg400_interface::withExceptionContext(
+          "CommandQueue::executeCommands", __FILE__, __LINE__,
+          [&]() {this->executeCommands(goal_handle, result);});
+      } catch (const mg400_interface::TcpSocketException & error) {
+        // Communication errors remain ordinary action failures, not a software latch.
+        std::fprintf(stderr, "CommandQueue communication failure: %s\n", error.what());
+        std::fflush(stderr);
+      }
+    });
+  this->finish(goal_handle, result);
+}
+
+void CommandQueue::finish(
+  const std::shared_ptr<GoalHandle> goal_handle,
+  std::shared_ptr<ActionT::Result> result) noexcept
+{
+  const auto fault = this->mg400_interface_->getSoftwareFault();
+  try {
+    // A terminal callback can throw after changing state. Never send twice.
+    if (!goal_handle->is_active()) {
+      return;
+    }
+    if (!result) {
+      result = std::make_shared<ActionT::Result>();
+    }
+    result->software_fault = fault->failed();
+    if (result->software_fault) {
+      result->result = false;
+    }
+    if (goal_handle->is_canceling()) {
+      // Preserve software_fault even when the ROS goal state requires CANCELED.
+      result->result = false;
+      goal_handle->canceled(result);
+    } else if (result->result) {
+      goal_handle->succeed(result);
+    } else {
+      goal_handle->abort(result);
+    }
+  } catch (const std::exception & error) {
+    fault->run("CommandQueue::finish", []() {throw;});
+    std::fprintf(stderr, "CommandQueue result delivery failed: %s\n", error.what());
+    std::fflush(stderr);
+  } catch (...) {
+    fault->run("CommandQueue::finish", []() {throw;});
+    std::fprintf(stderr, "CommandQueue result delivery failed: unknown exception\n");
+    std::fflush(stderr);
+  }
+}
+
+void CommandQueue::executeCommands(
+  const std::shared_ptr<GoalHandle> goal_handle,
+  const std::shared_ptr<ActionT::Result> & result)
 {
   rclcpp::Rate control_freq(10);  // Hz
 
   const auto & goal = goal_handle->get_goal();
 
   auto feedback = std::make_shared<ActionT::Feedback>();
-  auto result = std::make_shared<ActionT::Result>();
   result->result = false;
 
   const auto update_pose_and_angles =
@@ -145,6 +219,9 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
       update_pose_and_angles(feedback->current_pose, feedback->current_angles);
 
       while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
+        if (this->mg400_interface_->getSoftwareFault()->failed()) {
+          return false;
+        }
         if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(5s)) {
           RCLCPP_ERROR(
             this->node_logging_if_->get_logger(),
@@ -169,6 +246,9 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
       const auto enable_duration_threshold = rclcpp::Duration::from_seconds(0.3);
 
       while (!enable_mode_confirmed) {
+        if (this->mg400_interface_->getSoftwareFault()->failed()) {
+          return false;
+        }
         if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
           enable_start_time = rclcpp::Time();
 
@@ -282,27 +362,30 @@ void CommandQueue::execute(const std::shared_ptr<GoalHandle> goal_handle)
     batch_start < goal->commands.size();
     batch_start += enable_sync_every)
   {
+    if (this->mg400_interface_->getSoftwareFault()->failed()) {
+      return;
+    }
     const size_t batch_end = std::min(batch_start + enable_sync_every, goal->commands.size());
     const int sent_in_batch = this->sendCommand(goal->commands, batch_start, batch_end);
     sent_command_count += sent_in_batch;
     if (sent_in_batch > 0 && !wait_until_running_and_enable()) {
-      goal_handle->abort(result);
       return;
     }
   }
 
+  if (this->mg400_interface_->getSoftwareFault()->failed()) {
+    return;
+  }
   if (sent_command_count == 0) {
     RCLCPP_WARN(
       this->node_logging_if_->get_logger(),
       "No new command was sent to the robot because all targets are same as the current state.");
     result->result = true;
-    goal_handle->succeed(result);
     return;
   }
 
   RCLCPP_INFO(this->node_logging_if_->get_logger(), "Execution succeeded");
   result->result = true;
-  goal_handle->succeed(result);
 }
 
 void CommandQueue::sendMovJ(const mg400_msgs::msg::MovJ & params)
@@ -436,30 +519,45 @@ int CommandQueue::sendCommand(
 {
   int sent_command_count = 0;
   for (size_t i = start_index; i < end_index; ++i) {
+    // A receiver fault can arrive between commands in the same batch.
+    if (this->mg400_interface_->getSoftwareFault()->failed()) {
+      break;
+    }
+    // Record the command operation as well as the outer worker boundary.
     const auto & command = commands[i];
     switch (command.command_type) {
       case mg400_msgs::msg::Command::CT_MOV_J:
-        sendMovJ(command.mov_j_params);
+        mg400_interface::withExceptionContext(
+          "CommandQueue::sendMovJ", __FILE__, __LINE__,
+          [&]() {sendMovJ(command.mov_j_params);});
         sent_command_count++;
         break;
 
       case mg400_msgs::msg::Command::CT_MOV_L:
-        sendMovL(command.mov_l_params);
+        mg400_interface::withExceptionContext(
+          "CommandQueue::sendMovL", __FILE__, __LINE__,
+          [&]() {sendMovL(command.mov_l_params);});
         sent_command_count++;
         break;
 
       case mg400_msgs::msg::Command::CT_JOINT_MOV_J:
-        sendJointMovJ(command.joint_mov_j_params);
+        mg400_interface::withExceptionContext(
+          "CommandQueue::sendJointMovJ", __FILE__, __LINE__,
+          [&]() {sendJointMovJ(command.joint_mov_j_params);});
         sent_command_count++;
         break;
 
       case mg400_msgs::msg::Command::CT_MOV_JIO:
-        sendMovJIO(command.mov_jio_params);
+        mg400_interface::withExceptionContext(
+          "CommandQueue::sendMovJIO", __FILE__, __LINE__,
+          [&]() {sendMovJIO(command.mov_jio_params);});
         sent_command_count++;
         break;
 
       case mg400_msgs::msg::Command::CT_MOV_LIO:
-        sendMovLIO(command.mov_lio_params);
+        mg400_interface::withExceptionContext(
+          "CommandQueue::sendMovLIO", __FILE__, __LINE__,
+          [&]() {sendMovLIO(command.mov_lio_params);});
         sent_command_count++;
         break;
 
@@ -525,6 +623,7 @@ bool CommandQueue::validateAngles(const std::array<double, 4> & angles)
 bool CommandQueue::validateTarget(const std::vector<mg400_msgs::msg::Command> & commands)
 {
   for (size_t i = 0; i < commands.size(); ++i) {
+    // Record the command operation as well as the outer worker boundary.
     const auto & command = commands[i];
     switch (command.command_type) {
       case mg400_msgs::msg::Command::CT_MOV_J:
