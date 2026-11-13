@@ -58,6 +58,9 @@ bool MG400Interface::activate()
   const auto start = clock.now();
   const auto timeout = rclcpp::Duration::from_seconds(10.0);
   while ((clock.now() - start) < timeout) {
+    if (this->software_fault_->failed()) {
+      return false;
+    }
     if (this->isConnected()) {
       break;
     }
@@ -66,7 +69,9 @@ bool MG400Interface::activate()
   }
   if (!this->isConnected()) {
     RCLCPP_ERROR(this->getLogger(), "Could not connect to DOBOT MG400.");
-    this->deactivate();
+    if (!this->software_fault_->failed()) {
+      this->deactivate();
+    }
     return false;
   }
 
@@ -74,6 +79,9 @@ bool MG400Interface::activate()
   const auto data_timeout = rclcpp::Duration::from_seconds(10.0);
   const auto data_start = clock.now();
   while ((clock.now() - data_start) < data_timeout) {
+    if (this->software_fault_->failed()) {
+      return false;
+    }
     if (this->ok()) {
       break;
     }
@@ -81,7 +89,9 @@ bool MG400Interface::activate()
   }
   if (!this->ok()) {
     RCLCPP_ERROR(this->getLogger(), "Connection established but no data received.");
-    this->deactivate();
+    if (!this->software_fault_->failed()) {
+      this->deactivate();
+    }
     return false;
   }
 
