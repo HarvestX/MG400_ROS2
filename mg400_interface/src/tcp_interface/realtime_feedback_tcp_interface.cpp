@@ -14,6 +14,7 @@
 
 
 #include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
+#include "mg400_interface/exception_context.hpp"
 
 namespace mg400_interface
 {
@@ -143,7 +144,9 @@ void RealtimeFeedbackTcpInterface::recvData()
         continue;
       }
 
-      auto recvd_data = std::make_shared<RealTimeData>();
+      auto recvd_data = withExceptionContext(
+        "RealtimeFeedbackTcpInterface::allocate_packet", __FILE__, __LINE__,
+        []() {return std::make_shared<RealTimeData>();});
       if (!this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
         // Error: Data take timeout
         RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
@@ -168,7 +171,10 @@ void RealtimeFeedbackTcpInterface::recvData()
           if (this->rt_data_->enable_status == 0) {
             this->external_force_.fill(0.0);
             this->has_external_force_ = true;
-          } else if (this->estimator_->update(*this->rt_data_)) {
+          } else if (withExceptionContext(
+              "RealtimeFeedbackTcpInterface::estimate_external_force", __FILE__, __LINE__,
+              [&]() {return this->estimator_->update(*this->rt_data_);}))
+          {
             this->external_force_ = this->estimator_->getEstimatedExternalForce();
             this->has_external_force_ = true;
           }

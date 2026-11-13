@@ -51,6 +51,8 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gmock REQUIRED)
 
   set(TEST_TARGETS
+    test_exception_context
+    test_external_force_diagnostics
     test_error_msg_generator
     test_joint_handler)
   foreach(TARGET ${TEST_TARGETS})
