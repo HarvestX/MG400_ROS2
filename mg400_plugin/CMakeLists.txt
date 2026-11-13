@@ -28,6 +28,10 @@ endforeach()
 
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_command_queue_fault test/test_command_queue_fault.cpp)
+  target_link_libraries(test_command_queue_fault mg400_plugin_motion_api)
+  ament_target_dependencies(test_command_queue_fault rclcpp_action)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)

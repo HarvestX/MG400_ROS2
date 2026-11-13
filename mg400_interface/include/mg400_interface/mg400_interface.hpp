@@ -48,6 +48,7 @@ public:
 
 private:
   const std::string IP;
+  std::shared_ptr<SoftwareFault> software_fault_{std::make_shared<SoftwareFault>()};
 
   DashboardTcpInterface::UniquePtr dashboard_tcp_if_;
   MotionTcpInterface::UniquePtr motion_tcp_if_;
@@ -61,6 +62,9 @@ public:
   bool activate();
   bool deactivate();
   bool ok();
+  // Best-effort request; true means a command response, not physical stop.
+  bool stopAfterSoftwareFault() noexcept;
+  std::shared_ptr<SoftwareFault> getSoftwareFault() const {return software_fault_;}
 
 private:
   static const rclcpp::Logger getLogger() noexcept;

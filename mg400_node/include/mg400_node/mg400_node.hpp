@@ -16,6 +16,9 @@
 #define __MG400_NODE_MG400_NODE_HPP__
 
 #include <array>
+#include <future>
+#include <optional>
+#include <std_srvs/srv/trigger.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -43,6 +46,8 @@ using State = rclcpp_lifecycle::State;
 class MG400Node : public rclcpp_lifecycle::LifecycleNode
 {
 private:
+  friend class SoftwareFaultNodeTest;
+
   const std::vector<std::string> default_dashboard_api_plugins_ = {
     "mg400_plugin::ClearError",
     "mg400_plugin::DisableRobot",
@@ -73,6 +78,18 @@ private:
   mg400_interface::MG400Interface::SharedPtr interface_;
   mg400_plugin_base::DashboardApiLoader::SharedPtr dashboard_api_loader_;
   mg400_plugin_base::MotionApiLoader::SharedPtr motion_api_loader_;
+
+  using FaultClient = rclcpp::Client<std_srvs::srv::Trigger>;
+  FaultClient::SharedPtr fault_client_;
+  std::optional<FaultClient::FutureAndRequestId> fault_request_;
+  std::chrono::steady_clock::time_point fault_request_started_{};
+  std::chrono::steady_clock::time_point next_notification_{};
+  std::chrono::steady_clock::time_point next_stop_{};
+  std::future<bool> fault_stop_;
+  bool fault_notification_accepted_{false};
+  bool fault_disconnection_published_{false};
+  bool fault_stop_acknowledged_{false};
+  rclcpp::TimerBase::SharedPtr fault_timer_;
 
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr joint_state_timer_;
@@ -125,6 +142,10 @@ private:
   void cancelTimer();
 
   void handleAutoConfigure();
+  bool hasSoftwareFault() const;
+  void onSoftwareFaultTimer() noexcept;
+  void notifySoftwareFault();
+  void requestFaultStop();
 };
 }  // namespace mg400_node
 

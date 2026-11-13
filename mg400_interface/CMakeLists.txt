@@ -51,6 +51,9 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gmock REQUIRED)
 
   set(TEST_TARGETS
+    test_software_fault
+    test_exception_context
+    test_external_force_diagnostics
     test_error_msg_generator
     test_joint_handler)
   foreach(TARGET ${TEST_TARGETS})
@@ -66,6 +69,16 @@ if(BUILD_TESTING)
     ament_add_gmock(${TARGET} test/src/commander/${TARGET}.cpp)
     target_link_libraries(${TARGET} ${PROJECT_NAME})
   endforeach()
+
+  # Fault injection is linked only into tests; production has no injection switch.
+  target_link_options(test_software_fault PRIVATE
+    "-Wl,--wrap=_ZN15mg400_interface18DashboardCommander13emergencyStopEv")
+
+  # Linux/GNU ABI wrapper exercises the actual worker without robot connections.
+  ament_add_gtest(test_receiver_exception test/src/test_receiver_exception.cpp)
+  target_link_libraries(test_receiver_exception ${PROJECT_NAME})
+  target_link_options(test_receiver_exception PRIVATE
+    "-Wl,--wrap=_ZN15mg400_interface16TcpSocketHandler7connectERKNSt6chrono8durationIlSt5ratioILl1ELl1000000000EEEE")
 
   ament_target_dependencies(test_dashboard_commander mg400_common)
 endif()

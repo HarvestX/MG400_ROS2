@@ -14,13 +14,15 @@
 
 
 #include "mg400_interface/tcp_interface/realtime_feedback_tcp_interface.hpp"
+#include "mg400_interface/exception_context.hpp"
 
 namespace mg400_interface
 {
 RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
-  const std::string & ip, const std::string & prefix)
+  const std::string & ip, const std::string & prefix,
+  std::shared_ptr<SoftwareFault> software_fault)
 : frame_id_prefix(prefix),
-  current_joints_{}, rt_data_{}
+  current_joints_{}, rt_data_{}, software_fault_(std::move(software_fault))
 {
   this->is_running_ = false;
   this->tcp_socket_ = std::make_shared<TcpSocketHandler>(ip, this->PORT_);
@@ -28,18 +30,25 @@ RealtimeFeedbackTcpInterface::RealtimeFeedbackTcpInterface(
 
 RealtimeFeedbackTcpInterface::~RealtimeFeedbackTcpInterface()
 {
-  if (this->is_running_) {
-    this->disConnect();
-  }
+  // A finished worker may still be joinable even when is_running_ is false.
+  this->disConnect();
 }
 
 void RealtimeFeedbackTcpInterface::init() noexcept
 {
-  try {
-    this->is_running_ = true;
-    this->thread_ = std::make_unique<std::thread>(&RealtimeFeedbackTcpInterface::recvData, this);
-  } catch (const TcpSocketException & err) {
-    RCLCPP_ERROR(this->getLogger(), "%s", err.what());
+  // Do not replace a joinable worker: std::thread destruction would terminate
+  // the process before the supervisor can receive the failure.
+  if (this->thread_ && this->thread_->joinable()) {
+    return;
+  }
+  if (!this->software_fault_->run(
+      "RealtimeFeedbackTcpInterface::init", [this]() {
+        this->is_running_ = true;
+        this->thread_ =
+        std::make_unique<std::thread>(&RealtimeFeedbackTcpInterface::recvData, this);
+      }))
+  {
+    this->is_running_ = false;
   }
 }
 
@@ -56,7 +65,8 @@ bool RealtimeFeedbackTcpInterface::isConnected()
 bool RealtimeFeedbackTcpInterface::isActive()
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  return this->rt_data_ != nullptr;
+  // Cached feedback is no longer valid after a software exception.
+  return !this->software_fault_->failed() && this->rt_data_ != nullptr;
 }
 
 void RealtimeFeedbackTcpInterface::getCurrentJointStates(std::array<double, 4> & joints)
@@ -74,7 +84,7 @@ void RealtimeFeedbackTcpInterface::getCurrentEndPose(Pose & pose)
 bool RealtimeFeedbackTcpInterface::getExternalForce(std::array<double, 6> & force)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  if (!this->has_external_force_) {
+  if (this->software_fault_->failed() || !this->has_external_force_) {
     return false;
   }
   force = this->external_force_;
@@ -84,7 +94,7 @@ bool RealtimeFeedbackTcpInterface::getExternalForce(std::array<double, 6> & forc
 bool RealtimeFeedbackTcpInterface::getRealtimeData(RealTimeData & data)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  if (this->rt_data_ != nullptr) {
+  if (!this->software_fault_->failed() && this->rt_data_ != nullptr) {
     data = *this->rt_data_;
     return true;
   } else {
@@ -95,7 +105,7 @@ bool RealtimeFeedbackTcpInterface::getRealtimeData(RealTimeData & data)
 bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  if (this->rt_data_) {
+  if (!this->software_fault_->failed() && this->rt_data_) {
     mode = this->rt_data_->robot_mode;
     return true;
   } else {
@@ -106,7 +116,7 @@ bool RealtimeFeedbackTcpInterface::getRobotMode(uint64_t & mode)
 bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 {
   std::lock_guard<std::mutex> lock_rt_data(this->mutex_rt_data_);
-  if (this->rt_data_) {
+  if (!this->software_fault_->failed() && this->rt_data_) {
     return this->rt_data_->robot_mode == expected_mode;
   } else {
     return false;
@@ -116,7 +126,7 @@ bool RealtimeFeedbackTcpInterface::isRobotMode(const uint64_t & expected_mode)
 void RealtimeFeedbackTcpInterface::disConnect()
 {
   this->is_running_ = false;
-  if (this->thread_->joinable()) {
+  if (this->thread_ && this->thread_->joinable()) {
     this->thread_->join();
   }
   this->tcp_socket_->disConnect();
@@ -134,8 +144,16 @@ void RealtimeFeedbackTcpInterface::setExternalForceEstimator(
 
 void RealtimeFeedbackTcpInterface::recvData()
 {
+  // TCP errors keep their inner recovery path; latch exceptions escaping the loop.
+  this->software_fault_->run(
+    "RealtimeFeedbackTcpInterface::recvData", [this]() {this->recvDataLoop();});
+  this->is_running_ = false;
+}
+
+void RealtimeFeedbackTcpInterface::recvDataLoop()
+{
   using namespace std::chrono_literals;  // NOLINT
-  while (this->is_running_) {
+  while (this->is_running_ && !this->software_fault_->failed()) {
     try {
       // Error: Connection error
       if (!this->tcp_socket_->isConnected()) {
@@ -143,7 +161,9 @@ void RealtimeFeedbackTcpInterface::recvData()
         continue;
       }
 
-      auto recvd_data = std::make_shared<RealTimeData>();
+      auto recvd_data = withExceptionContext(
+        "RealtimeFeedbackTcpInterface::allocate_packet", __FILE__, __LINE__,
+        []() {return std::make_shared<RealTimeData>();});
       if (!this->tcp_socket_->recv(recvd_data.get(), sizeof(RealTimeData), 1s)) {
         // Error: Data take timeout
         RCLCPP_WARN(this->getLogger(), "Tcp recv timeout");
@@ -168,7 +188,10 @@ void RealtimeFeedbackTcpInterface::recvData()
           if (this->rt_data_->enable_status == 0) {
             this->external_force_.fill(0.0);
             this->has_external_force_ = true;
-          } else if (this->estimator_->update(*this->rt_data_)) {
+          } else if (withExceptionContext(
+              "RealtimeFeedbackTcpInterface::estimate_external_force", __FILE__, __LINE__,
+              [&]() {return this->estimator_->update(*this->rt_data_);}))
+          {
             this->external_force_ = this->estimator_->getEstimatedExternalForce();
             this->has_external_force_ = true;
           }

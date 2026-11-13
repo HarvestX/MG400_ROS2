@@ -26,6 +26,16 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 {
   this->declare_parameter<bool>("auto_configure", true);
   this->declare_parameter<bool>("auto_connect", true);
+  // The application supplies its existing emergency entry; keep XV names out
+  // of this generic driver. An empty destination never clears a local fault.
+  const auto fault_service =
+    this->declare_parameter<std::string>("software_fault_service", "");
+  if (!fault_service.empty()) {
+    fault_client_ = this->create_client<std_srvs::srv::Trigger>(fault_service);
+  }
+  // Keep notification alive even while the lifecycle node is inactive.
+  fault_timer_ = this->create_wall_timer(
+    100ms, [this]() {this->onSoftwareFaultTimer();});
   this->declare_parameter<int>("auto_configure_start_delay_msec", 100);
   this->declare_parameter<std::string>("ip_address", "192.168.1.6");
   this->declare_parameter<std::vector<std::string>>(
@@ -57,6 +67,10 @@ MG400Node::MG400Node(const rclcpp::NodeOptions & options)
 
 MG400Node::~MG400Node()
 {
+  fault_timer_.reset();
+  if (fault_stop_.valid()) {
+    fault_stop_.wait();
+  }
   this->cancelTimer();
   if (this->interface_) {
     this->interface_->deactivate();
@@ -98,6 +112,11 @@ void MG400Node::handleAutoConfigure()
 
 CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 {
+  // Lifecycle recovery must not discard an unreported software exception.
+  if (hasSoftwareFault()) {
+    return CallbackReturn::FAILURE;
+  }
+
   this->mg400_connected_pub_ =
     this->create_publisher<std_msgs::msg::Bool>(
     "mg400_connected", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
@@ -181,11 +200,18 @@ CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 {
+  // Lifecycle recovery must not discard an unreported software exception.
+  if (hasSoftwareFault()) {
+    return CallbackReturn::FAILURE;
+  }
+
   this->connect_timer_.reset();
 
   if (!this->interface_->activate()) {
     RCLCPP_WARN(this->get_logger(), "Failed to connect to MG400 at %s", this->ip_address_.c_str());
-    if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
+    if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_ &&
+      !hasSoftwareFault())
+    {
       RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
       this->connect_timer_ = this->create_wall_timer(5s, [this]() {this->activate();});
     }
@@ -202,13 +228,20 @@ CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 {
+  // Lifecycle recovery must not discard an unreported software exception.
+  if (hasSoftwareFault()) {
+    return CallbackReturn::FAILURE;
+  }
+
   RCLCPP_WARN(this->get_logger(), "Disconnected from MG400 at %s", this->ip_address_.c_str());
   this->mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
 
   this->cancelTimer();
   this->interface_->deactivate();
 
-  if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_) {
+  if (this->get_parameter("auto_connect").as_bool() && this->connection_interrupted_ &&
+    !hasSoftwareFault())
+  {
     RCLCPP_INFO(this->get_logger(), "Try reconnecting in 5 seconds ...");
     this->connect_timer_ = this->create_wall_timer(5s, [this]() {this->activate();});
   }
@@ -218,6 +251,11 @@ CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
 {
+  // Lifecycle recovery must not discard an unreported software exception.
+  if (hasSoftwareFault()) {
+    return CallbackReturn::FAILURE;
+  }
+
   this->mg400_connected_pub_.reset();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
@@ -235,6 +273,11 @@ CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
 {
+  // Explicit application shutdown is separate from automatic fault handling.
+  fault_timer_.reset();
+  if (fault_stop_.valid()) {
+    fault_stop_.wait();
+  }
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
@@ -253,6 +296,12 @@ CallbackReturn MG400Node::on_shutdown(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_error(const State & /*previous_state*/)
 {
+  if (hasSoftwareFault()) {
+    // Retain the interface and independent fault timer in the unconfigured state.
+    this->cancelTimer();
+    this->connect_timer_.reset();
+    return CallbackReturn::SUCCESS;
+  }
   this->cancelTimer();
   this->dashboard_api_loader_.reset();
   this->motion_api_loader_.reset();
@@ -336,24 +385,28 @@ void MG400Node::onRobotModeTimer()
 
 void MG400Node::onExternalForceTimer()
 {
-  if (!this->interface_->ok()) {
-    return;
-  }
+  // Publishing can also throw; retain this failure for the independent notifier.
+  this->interface_->getSoftwareFault()->run(
+    "MG400Node::onExternalForceTimer", [this]() {
+      if (!this->interface_->ok()) {
+        return;
+      }
 
-  std::array<double, 6> force;
-  if (!this->interface_->realtime_tcp_interface->getExternalForce(force)) {
-    return;
-  }
+      std::array<double, 6> force;
+      if (!this->interface_->realtime_tcp_interface->getExternalForce(force)) {
+        return;
+      }
 
-  auto msg = geometry_msgs::msg::WrenchStamped();
-  msg.header.stamp = this->now();
-  msg.header.frame_id =
-    this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_end_effector_flange";
-  msg.wrench.force.x = force[0];
-  msg.wrench.force.y = force[1];
-  msg.wrench.force.z = force[2];
-  msg.wrench.torque.z = force[5];
-  this->external_force_pub_->publish(std::move(msg));
+      auto msg = geometry_msgs::msg::WrenchStamped();
+      msg.header.stamp = this->now();
+      msg.header.frame_id =
+      this->interface_->realtime_tcp_interface->frame_id_prefix + "mg400_end_effector_flange";
+      msg.wrench.force.x = force[0];
+      msg.wrench.force.y = force[1];
+      msg.wrench.force.z = force[2];
+      msg.wrench.torque.z = force[5];
+      this->external_force_pub_->publish(std::move(msg));
+    });
 }
 
 void MG400Node::onErrorTimer()
@@ -417,11 +470,128 @@ void MG400Node::onErrorTimer()
 
 void MG400Node::onInterfaceCheckTimer()
 {
+  if (hasSoftwareFault()) {
+    // The fault timer retains the dashboard connection for the stop attempt.
+    return;
+  }
   if (!this->interface_->ok()) {
     RCLCPP_ERROR(this->get_logger(), "Connection to MG400 was interrupted");
     this->connection_interrupted_ = true;
     this->deactivate();
   }
+}
+
+
+bool MG400Node::hasSoftwareFault() const
+{
+  return interface_ && interface_->getSoftwareFault()->failed();
+}
+
+void MG400Node::onSoftwareFaultTimer() noexcept
+{
+  if (!hasSoftwareFault()) {
+    return;
+  }
+  // Do not deactivate: it would close the connection needed for EmergencyStop.
+  // The interface latch rejects new commands; ordinary reconnect is not recovery.
+  this->cancelTimer();
+  this->connect_timer_.reset();
+  this->connection_interrupted_ = false;
+
+  // A failure in either notification or stopping must not suppress the other.
+  try {
+    notifySoftwareFault();
+  } catch (const std::exception & error) {
+    std::fprintf(stderr, "MG400 fault notification exception: %s\n", error.what());
+  } catch (...) {
+    std::fprintf(stderr, "MG400 fault notification exception: unknown\n");
+  }
+  try {
+    requestFaultStop();
+  } catch (const std::exception & error) {
+    std::fprintf(stderr, "MG400 fault stop scheduling exception: %s\n", error.what());
+  } catch (...) {
+    std::fprintf(stderr, "MG400 fault stop scheduling exception: unknown\n");
+  }
+  try {
+    if (!fault_disconnection_published_ && mg400_connected_pub_) {
+      mg400_connected_pub_->publish(std_msgs::msg::Bool().set__data(false));
+      fault_disconnection_published_ = true;
+    }
+  } catch (...) {
+    std::fprintf(stderr, "MG400 software fault: failed to publish unavailable state\n");
+  }
+}
+
+void MG400Node::notifySoftwareFault()
+{
+  if (fault_notification_accepted_) {
+    return;
+  }
+  const auto now = std::chrono::steady_clock::now();
+  if (fault_request_) {
+    if (fault_request_->wait_for(0s) == std::future_status::ready) {
+      // Move out before get(): even a failed future must permit a later retry.
+      auto request = std::move(*fault_request_);
+      fault_request_.reset();
+      next_notification_ = now + 1s;
+      fault_notification_accepted_ = request.get()->success;
+      std::fprintf(
+        stderr, "MG400 software fault: upper notification %s\n",
+        fault_notification_accepted_ ? "accepted (stop not verified)" : "rejected; retrying");
+      return;
+    }
+    if (now - fault_request_started_ < 5s) {
+      return;
+    }
+    // Without removing expired requests rclcpp retains one promise per retry.
+    fault_client_->remove_pending_request(*fault_request_);
+    fault_request_.reset();
+    next_notification_ = now + 1s;
+    std::fprintf(stderr, "MG400 software fault: upper notification timed out; retrying\n");
+    return;
+  }
+  if (now < next_notification_) {
+    return;
+  }
+  next_notification_ = now + 1s;
+  if (!fault_client_) {
+    std::fprintf(stderr, "MG400 software fault: software_fault_service is not configured\n");
+    return;
+  }
+  if (!fault_client_->service_is_ready()) {
+    std::fprintf(stderr, "MG400 software fault: upper service unavailable; retrying\n");
+    return;
+  }
+  fault_request_.emplace(
+    fault_client_->async_send_request(std::make_shared<std_srvs::srv::Trigger::Request>()));
+  fault_request_started_ = now;
+}
+
+void MG400Node::requestFaultStop()
+{
+  if (fault_stop_acknowledged_) {
+    return;
+  }
+  const auto now = std::chrono::steady_clock::now();
+  if (fault_stop_.valid()) {
+    if (fault_stop_.wait_for(0s) != std::future_status::ready) {
+      return;
+    }
+    fault_stop_acknowledged_ = fault_stop_.get();
+    next_stop_ = now + 1s;
+    return;
+  }
+  if (now < next_stop_) {
+    return;
+  }
+  next_stop_ = now + 1s;
+  // Own the worker and interface; never detach a thread using node state.
+  // Dashboard I/O may block, but must not block the notification executor.
+  fault_stop_ = std::async(
+    std::launch::async, [interface = interface_]() {
+      return interface->stopAfterSoftwareFault();
+    });
 }
 
 void MG400Node::runTimer()

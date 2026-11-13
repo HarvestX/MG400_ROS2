@@ -20,6 +20,7 @@
 
 #include "mg400_common/kinematics.hpp"
 #include "mg400_interface/command_utils.hpp"
+#include "mg400_interface/exception_context.hpp"
 
 namespace mg400_interface
 {
@@ -73,7 +74,9 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
     return false;
   }
 
-  this->updateAutoBias(data);
+  withExceptionContext(
+    "ExternalForceEstimator::updateAutoBias", __FILE__, __LINE__,
+    [&]() {this->updateAutoBias(data);});
 
   if (!this->isReady()) {
     RCLCPP_INFO_THROTTLE(
@@ -83,17 +86,31 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
     return false;
   }
 
-  const Eigen::Vector4d joints = this->toJointAngles(data);
-  const Eigen::Vector4d measured_joint_torque = this->toJointTorque(data);
-  const Eigen::Matrix4d jacobian = this->buildTaskJacobian(joints);
+  const Eigen::Vector4d joints = withExceptionContext(
+    "ExternalForceEstimator::toJointAngles", __FILE__, __LINE__,
+    [&]() {return this->toJointAngles(data);});
+  const Eigen::Vector4d measured_joint_torque = withExceptionContext(
+    "ExternalForceEstimator::toJointTorque", __FILE__, __LINE__,
+    [&]() {return this->toJointTorque(data);});
+  const Eigen::Matrix4d jacobian = withExceptionContext(
+    "ExternalForceEstimator::buildTaskJacobian", __FILE__, __LINE__,
+    [&]() {return this->buildTaskJacobian(joints);});
 
   const Eigen::Vector4d ext_joint_torque =
-    this->estimateDeterministicExternalJointTorque(data, joints, measured_joint_torque);
+    withExceptionContext(
+    "ExternalForceEstimator::estimateDeterministicExternalJointTorque", __FILE__, __LINE__,
+    [&]() {
+      return this->estimateDeterministicExternalJointTorque(data, joints, measured_joint_torque);
+    });
   const auto [estimated_wrench, min_sv] =
-    this->solveWrenchWithMinSingularValue(jacobian, ext_joint_torque);
+    withExceptionContext(
+    "ExternalForceEstimator::solveWrenchWithMinSingularValue", __FILE__, __LINE__,
+    [&]() {return this->solveWrenchWithMinSingularValue(jacobian, ext_joint_torque);});
 
   const Eigen::Vector4d guarded_wrench =
-    this->applyDeterministicWrenchGuards(estimated_wrench, min_sv);
+    withExceptionContext(
+    "ExternalForceEstimator::applyDeterministicWrenchGuards", __FILE__, __LINE__,
+    [&]() {return this->applyDeterministicWrenchGuards(estimated_wrench, min_sv);});
 
   // Filter in the fixed origin axes so changing flange yaw does not mix frames.
   if (!this->has_filtered_wrench_) {
@@ -107,8 +124,12 @@ bool ExternalForceEstimator::update(const RealTimeData & data)
 
   // Use the same joint sample as the estimate; the flange yaw is J1 + J4.
   Eigen::Vector4d output_wrench =
-    this->toOutputFrameWrench(this->filtered_wrench_, joints(0) + joints(3));
-  output_wrench = this->applyOutputDeadband(output_wrench);
+    withExceptionContext(
+    "ExternalForceEstimator::toOutputFrameWrench", __FILE__, __LINE__,
+    [&]() {return this->toOutputFrameWrench(this->filtered_wrench_, joints(0) + joints(3));});
+  output_wrench = withExceptionContext(
+    "ExternalForceEstimator::applyOutputDeadband", __FILE__, __LINE__,
+    [&]() {return this->applyOutputDeadband(output_wrench);});
 
   // Flange-frame wrench at the flange origin: [Fx, Fy, Fz, 0, 0, Tz].
   // Tx and Ty are unestimated and remain zero.
