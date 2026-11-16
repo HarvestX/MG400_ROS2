@@ -70,9 +70,14 @@ rclcpp_action::GoalResponse CommandQueue::handle_goal(
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
     uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+    // Feedback can become unavailable after the mode check, for example on a receiver fault.
+    if (this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode)) {
+      RCLCPP_ERROR(
+        this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %llu",
+        static_cast<unsigned long long>(mode));
+    } else {
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot mode is unavailable");
+    }
     return rclcpp_action::GoalResponse::REJECT;
   }
 
@@ -623,7 +628,6 @@ bool CommandQueue::validateAngles(const std::array<double, 4> & angles)
 bool CommandQueue::validateTarget(const std::vector<mg400_msgs::msg::Command> & commands)
 {
   for (size_t i = 0; i < commands.size(); ++i) {
-    // Record the command operation as well as the outer worker boundary.
     const auto & command = commands[i];
     switch (command.command_type) {
       case mg400_msgs::msg::Command::CT_MOV_J:
