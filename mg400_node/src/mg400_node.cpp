@@ -112,7 +112,7 @@ void MG400Node::handleAutoConfigure()
 
 CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 {
-  // Lifecycle recovery must not discard an unreported software exception.
+  // Keep the fault until this node is replaced, even after the host accepts it.
   if (hasSoftwareFault()) {
     return CallbackReturn::FAILURE;
   }
@@ -200,7 +200,7 @@ CallbackReturn MG400Node::on_configure(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 {
-  // Lifecycle recovery must not discard an unreported software exception.
+  // Keep the fault until this node is replaced, even after the host accepts it.
   if (hasSoftwareFault()) {
     return CallbackReturn::FAILURE;
   }
@@ -228,7 +228,7 @@ CallbackReturn MG400Node::on_activate(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 {
-  // Lifecycle recovery must not discard an unreported software exception.
+  // Keep the fault until this node is replaced, even after the host accepts it.
   if (hasSoftwareFault()) {
     return CallbackReturn::FAILURE;
   }
@@ -251,7 +251,7 @@ CallbackReturn MG400Node::on_deactivate(const State & /*previous_state*/)
 
 CallbackReturn MG400Node::on_cleanup(const State & /*previous_state*/)
 {
-  // Lifecycle recovery must not discard an unreported software exception.
+  // Keep the fault until this node is replaced, even after the host accepts it.
   if (hasSoftwareFault()) {
     return CallbackReturn::FAILURE;
   }

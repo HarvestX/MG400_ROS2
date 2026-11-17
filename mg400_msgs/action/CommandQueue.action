@@ -3,7 +3,7 @@ mg400_msgs/Command[] commands
 ---
 # result definition
 bool result
-# Latched software exception; must not be retried or treated as successful cancellation.
+# True after a software exception. Do not retry, even if the action was canceled.
 bool software_fault
 mg400_msgs/ErrorID error_id
 ---
