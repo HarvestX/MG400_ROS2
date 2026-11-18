@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>mg400_node</name>
-  <version>2.8.0</version>
+  <version>2.8.1</version>
   <description>MG400 Node Package.</description>
   <maintainer email="veloute.de.jonquille@gmail.com">ynyBonfennil</maintainer>
   <license>Apache-2.0</license>
@@ -19,12 +19,14 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
 
   <exec_depend>mg400_plugin</exec_depend>
 
   <build_depend>qtbase5-dev</build_depend>
   <build_depend>qt5-qmake</build_depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

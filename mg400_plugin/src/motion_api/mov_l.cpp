@@ -67,9 +67,14 @@ rclcpp_action::GoalResponse MovL::handle_goal(
   using RobotMode = mg400_msgs::msg::RobotMode;
   if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
     uint64_t mode;
-    this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode);
-    RCLCPP_ERROR(
-      this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %ld", mode);
+    // Feedback can become unavailable after the mode check, for example on a receiver fault.
+    if (this->mg400_interface_->realtime_tcp_interface->getRobotMode(mode)) {
+      RCLCPP_ERROR(
+        this->node_logging_if_->get_logger(), "Robot mode is not enabled: mode is %llu",
+        static_cast<unsigned long long>(mode));
+    } else {
+      RCLCPP_ERROR(this->node_logging_if_->get_logger(), "Robot mode is unavailable");
+    }
     return rclcpp_action::GoalResponse::REJECT;
   }
 

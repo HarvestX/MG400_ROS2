@@ -23,6 +23,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "mg400_interface/external_force_estimator.hpp"
+#include "mg400_interface/software_fault.hpp"
 #include "mg400_interface/joint_handler.hpp"
 #include "mg400_interface/tcp_interface/realtime_data.hpp"
 #include "mg400_interface/tcp_interface/tcp_socket_handler.hpp"
@@ -50,11 +51,13 @@ private:
   std::atomic<bool> is_running_;
   std::unique_ptr<std::thread> thread_;
   TcpSocketHandler::SharedPtr tcp_socket_;
+  std::shared_ptr<SoftwareFault> software_fault_;
 
 public:
   RealtimeFeedbackTcpInterface() = delete;
   explicit RealtimeFeedbackTcpInterface(
-    const std::string &, const std::string & = "");
+    const std::string &, const std::string & = "",
+    std::shared_ptr<SoftwareFault> = std::make_shared<SoftwareFault>());
   ~RealtimeFeedbackTcpInterface();
   void init() noexcept;
 
@@ -76,6 +79,7 @@ public:
 
 private:
   void recvData();
+  void recvDataLoop();
 
   ExternalForceEstimator::SharedPtr estimator_;
   std::array<double, 6> external_force_{};
