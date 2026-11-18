@@ -168,6 +168,40 @@ protected:
   }
 };
 
+TEST_F(CommandQueueFault, PluginDestructionWaitsForResultDelivery)
+{
+  using namespace std::chrono_literals;
+  auto plugin = std::make_unique<Queue>();
+  mg400_plugin::CommandQueueTestAccess::configure(
+    *plugin, interface, clock, std::make_shared<Logger>(),
+    std::make_shared<mg400_interface::MotionCommander>(&motion));
+  std::promise<void> delivering;
+  std::promise<void> release;
+  auto gate = release.get_future();
+  auto handle = std::make_shared<Goal>(
+    std::make_shared<Action::Goal>(), [&](const auto &, std::shared_ptr<void>) {
+      delivering.set_value();
+      gate.wait();
+    });
+  auto entered = delivering.get_future();
+  mg400_plugin::CommandQueueTestAccess::accept(*plugin, handle);
+  if (entered.wait_for(3s) != std::future_status::ready) {
+    release.set_value();
+    FAIL() << "Worker did not reach result delivery";
+  }
+  std::promise<void> closing;
+  auto started = closing.get_future();
+  auto cleanup = std::async(
+    std::launch::async, [&]() {
+      closing.set_value();
+      plugin.reset();
+    });
+  started.wait();
+  EXPECT_EQ(std::future_status::timeout, cleanup.wait_for(100ms));
+  release.set_value();
+  cleanup.get();
+}
+
 TEST_F(CommandQueueFault, EmptyGoalSucceedsWithoutSoftwareFault)
 {
   run(goal());

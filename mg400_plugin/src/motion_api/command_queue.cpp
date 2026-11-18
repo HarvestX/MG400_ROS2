@@ -20,6 +20,15 @@
 namespace mg400_plugin
 {
 
+CommandQueue::~CommandQueue()
+{
+  // Cleanup unloads this plugin. Finish every accepted goal before its state goes away.
+  stopping_.store(true);
+  for (auto & worker : workers_) {
+    worker.wait();
+  }
+}
+
 void CommandQueue::configure(
   const mg400_interface::MotionCommander::SharedPtr commander,
   const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_if,
@@ -107,15 +116,15 @@ void CommandQueue::handle_accepted(
   bool started = false;
   fault->run(
     "CommandQueue::handle_accepted", [&]() {
-      std::thread worker(&CommandQueue::execute, this, goal_handle);
-      try {
-        worker.detach();
-        started = true;
-      } catch (...) {
-        // A joinable thread must not be destroyed while unwinding.
-        worker.join();
-        throw;
-      }
+      // Accepted callbacks share the default mutually exclusive callback group.
+      workers_.erase(
+        std::remove_if(
+          workers_.begin(), workers_.end(), [](auto & worker) {
+            return worker.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+          }), workers_.end());
+      workers_.reserve(workers_.size() + 1);
+      workers_.push_back(std::async(std::launch::async, &CommandQueue::execute, this, goal_handle));
+      started = true;
     });
   if (!started) {
     this->finish(goal_handle, nullptr);
@@ -224,7 +233,7 @@ void CommandQueue::executeCommands(
       update_pose_and_angles(feedback->current_pose, feedback->current_angles);
 
       while (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::RUNNING)) {
-        if (this->mg400_interface_->getSoftwareFault()->failed()) {
+        if (stopping_.load() || this->mg400_interface_->getSoftwareFault()->failed()) {
           return false;
         }
         if (this->node_clock_if_->get_clock()->now() - start > rclcpp::Duration(5s)) {
@@ -251,7 +260,7 @@ void CommandQueue::executeCommands(
       const auto enable_duration_threshold = rclcpp::Duration::from_seconds(0.3);
 
       while (!enable_mode_confirmed) {
-        if (this->mg400_interface_->getSoftwareFault()->failed()) {
+        if (stopping_.load() || this->mg400_interface_->getSoftwareFault()->failed()) {
           return false;
         }
         if (!this->mg400_interface_->realtime_tcp_interface->isRobotMode(RobotMode::ENABLE)) {
@@ -367,7 +376,7 @@ void CommandQueue::executeCommands(
     batch_start < goal->commands.size();
     batch_start += enable_sync_every)
   {
-    if (this->mg400_interface_->getSoftwareFault()->failed()) {
+    if (stopping_.load() || this->mg400_interface_->getSoftwareFault()->failed()) {
       return;
     }
     const size_t batch_end = std::min(batch_start + enable_sync_every, goal->commands.size());
@@ -378,7 +387,7 @@ void CommandQueue::executeCommands(
     }
   }
 
-  if (this->mg400_interface_->getSoftwareFault()->failed()) {
+  if (stopping_.load() || this->mg400_interface_->getSoftwareFault()->failed()) {
     return;
   }
   if (sent_command_count == 0) {
@@ -525,7 +534,7 @@ int CommandQueue::sendCommand(
   int sent_command_count = 0;
   for (size_t i = start_index; i < end_index; ++i) {
     // A receiver fault can arrive between commands in the same batch.
-    if (this->mg400_interface_->getSoftwareFault()->failed()) {
+    if (stopping_.load() || this->mg400_interface_->getSoftwareFault()->failed()) {
       break;
     }
     // Record the command operation as well as the outer worker boundary.

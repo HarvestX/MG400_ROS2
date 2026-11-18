@@ -15,6 +15,8 @@
 #ifndef __MG400_PLUGIN_MOTION_API_JOINT_MOV_J_HPP__
 #define __MG400_PLUGIN_MOTION_API_JOINT_MOV_J_HPP__
 
+#include <atomic>
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -48,8 +50,12 @@ private:
   rclcpp_action::Server<ActionT>::SharedPtr action_server_;
 
   mg400_common::MG400IKUtil mg400_ik_util_;
+  std::atomic<bool> stopping_{false};
+  std::vector<std::future<void>> workers_;
 
 public:
+  ~CommandQueue() override;
+
   void configure(
     const mg400_interface::MotionCommander::SharedPtr,
     const rclcpp::node_interfaces::NodeBaseInterface::SharedPtr,
